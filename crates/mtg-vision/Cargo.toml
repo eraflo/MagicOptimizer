@@ -1,0 +1,19 @@
+[package]
+name = "mtg-vision"
+description = "Card detection from a camera frame: rectification, perceptual hashing, matching"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[lints]
+workspace = true
+
+# No image codecs here on purpose. Frames arrive from a WebView canvas as raw RGBA, already
+# decoded, so a codec-carrying dependency would be weight for nothing — and every byte counts
+# in an Android build. Decoding belongs in build-artifacts, which reads downloaded JPEGs.
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+thiserror = "2"

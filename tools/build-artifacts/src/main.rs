@@ -5,6 +5,7 @@
 //! dependency acceptable when the rest of the workspace forbids one. See
 //! `docs/dev/data-pipeline.md`.
 
+mod artwork;
 mod oracle;
 mod scryfall;
 mod spellbook;
@@ -52,6 +53,27 @@ struct Args {
     /// Only fetch combos, skipping the card catalog.
     #[arg(long)]
     combos_only: bool,
+
+    /// Also build arthashes.bin, the fingerprints the camera scanner matches against.
+    ///
+    /// Off by default because it is tens of thousands of image downloads and over an hour of
+    /// wall clock. It is resumable — run it again and it picks up where it stopped.
+    #[arg(long)]
+    art: bool,
+
+    /// Only build arthashes.bin, skipping the card catalog.
+    #[arg(long)]
+    art_only: bool,
+
+    /// Stop after this many artwork downloads. For checking the plumbing, not for publishing.
+    #[arg(long)]
+    art_limit: Option<usize>,
+
+    /// Build everything: the card catalog, the combos and the artwork hashes.
+    ///
+    /// Budget a couple of hours, almost all of it the artwork downloads.
+    #[arg(long)]
+    all: bool,
 }
 
 fn main() -> Result<()> {
@@ -63,6 +85,10 @@ fn main() -> Result<()> {
 
     if args.combos_only {
         return build_combos(&args.out, started);
+    }
+    if args.art_only {
+        artwork::build(&args.out, &args.cache, args.art_limit, started)?;
+        return Ok(());
     }
 
     let (input_path, source_updated_at) = match &args.from_file {
@@ -144,9 +170,13 @@ fn main() -> Result<()> {
         started.elapsed().as_secs_f64()
     );
 
-    if args.combos {
+    if args.combos || args.all {
         println!();
         build_combos(&args.out, Instant::now())?;
+    }
+    if args.art || args.all {
+        println!();
+        artwork::build(&args.out, &args.cache, args.art_limit, Instant::now())?;
     }
     Ok(())
 }
@@ -157,8 +187,8 @@ fn build_combos(out: &std::path::Path, started: Instant) -> Result<()> {
     let (combos, report) = spellbook::fetch_combos()?;
 
     println!(
-        "  {} pages, {} variants seen, {} kept",
-        report.pages, report.variants_seen, report.kept
+        "  {} variants seen, {} kept",
+        report.variants_seen, report.kept
     );
     if report.skipped_not_ok > 0 {
         println!(
@@ -188,7 +218,10 @@ fn build_combos(out: &std::path::Path, started: Instant) -> Result<()> {
 
     let data = mtg_combo::ComboData {
         format_version: mtg_combo::FORMAT_VERSION,
-        fetched_at: today(),
+        // When Spellbook generated the snapshot, not when we happened to download it — that is
+        // what tells the user how old their combo data really is. Only falls back to the local
+        // clock if the dump stopped saying.
+        fetched_at: report.snapshot_taken_at.clone().unwrap_or_else(today),
         combos,
     };
     let bytes = mtg_combo::serialize(&data).context("serializing the combo database")?;

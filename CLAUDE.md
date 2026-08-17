@@ -143,9 +143,15 @@ fix it, do not silence it with `#[allow]` unless you write the justification in 
 - **The bracket estimate can only reach 2 to 4.** Brackets 1 and 5 are about how a deck is
   played, not what is in it — two identical lists can sit in 2 and 1. Never present the number
   as covering the full scale, and never drop the caveats from a UI that shows it.
-- **Commander Spellbook rate-limits.** A full combo fetch is a few hundred paginated requests
-  and gets `429` partway through without backoff. It is also an unofficial endpoint with no
-  contract: unexpected variant statuses are reported loudly, like the legality-key warning.
+- **Fetch combos from the bulk dump, never by paginating.** `json.commanderspellbook.com/
+  variants.json.gz` is the whole database in one request — 105,328 variants in five seconds,
+  measured. Paginating `/variants/?limit=100` does not work: even at 600 ms between requests
+  with exponential backoff it collapsed into a wall of `429`s and a final `503` around offset
+  30,800, losing the entire run. It is still an unofficial endpoint with no contract, so
+  unexpected variant statuses are reported loudly, like the legality-key warning.
+- **That dump is named `.gz` *and* served with `Content-Encoding: gzip`.** Whether the bytes
+  arriving are still compressed depends on the HTTP client — `ureq` unwraps it by default.
+  `spellbook::gunzip_if_needed` sniffs the magic number rather than assuming either way.
 - **Do not interpret Spellbook's `bracketTag`.** The values are single letters whose meaning is
   undocumented. It is stored verbatim; the bracket comes from Wizards' published criteria.
 - **Do not add a search index without a measurement first.** The linear scan is ~5 ms over the

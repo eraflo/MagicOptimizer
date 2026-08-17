@@ -51,6 +51,26 @@ impl AppState {
         Ok(state)
     }
 
+    /// A state that will not find any artifact, whatever is lying around.
+    ///
+    /// [`AppState::new`] falls back to `artifacts/` in the checkout so `tauri dev` works right
+    /// after a build — which means a test asserting fresh-install behaviour through it passes
+    /// or fails depending on whether the developer has run `build-artifacts`. That is exactly
+    /// what happened: the combo test passed until `artifacts/combos.rkyv` was first generated.
+    #[cfg(test)]
+    pub(crate) fn without_artifacts(data_dir: &Path) -> Result<AppState, String> {
+        let state = AppState::new(data_dir)?;
+        Ok(AppState {
+            catalog_path: data_dir.join("cards.rkyv"),
+            combo_path: data_dir.join("combos.rkyv"),
+            ..state
+        })
+        .inspect(|state: &AppState| {
+            state.reload_catalog();
+            state.reload_combos();
+        })
+    }
+
     pub fn catalog_path(&self) -> &Path {
         &self.catalog_path
     }

@@ -108,6 +108,31 @@ pub fn download_cached(url: &str, dest: &Path) -> Result<()> {
     Ok(())
 }
 
+/// Card images are a few hundred kilobytes. Anything much larger is not one, and reading it
+/// into memory unbounded would be a way for a redirect to somewhere unexpected to hurt.
+const MAX_IMAGE_BYTES: u64 = 8 * 1024 * 1024;
+
+/// Fetches a small file into memory — a card image, not a bulk archive.
+pub fn download_bytes(url: &str) -> Result<Vec<u8>> {
+    let response = ureq::get(url)
+        .header("User-Agent", USER_AGENT)
+        .call()
+        .with_context(|| format!("downloading {url}"))?;
+
+    if response.status() != 200 {
+        bail!("downloading {url}: unexpected status {}", response.status());
+    }
+
+    let mut bytes = Vec::new();
+    response
+        .into_body()
+        .into_reader()
+        .take(MAX_IMAGE_BYTES)
+        .read_to_end(&mut bytes)
+        .with_context(|| format!("reading {url}"))?;
+    Ok(bytes)
+}
+
 /// Opens a bulk file for line-by-line reading, decompressing on the fly when needed.
 ///
 /// Never loads the whole file: the all-cards bulk does not fit comfortably in memory.

@@ -7,8 +7,21 @@
 //! written to fail loudly at build time rather than quietly produce a wrong artifact — and the
 //! app treats the combo database as optional, so a broken build here costs a feature rather
 //! than the whole application.
+//!
+//! # Why the bulk file rather than the paginated API
+//!
+//! The first version walked `/variants/?limit=100`, which is about three hundred requests. It
+//! did not work: at 250 ms between requests it was rate-limited after roughly a hundred pages,
+//! and at 600 ms with exponential backoff it still collapsed into a wall of `429`s and finally
+//! a `503` around offset 30,800 — losing the entire run, because pagination accumulates in
+//! memory and one failure at the end throws away everything before it.
+//!
+//! Spellbook publishes the whole thing as a single gzipped file, regenerated several times a
+//! day. One request instead of three hundred, no rate limit to fight, and nothing to lose
+//! partway through. It is also plainly the more considerate way to use donated infrastructure.
 
 use std::collections::BTreeSet;
+use std::io::Read;
 use std::time::Duration;
 
 use anyhow::{Context, Result};
@@ -17,33 +30,28 @@ use serde::Deserialize;
 
 use crate::scryfall::USER_AGENT;
 
-const BASE_URL: &str = "https://backend.commanderspellbook.com/variants/";
+const BULK_URL: &str = "https://json.commanderspellbook.com/variants.json.gz";
 
-/// Most the endpoint returns per request, whatever you ask for.
-const PAGE_SIZE: u32 = 100;
-
-/// Between requests. Their servers are donated infrastructure for a free community project;
-/// there is no reason to hammer them for a snapshot that is taken once per build.
+/// A ceiling on the decoded stream.
 ///
-/// 250ms was not enough — a full fetch was rate-limited after about a hundred pages.
-const DELAY: Duration = Duration::from_millis(600);
+/// The file was 627 MB uncompressed on 2026-08-17. This is well above any plausible growth and
+/// stops a decompression bomb, or a redirect somewhere unexpected, from being read without
+/// limit. It applies after decompression, which is the only place a bomb would show.
+const MAX_DECODED_BYTES: u64 = 4 * 1024 * 1024 * 1024;
 
-/// How many times to retry a page that was refused.
-const MAX_RETRIES: u32 = 6;
+/// How many times to retry a refused download.
+const MAX_RETRIES: u32 = 4;
 
 /// First backoff after a refusal, doubling from there.
 const FIRST_BACKOFF: Duration = Duration::from_secs(5);
 
-/// A hard stop, so a change in the pagination contract cannot spin forever.
-const MAX_PAGES: u32 = 2_000;
-
 #[derive(Debug, Deserialize)]
-struct Page {
-    results: Vec<Variant>,
-    /// Absent or null on the last page. There is no `count`, so this is the only way to know
-    /// when to stop.
+struct Bulk {
+    /// When Spellbook generated the snapshot. Better than the build's own clock: it says how
+    /// old the *data* is, not when it happened to be fetched.
     #[serde(default)]
-    next: Option<String>,
+    timestamp: Option<String>,
+    variants: Vec<Variant>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -62,7 +70,15 @@ struct Variant {
     #[serde(default)]
     produces: Vec<Produces>,
     #[serde(default)]
-    legalities: std::collections::HashMap<String, bool>,
+    legalities: Legalities,
+}
+
+/// Only the one format that is used, so thirty thousand maps of twenty string keys are not
+/// built and thrown away. Serde ignores the rest.
+#[derive(Debug, Default, Deserialize)]
+struct Legalities {
+    #[serde(default)]
+    commander: bool,
 }
 
 #[derive(Debug, Deserialize)]
@@ -90,7 +106,8 @@ struct Feature {
 /// Totals and warnings from a fetch.
 #[derive(Debug, Default)]
 pub struct FetchReport {
-    pub pages: u32,
+    /// When Spellbook generated the snapshot, if it said.
+    pub snapshot_taken_at: Option<String>,
     pub variants_seen: usize,
     pub kept: usize,
     /// Variants Spellbook itself does not consider valid.
@@ -101,63 +118,47 @@ pub struct FetchReport {
     pub unexpected_statuses: BTreeSet<String>,
 }
 
-/// Downloads every combo variant.
+/// Downloads and converts the whole combo snapshot.
 pub fn fetch_combos() -> Result<(Vec<Combo>, FetchReport)> {
     let mut report = FetchReport::default();
+
+    let reader = download_with_retry()?;
+    // Parsed straight off the wire. The file is 627 MB uncompressed, and holding that as text
+    // to parse afterwards would be gratuitous — streaming keeps only what survives conversion.
+    let bulk: Bulk = serde_json::from_reader(std::io::BufReader::with_capacity(1 << 20, reader))
+        .context("parsing the Commander Spellbook variant dump")?;
+
+    report.snapshot_taken_at = bulk.timestamp;
+    report.variants_seen = bulk.variants.len();
+
     let mut combos = Vec::new();
-    let mut url = format!("{BASE_URL}?limit={PAGE_SIZE}");
-
-    loop {
-        if report.pages >= MAX_PAGES {
-            anyhow::bail!(
-                "stopped after {MAX_PAGES} pages — the pagination contract has probably changed"
-            );
+    for variant in bulk.variants {
+        if let Some(combo) = convert(variant, &mut report) {
+            combos.push(combo);
         }
-
-        let body = get_with_retry(&url)?;
-
-        let page: Page = serde_json::from_str(&body).with_context(|| format!("parsing {url}"))?;
-        report.pages += 1;
-        report.variants_seen += page.results.len();
-
-        for variant in page.results {
-            match convert(variant, &mut report) {
-                Some(combo) => combos.push(combo),
-                None => continue,
-            }
-        }
-
-        match page.next {
-            Some(next) if !next.is_empty() => url = next,
-            _ => break,
-        }
-        std::thread::sleep(DELAY);
     }
 
     report.kept = combos.len();
     Ok((combos, report))
 }
 
-/// Fetches one page, backing off and retrying when the server pushes back.
+/// Fetches the dump, backing off and retrying when the server pushes back.
 ///
-/// A full fetch is a few hundred requests and reliably ran into `429 Too Many Requests`
-/// partway through. Giving up there would mean never getting a complete snapshot, so refusals
-/// are waited out rather than treated as failures. Only a refusal is retried: a malformed
-/// response is a contract change and should fail the build loudly.
-fn get_with_retry(url: &str) -> Result<String> {
+/// Only a refusal is retried: a malformed response is a contract change and should fail the
+/// build loudly rather than be attempted four more times and fail anyway.
+fn download_with_retry() -> Result<impl Read> {
     let mut backoff = FIRST_BACKOFF;
 
     for attempt in 0..=MAX_RETRIES {
-        match ureq::get(url)
+        match ureq::get(BULK_URL)
             .header("User-Agent", USER_AGENT)
             .header("Accept", "application/json")
             .call()
         {
-            Ok(mut response) => {
-                return response
-                    .body_mut()
-                    .read_to_string()
-                    .with_context(|| format!("reading {url}"));
+            Ok(response) => {
+                return Ok(
+                    gunzip_if_needed(response.into_body().into_reader())?.take(MAX_DECODED_BYTES)
+                );
             }
             Err(error) if is_worth_retrying(&error) && attempt < MAX_RETRIES => {
                 eprintln!("  {error}; waiting {}s before retrying", backoff.as_secs());
@@ -165,12 +166,43 @@ fn get_with_retry(url: &str) -> Result<String> {
                 backoff *= 2;
             }
             Err(error) => {
-                return Err(anyhow::Error::new(error)).with_context(|| format!("requesting {url}"));
+                return Err(anyhow::Error::new(error))
+                    .with_context(|| format!("requesting {BULK_URL}"));
             }
         }
     }
 
-    anyhow::bail!("gave up on {url} after {MAX_RETRIES} retries")
+    anyhow::bail!("gave up on {BULK_URL} after {MAX_RETRIES} retries")
+}
+
+/// Decompresses the stream, but only if it actually arrived compressed.
+///
+/// The file is named `.gz` *and* served with `Content-Encoding: gzip`, so whether the bytes on
+/// the wire are still compressed by the time they reach here depends on the HTTP client's
+/// configuration — `ureq` unwraps it by default, and an earlier version of this code assumed
+/// otherwise and failed with "invalid gzip header". Sniffing the magic number is proof rather
+/// than assumption, and it survives either side changing its mind.
+fn gunzip_if_needed(mut reader: impl Read + 'static) -> Result<Box<dyn Read>> {
+    let mut magic = [0u8; 2];
+    let mut filled = 0;
+    while filled < magic.len() {
+        // A single `read` is allowed to return fewer bytes than asked for, and on a network
+        // stream it usually does.
+        match reader.read(&mut magic[filled..]) {
+            Ok(0) => break,
+            Ok(n) => filled += n,
+            Err(error) => return Err(anyhow::Error::new(error).context("reading the dump")),
+        }
+    }
+
+    let head = std::io::Cursor::new(magic[..filled].to_vec());
+    let whole = head.chain(reader);
+
+    Ok(if filled == 2 && magic == [0x1f, 0x8b] {
+        Box::new(flate2::read::GzDecoder::new(whole))
+    } else {
+        Box::new(whole)
+    })
 }
 
 /// True for the failures that pass on their own: rate limiting and server-side errors.
@@ -204,7 +236,10 @@ fn convert(variant: Variant, report: &mut FetchReport) -> Option<Combo> {
     for used in &variant.uses {
         // Without an oracle id a combo piece cannot be matched against a deck, so the whole
         // combo is useless to us. Dropped rather than half-stored.
-        let oracle_id = used.card.oracle_id.as_ref()?;
+        let Some(oracle_id) = used.card.oracle_id.as_ref() else {
+            report.skipped_without_oracle_id += 1;
+            return None;
+        };
         oracle_ids.push(oracle_id.clone());
         card_names.push(used.card.name.clone());
     }
@@ -224,11 +259,7 @@ fn convert(variant: Variant, report: &mut FetchReport) -> Option<Combo> {
             .map(|p| p.feature.name)
             .collect(),
         identity: variant.identity.unwrap_or_default(),
-        legal_in_commander: variant
-            .legalities
-            .get("commander")
-            .copied()
-            .unwrap_or(false),
+        legal_in_commander: variant.legalities.commander,
         popularity: variant.popularity,
         bracket_tag: variant.bracket_tag.unwrap_or_default(),
     })
@@ -238,14 +269,14 @@ fn convert(variant: Variant, report: &mut FetchReport) -> Option<Combo> {
 mod tests {
     use super::*;
 
-    fn parse(json: &str) -> Page {
+    fn parse(json: &str) -> Bulk {
         serde_json::from_str(json).expect("parse")
     }
 
     #[test]
     fn only_transient_failures_are_retried() {
         // Rate limiting and server errors pass; a contract change must fail loudly instead of
-        // being retried six times and then failing anyway.
+        // being retried and then failing anyway.
         assert!(is_worth_retrying(&ureq::Error::StatusCode(429)));
         assert!(is_worth_retrying(&ureq::Error::StatusCode(503)));
         assert!(!is_worth_retrying(&ureq::Error::StatusCode(404)));
@@ -253,14 +284,13 @@ mod tests {
     }
 
     #[test]
-    fn a_page_of_the_current_shape_parses() {
-        // Trimmed from a real response on 2026-08-17.
-        let page = parse(
+    fn the_dump_of_the_current_shape_parses() {
+        // Trimmed from the real file fetched on 2026-08-17.
+        let bulk = parse(
             r#"{
-                "count": null,
-                "next": "https://backend.commanderspellbook.com/variants/?limit=100&offset=100",
-                "previous": null,
-                "results": [{
+                "timestamp": "2026-08-17T15:29:35.923525+00:00",
+                "version": "6.1.1",
+                "variants": [{
                     "id": "513-5034--46",
                     "status": "OK",
                     "identity": "U",
@@ -279,12 +309,15 @@ mod tests {
             }"#,
         );
 
-        assert_eq!(page.results.len(), 1);
-        assert!(page.next.is_some());
+        assert_eq!(bulk.variants.len(), 1);
+        assert_eq!(
+            bulk.timestamp.as_deref(),
+            Some("2026-08-17T15:29:35.923525+00:00")
+        );
 
         let mut report = FetchReport::default();
-        let combo =
-            convert(page.results.into_iter().next().expect("one"), &mut report).expect("converted");
+        let combo = convert(bulk.variants.into_iter().next().expect("one"), &mut report)
+            .expect("converted");
 
         assert_eq!(combo.id, "513-5034--46");
         assert_eq!(combo.oracle_ids.len(), 2);
@@ -295,28 +328,50 @@ mod tests {
     }
 
     #[test]
-    fn the_last_page_has_no_next() {
-        let page = parse(r#"{"results": [], "next": null}"#);
-        assert!(page.next.is_none());
+    fn the_nested_fields_the_real_file_carries_are_tolerated() {
+        // The dump nests far more than the paginated API did: features have ids and statuses,
+        // cards carry five image URLs each, produces entries have quantities.
+        let bulk = parse(
+            r#"{"timestamp": "t", "variants": [{
+                "id": "1054-1538-1735", "status": "OK", "identity": "BR", "popularity": 6,
+                "bracketTag": "E", "spoiler": false, "variantCount": 3,
+                "prices": {"tcgplayer": "12.34"}, "manaNeeded": "{2}{R}",
+                "uses": [{"card": {"id": 1735, "name": "Spellweaver Helix",
+                          "oracleId": "9aa8eef1-fc67-4d54-9783-4d0175a76741", "faces": 1,
+                          "imageUriFrontPng": "https://cards.scryfall.io/png/front/a/4/x.png",
+                          "layoutRotationFront": null},
+                         "zoneLocations": ["B"], "mustBeCommander": false}],
+                "produces": [{"feature": {"id": 1, "name": "Near-infinite damage",
+                              "uncountable": true, "status": "S"}, "quantity": 1}],
+                "legalities": {"commander": true, "pauperCommanderMain": false}
+            }]}"#,
+        );
+
+        let mut report = FetchReport::default();
+        let combo = convert(bulk.variants.into_iter().next().expect("one"), &mut report)
+            .expect("converted");
+        assert_eq!(combo.card_names, ["Spellweaver Helix"]);
+        assert_eq!(combo.produces, ["Near-infinite damage"]);
+        assert!(combo.legal_in_commander);
     }
 
     #[test]
     fn unknown_fields_do_not_break_the_parse() {
-        // An unofficial endpoint will add fields; that must not fail a build.
-        let page =
-            parse(r#"{"results": [], "next": null, "somethingNew": {"nested": true}, "count": 5}"#);
-        assert!(page.results.is_empty());
+        // An unofficial source will add fields; that must not fail a build.
+        let bulk = parse(r#"{"variants": [], "somethingNew": {"nested": true}, "count": 5}"#);
+        assert!(bulk.variants.is_empty());
+        assert!(bulk.timestamp.is_none());
     }
 
     #[test]
     fn variants_spellbook_rejects_are_skipped_and_recorded() {
         // So a new status value shows up in the build output rather than silently changing
         // what ends up in the artifact.
-        let page = parse(
-            r#"{"results": [{"id": "x", "status": "NOT_WORKING", "uses": [], "produces": []}], "next": null}"#,
+        let bulk = parse(
+            r#"{"variants": [{"id": "x", "status": "NOT_WORKING", "uses": [], "produces": []}]}"#,
         );
         let mut report = FetchReport::default();
-        assert!(convert(page.results.into_iter().next().expect("one"), &mut report).is_none());
+        assert!(convert(bulk.variants.into_iter().next().expect("one"), &mut report).is_none());
         assert_eq!(report.skipped_not_ok, 1);
         assert!(report.unexpected_statuses.contains("NOT_WORKING"));
     }
@@ -324,25 +379,24 @@ mod tests {
     #[test]
     fn a_combo_with_a_card_lacking_an_oracle_id_is_dropped_whole() {
         // Keeping it with one piece missing would make it match decks it is not in.
-        let page = parse(
-            r#"{"results": [{"id": "x", "status": "OK", "produces": [],
-                 "uses": [{"card": {"name": "A", "oracleId": "o-a"}}, {"card": {"name": "B"}}]}],
-                "next": null}"#,
+        let bulk = parse(
+            r#"{"variants": [{"id": "x", "status": "OK", "produces": [],
+                 "uses": [{"card": {"name": "A", "oracleId": "o-a"}}, {"card": {"name": "B"}}]}]}"#,
         );
         let mut report = FetchReport::default();
-        assert!(convert(page.results.into_iter().next().expect("one"), &mut report).is_none());
+        assert!(convert(bulk.variants.into_iter().next().expect("one"), &mut report).is_none());
+        assert_eq!(report.skipped_without_oracle_id, 1);
     }
 
     #[test]
     fn missing_optional_fields_default_rather_than_failing() {
-        let page = parse(
-            r#"{"results": [{"id": "x", "status": "OK",
-                 "uses": [{"card": {"name": "A", "oracleId": "o-a"}}]}],
-                "next": null}"#,
+        let bulk = parse(
+            r#"{"variants": [{"id": "x", "status": "OK",
+                 "uses": [{"card": {"name": "A", "oracleId": "o-a"}}]}]}"#,
         );
         let mut report = FetchReport::default();
-        let combo =
-            convert(page.results.into_iter().next().expect("one"), &mut report).expect("converted");
+        let combo = convert(bulk.variants.into_iter().next().expect("one"), &mut report)
+            .expect("converted");
         assert!(combo.produces.is_empty());
         assert!(combo.identity.is_empty());
         assert!(!combo.legal_in_commander, "absent legality is not legal");

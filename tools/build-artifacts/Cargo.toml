@@ -21,9 +21,14 @@ workspace = true
 mtg-core = { path = "../../crates/mtg-core" }
 mtg-combo = { path = "../../crates/mtg-combo" }
 mtg-data = { path = "../../crates/mtg-data" }
+mtg-vision = { path = "../../crates/mtg-vision" }
 anyhow = "1"
 clap = { version = "4", features = ["derive"] }
 flate2 = "1"
+# JPEG and PNG only, and no default features: everything else in `image` is weight this tool
+# has no use for. Both decoders are pure Rust, so this stays true even though the rule that
+# forbids C dependencies does not apply here.
+image = { version = "0.25", default-features = false, features = ["jpeg", "png"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 ureq = "3"

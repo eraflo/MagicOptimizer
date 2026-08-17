@@ -70,8 +70,11 @@ mod tests {
     #[test]
     fn a_fresh_install_reports_no_combo_data_without_erroring() {
         // The artifact is an optional download; its absence is a state, not a failure.
+        //
+        // `without_artifacts` rather than `new`, because `new` falls back to `artifacts/` in the
+        // checkout — this test used to pass only because nobody had built the combo snapshot yet.
         let dir = tempfile::tempdir().expect("tempdir");
-        let state = AppState::new(dir.path()).expect("state");
+        let state = AppState::without_artifacts(dir.path()).expect("state");
 
         assert!(state.with_combos(|db| db.len()).is_none());
         assert!(
