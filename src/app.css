@@ -23,6 +23,11 @@
   --radius: 10px;
   --radius-sm: 6px;
 
+  /* Breakpoints. Declared here for reference only — media queries cannot read custom
+     properties, so the same numbers are written literally in each component.
+       <= 1180px  filters collapse into a drawer   (narrow desktop, tablet)
+       <=  860px  card detail becomes a full-screen sheet, tables stack   (phone) */
+
   color-scheme: dark;
 }
 
@@ -34,6 +39,13 @@ html,
 body {
   margin: 0;
   height: 100%;
+}
+
+body {
+  /* Keeps content clear of notches and gesture bars on Android. Paired with
+     viewport-fit=cover in index.html. */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
+    env(safe-area-inset-left);
 }
 
 body {
@@ -191,4 +203,32 @@ label {
 
 ::-webkit-scrollbar-thumb:hover {
   background: #3a435a;
+}
+
+/* Touch --------------------------------------------------------------------- */
+/* Keyed on pointer type rather than width: a small window on a desktop still has a mouse,
+   and a large tablet still has fingers. 44px is the usual minimum comfortable target. */
+@media (pointer: coarse) {
+  button {
+    min-height: 40px;
+    padding: 8px 14px;
+  }
+
+  input,
+  select,
+  textarea {
+    min-height: 40px;
+    /* Anything under 16px makes iOS and some Android WebViews zoom on focus. */
+    font-size: 16px;
+  }
+
+  .checkbox {
+    min-height: 40px;
+  }
+
+  .checkbox input {
+    width: 20px;
+    height: 20px;
+    min-height: 0;
+  }
 }

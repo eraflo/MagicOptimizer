@@ -34,9 +34,19 @@ cargo test --workspace
 CI runs exactly these three. A Clippy warning fails the build: fix it rather than silencing it
 with `#[allow]`, and if silencing really is right, write the reason in a comment next to it.
 
+## Releases
+
+Every push to `main` rebuilds the
+[`nightly` prerelease](https://github.com/eraflo/MagicOptimizer/releases/tag/nightly) with
+installers for Windows, macOS and Linux. It is a rolling tag: the previous release is deleted
+and recreated on each push, so there is no pile of meaningless versions. Release notes live in
+`.github/release-notes/nightly.md` and are edited there, not in the workflow.
+
 ## Conventions
 
 - **Everything in English** — documentation, comments, identifiers, commit messages, UI strings.
+- **New views must work at every breakpoint.** 1180px collapses the filters into a drawer,
+  860px turns side panels into full-screen sheets. See [`docs/dev/android.md`](docs/dev/android.md).
 - **Conventional commits**: `feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`.
 - **Errors**: `thiserror` in crates, `anyhow` only in binaries.
 - **No `unwrap()` or `expect()` in domain crates.** Fine in tests and in binary startup code.

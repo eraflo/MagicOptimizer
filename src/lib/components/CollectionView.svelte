@@ -66,9 +66,11 @@
     }
   }
 
+  // Empty rather than a dash: on phones these become a dot-separated list, where a placeholder
+  // for "nothing" is just noise. A blank cell reads fine in the desktop table too.
   function locationOf(holding: Holding): string {
     const location = holding.location;
-    if (!location) return "—";
+    if (!location) return "";
     let text = location.container;
     if (location.section) text += `, ${location.section}`;
     if (location.slot != null) text += ` #${location.slot}`;
@@ -147,7 +149,7 @@
             {/if}
           </span>
           <span class="dim" role="cell">
-            {holding.set_code ? `${holding.set_code.toUpperCase()} ${holding.collector_number}` : "—"}
+            {holding.set_code ? `${holding.set_code.toUpperCase()} ${holding.collector_number}` : ""}
           </span>
           <span class="dim" role="cell">{conditionLabels[holding.condition] ?? holding.condition}</span>
           <span class="dim" role="cell">{locationOf(holding)}</span>
@@ -160,7 +162,7 @@
               +
             </button>
           </span>
-          <span role="cell">
+          <span class="actions" role="cell">
             <button type="button" class="ghost remove" onclick={() => remove(holding)}>
               Remove
             </button>
@@ -351,5 +353,81 @@
     background: rgba(228, 87, 61, 0.12);
     border: 1px solid rgba(228, 87, 61, 0.4);
     color: var(--danger);
+  }
+
+  @media (max-width: 1100px) {
+    header {
+      flex-wrap: wrap;
+      gap: 10px 16px;
+    }
+
+    .filter {
+      margin-left: 0;
+      max-width: none;
+      flex: 1 1 100%;
+      order: 3;
+    }
+  }
+
+  /* Phones: six columns will not fit, so each holding becomes a stacked block. A grid with
+     narrower columns was tried first and just produced six unreadable slivers. */
+  @media (max-width: 860px) {
+    .head {
+      display: none;
+    }
+
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 3px 10px;
+      padding: 11px 14px;
+    }
+
+    /* Name, stepper and Remove share the first line; the metadata always takes the second.
+       Letting the metadata share a line instead made Remove wrap on some rows and not others,
+       which looked like a bug. */
+    .name {
+      flex: 1 1 130px;
+      order: 1;
+      white-space: normal;
+    }
+
+    .quantity {
+      order: 2;
+    }
+
+    .actions {
+      order: 3;
+    }
+
+    /* A zero-height full-width item, which forces the metadata onto its own line. Flexbox
+       decides line breaks before it grows anything, so relying on the name expanding to push
+       the metadata down does not work — the first metadata field gets pulled up beside it. */
+    .row::after {
+      content: "";
+      order: 4;
+      flex-basis: 100%;
+      height: 0;
+    }
+
+    .dim {
+      order: 5;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .dim:empty {
+      display: none;
+    }
+
+    /* Middle dots between the metadata bits, since the column headers are gone. The general
+       sibling combinator with :not(:empty) is what keeps a dot from leading the line when the
+       earlier fields are blank. */
+    .dim:not(:empty) ~ .dim:not(:empty)::before {
+      content: "·";
+      margin-right: 10px;
+      color: var(--text-dim);
+    }
   }
 </style>

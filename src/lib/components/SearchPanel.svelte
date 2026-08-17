@@ -7,12 +7,17 @@
     resultCount,
     total,
     searching,
+    open = false,
+    onclose,
   }: {
     request: SearchRequest;
     formatList: [string, string][];
     resultCount: number;
     total: number;
     searching: boolean;
+    /** Only meaningful below 1180px, where the panel is a drawer. */
+    open?: boolean;
+    onclose: () => void;
   } = $props();
 
   const COLORS = [
@@ -60,7 +65,12 @@
   }
 </script>
 
-<aside class="panel">
+<aside class="panel" class:open>
+  <div class="drawer-head">
+    <strong>Filters</strong>
+    <button type="button" class="ghost" onclick={onclose} aria-label="Close filters">Done</button>
+  </div>
+
   <div class="field">
     <label for="search-text">Name or rules text</label>
     <input
@@ -265,5 +275,46 @@
   .count {
     font-size: 12px;
     color: var(--text-muted);
+  }
+
+  /* The drawer header only exists when the panel is a drawer. */
+  .drawer-head {
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    margin: -4px 0 -4px;
+  }
+
+  /* Below 1180px there is no room for a permanent sidebar: it slides in over the results.
+     Kept mounted rather than conditionally rendered so filter state survives closing it. */
+  @media (max-width: 1180px) {
+    .panel {
+      position: fixed;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      z-index: 30;
+      width: min(320px, 86vw);
+      transform: translateX(-100%);
+      transition: transform 180ms ease;
+      box-shadow: 12px 0 32px rgba(0, 0, 0, 0.45);
+      /* Hidden from assistive tech and from tab order while closed. */
+      visibility: hidden;
+    }
+
+    .panel.open {
+      transform: none;
+      visibility: visible;
+    }
+
+    .drawer-head {
+      display: flex;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .panel {
+      transition: none;
+    }
   }
 </style>

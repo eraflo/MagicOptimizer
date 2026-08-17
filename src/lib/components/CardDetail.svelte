@@ -8,10 +8,13 @@
     ownedCount,
     containers,
     onadd,
+    onclose,
   }: {
     card: CardDetails | null;
     ownedCount: number;
     containers: string[];
+    /** Closes the sheet on phones, where the panel covers the list. */
+    onclose: () => void;
     onadd: (options: {
       pool: Pool;
       quantity: number;
@@ -48,10 +51,14 @@
   }
 </script>
 
-<aside class="panel">
+<aside class="panel" class:has-card={card !== null}>
   {#if !card}
     <p class="placeholder">Select a card to see its details.</p>
   {:else}
+    <div class="sheet-head">
+      <button type="button" class="ghost" onclick={onclose}>&#8592; Back to results</button>
+    </div>
+
     {#if card.image_normal}
       <img class="art" src={card.image_normal} alt={card.name} loading="lazy" />
     {/if}
@@ -347,5 +354,63 @@
     font-size: 11px;
     color: var(--text-dim);
     line-height: 1.4;
+  }
+
+  /* The back button only exists when the panel covers the list. */
+  .sheet-head {
+    display: none;
+    margin: -4px 0 8px -6px;
+  }
+
+  /* Narrow desktop and tablet: give the list the space the panel was taking. */
+  @media (max-width: 1180px) {
+    .panel {
+      width: 312px;
+    }
+  }
+
+  /* Phones: there is no room for two columns, so the detail becomes a sheet over the list.
+     It is only in the layout at all once a card is selected — the "select a card" placeholder
+     would otherwise cover the list it is asking you to pick from. */
+  @media (max-width: 860px) {
+    .panel {
+      display: none;
+    }
+
+    .panel.has-card {
+      display: block;
+      position: fixed;
+      inset: 0;
+      z-index: 40;
+      width: 100%;
+      border-left: none;
+      padding-bottom: 32px;
+    }
+
+    .sheet-head {
+      display: block;
+      position: sticky;
+      top: -16px;
+      margin: -16px -16px 8px;
+      padding: 8px 10px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      z-index: 1;
+    }
+
+    .art {
+      max-width: 320px;
+      margin-inline: auto;
+    }
+  }
+
+  @media (max-width: 420px) {
+    .grid {
+      grid-template-columns: 1fr;
+    }
+
+    .span-2 {
+      grid-column: span 1;
+    }
   }
 </style>

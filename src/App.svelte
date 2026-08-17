@@ -7,6 +7,8 @@
   import type { CardDetails, CardSummary, CatalogStatus, SearchRequest } from "./lib/types";
 
   let tab = $state<"browse" | "collection">("browse");
+  /** Only has an effect below 1180px, where the filter panel is a drawer. */
+  let filtersOpen = $state(false);
   let status = $state<CatalogStatus | null>(null);
   let formatList = $state<[string, string][]>([]);
   let containers = $state<string[]>([]);
@@ -77,6 +79,22 @@
     }
   }
 
+  // Counted so the drawer button can say how many filters are hidden behind it — otherwise a
+  // narrow window can silently filter results with nothing on screen explaining why.
+  const activeFilterCount = $derived(
+    [
+      (request.text ?? "").trim() !== "",
+      (request.cardTypes ?? []).length > 0,
+      (request.identity ?? "") !== "",
+      (request.format ?? "") !== "",
+      request.minManaValue != null,
+      request.maxManaValue != null,
+      request.gameChangersOnly === true,
+      request.commandersOnly === true,
+      request.ownedOnly === true,
+    ].filter(Boolean).length,
+  );
+
   async function select(oracleId: string) {
     selectedId = oracleId;
     try {
@@ -85,6 +103,11 @@
       error = String(e);
       selected = null;
     }
+  }
+
+  function closeDetail() {
+    selectedId = null;
+    selected = null;
   }
 
   async function addSelected(options: {
@@ -195,13 +218,45 @@
       resultCount={results.length}
       {total}
       {searching}
+      open={filtersOpen}
+      onclose={() => (filtersOpen = false)}
     />
-    <CardList cards={results} {owned} selected={selectedId} onselect={select} />
+
+    {#if filtersOpen}
+      <button
+        type="button"
+        class="backdrop"
+        aria-label="Close filters"
+        onclick={() => (filtersOpen = false)}
+      ></button>
+    {/if}
+
+    <div class="results">
+      <div class="compact-bar">
+        <button type="button" onclick={() => (filtersOpen = true)}>
+          Filters{activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}
+        </button>
+        <span class="compact-count">
+          {#if searching}
+            Searching…
+          {:else if total === 0}
+            No matches
+          {:else if results.length < total}
+            {results.length} of {total.toLocaleString()}
+          {:else}
+            {total.toLocaleString()} {total === 1 ? "card" : "cards"}
+          {/if}
+        </span>
+      </div>
+      <CardList cards={results} {owned} selected={selectedId} onselect={select} />
+    </div>
+
     <CardDetail
       card={selected}
       ownedCount={selected ? (owned[selected.oracle_id] ?? 0) : 0}
       {containers}
       onadd={addSelected}
+      onclose={closeDetail}
     />
   </main>
 {:else}
@@ -209,6 +264,14 @@
     <CollectionView onchanged={refreshCollectionSideData} />
   </main>
 {/if}
+
+<svelte:window
+  onkeydown={(event) => {
+    if (event.key !== "Escape") return;
+    if (filtersOpen) filtersOpen = false;
+    else if (selected) closeDetail();
+  }}
+/>
 
 <style>
   .app-bar {
@@ -278,6 +341,64 @@
     display: flex;
     min-height: 0;
     overflow: hidden;
+    position: relative;
+  }
+
+  .results {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  /* Shown only once the filter panel becomes a drawer. */
+  .compact-bar {
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 14px;
+    border-bottom: 1px solid var(--border);
+    background: var(--panel);
+  }
+
+  .compact-count {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 29;
+    background: rgba(6, 8, 13, 0.6);
+    border: none;
+    border-radius: 0;
+    padding: 0;
+    cursor: default;
+  }
+
+  @media (max-width: 1180px) {
+    .compact-bar {
+      display: flex;
+    }
+  }
+
+  /* Phones: the header has to give up something. The catalog status goes, since the tabs and
+     the brand are what you navigate with. */
+  @media (max-width: 640px) {
+    .app-bar {
+      gap: 12px;
+      padding: 8px 12px;
+    }
+
+    .status .ok {
+      display: none;
+    }
+
+    .brand strong {
+      display: none;
+    }
   }
 
   .error {

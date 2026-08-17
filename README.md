@@ -60,7 +60,12 @@ The project ships in phases. It stays usable at the end of each one.
 
 ## Installation
 
-No release yet. See [CONTRIBUTING.md](CONTRIBUTING.md) to build from source.
+No stable release yet. Every push to `main` publishes installers for Windows, macOS and Linux
+to the **[nightly prerelease](https://github.com/eraflo/MagicOptimizer/releases/tag/nightly)**.
+
+Those builds are unsigned, so Windows SmartScreen and macOS Gatekeeper will both object, and
+they ship with no card data — see the release notes. To build from source instead, see
+[CONTRIBUTING.md](CONTRIBUTING.md).
 
 What works today, from a checkout. First build the card data — the app ships with none, and this
 downloads Scryfall's oracle bulk file and writes `artifacts/cards.rkyv` (35,306 cards, 25.9 MB,

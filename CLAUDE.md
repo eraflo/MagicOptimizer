@@ -140,6 +140,10 @@ fix it, do not silence it with `#[allow]` unless you write the justification in 
   heuristics alone.
 - **Android performance budget.** The vision pipeline must hold 5–10 fps on a mid-range phone.
   Measure before optimizing, but do not let a regression through.
+- **The UI is already responsive; keep it that way.** Three CSS breakpoints — 1180px collapses
+  the filter panel into a drawer, 860px turns the card detail into a full-screen sheet and
+  stacks the collection table. Any new view needs the same treatment, and touch sizing keys on
+  `pointer: coarse` rather than on width. See `docs/dev/android.md`.
 
 ---
 

@@ -147,4 +147,35 @@
     text-align: center;
     color: var(--text-dim);
   }
+
+  /* Phones: the type line moves under the name instead of competing with it for width. */
+  @media (max-width: 860px) {
+    .row {
+      grid-template-columns: minmax(0, 1fr) auto 40px;
+      grid-template-areas:
+        "name cost owned"
+        "type type owned";
+      gap: 2px 10px;
+      padding: 9px 14px;
+    }
+
+    .name {
+      grid-area: name;
+    }
+
+    .cost {
+      grid-area: cost;
+      justify-self: end;
+    }
+
+    .type {
+      grid-area: type;
+      font-size: 12px;
+    }
+
+    .owned {
+      grid-area: owned;
+      align-self: center;
+    }
+  }
 </style>

@@ -1,0 +1,116 @@
+name: Nightly build
+
+# Every push to main replaces the `nightly` prerelease with fresh installers.
+#
+# A rolling tag rather than a version tag: the project is pre-1.0 and every commit on main is
+# the newest thing there is, so pinning a version per push would produce a wall of meaningless
+# releases. Once there are real versions, this becomes a `v*` tag trigger instead.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# One build at a time. Two pushes in quick succession would otherwise race to recreate the same
+# release and one would upload into a release the other had just deleted.
+concurrency:
+  group: nightly
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  prepare:
+    name: Recreate the nightly release
+    runs-on: ubuntu-latest
+    outputs:
+      release_id: ${{ steps.create.outputs.release_id }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # Deleting first is what keeps assets from previous runs from piling up under the same
+      # tag — tauri-action uploads but never cleans.
+      - name: Delete the previous nightly release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release delete nightly --cleanup-tag --yes || true
+
+      - name: Create the release
+        id: create
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          short="${GITHUB_SHA:0:7}"
+          {
+            printf 'Built from [`%s`](https://github.com/%s/commit/%s) on `main`.\n\n' \
+              "$short" "$GITHUB_REPOSITORY" "$GITHUB_SHA"
+            cat .github/release-notes/nightly.md
+          } > notes.md
+
+          gh release create nightly \
+            --target "$GITHUB_SHA" \
+            --title "Nightly build ($short)" \
+            --prerelease \
+            --notes-file notes.md
+
+          # Handed to tauri-action so it uploads into this release instead of trying to
+          # create its own — three matrix jobs racing to create one release ends badly.
+          id=$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/nightly" --jq .id)
+          echo "release_id=$id" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: ${{ matrix.name }}
+    needs: prepare
+    strategy:
+      # One platform failing should not deny the other two their installers.
+      fail-fast: false
+      matrix:
+        include:
+          - name: Windows
+            runner: windows-latest
+            args: ""
+          - name: macOS (universal)
+            runner: macos-latest
+            args: "--target universal-apple-darwin"
+          - name: Linux
+            runner: ubuntu-latest
+            args: ""
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          # A universal macOS binary needs both architectures; the field is ignored elsewhere.
+          targets: ${{ matrix.runner == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+
+      - name: Install Linux dependencies
+        if: matrix.runner == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libgtk-3-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            patchelf
+
+      - run: npm ci
+
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: nightly
+          releaseId: ${{ needs.prepare.outputs.release_id }}
+          args: ${{ matrix.args }}
