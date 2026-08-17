@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/mtg-core", "crates/mtg-data", "crates/mtg-collection", "crates/mtg-deck", "tools/build-artifacts", "src-tauri"]
+members = ["crates/mtg-core", "crates/mtg-data", "crates/mtg-collection", "crates/mtg-deck", "crates/mtg-optimizer", "tools/build-artifacts", "src-tauri"]
 
 [workspace.package]
 version = "0.0.0"

@@ -1,0 +1,21 @@
+[package]
+name = "mtg-optimizer"
+description = "Deck scoring, goldfish simulation, and search"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+mtg-core = { path = "../mtg-core" }
+mtg-data = { path = "../mtg-data" }
+mtg-deck = { path = "../mtg-deck" }
+serde = { version = "1", features = ["derive"] }
+
+[dev-dependencies]
+clap = { version = "4", features = ["derive"] }

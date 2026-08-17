@@ -25,6 +25,7 @@ mtg-core = { path = "../crates/mtg-core" }
 mtg-data = { path = "../crates/mtg-data" }
 mtg-collection = { path = "../crates/mtg-collection" }
 mtg-deck = { path = "../crates/mtg-deck" }
+mtg-optimizer = { path = "../crates/mtg-optimizer" }
 tauri = { version = "2", features = [] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"

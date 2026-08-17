@@ -3,6 +3,7 @@
   import { describeViolation } from "../types";
   import type { DeckView, ExportStyle, StoredDeck, Zone } from "../types";
   import ManaCurve from "./ManaCurve.svelte";
+  import OptimizePanel from "./OptimizePanel.svelte";
 
   let {
     formatList,
@@ -352,6 +353,15 @@
             curve={open.stats.curve}
             colorPips={open.stats.color_pips}
             averageManaValue={open.stats.average_mana_value}
+          />
+
+          <OptimizePanel
+            deckId={open.id}
+            onapplied={(view) => {
+              // Guarded: a command that answered with nothing would otherwise blank the
+              // editor out from under the reader.
+              if (view) open = view;
+            }}
           />
 
           <section class="export">

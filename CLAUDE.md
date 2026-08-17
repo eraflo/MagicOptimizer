@@ -76,7 +76,7 @@ which should hold only thin commands delegating to the crates.
 | `mtg-data` | Card catalog: `rkyv` mmap loading, in-memory indexes, search and filtering. |
 | `mtg-collection` | Physical and digital collections, storage locations, draft pools. `redb`. |
 | `mtg-deck` | Deck model, format rules, legality checking, import/export. |
-| `mtg-optimizer` | Scoring, simulated annealing, Monte Carlo simulation, hypergeometric math. |
+| `mtg-optimizer` | Scoring, simulated annealing, Monte Carlo simulation, hypergeometric math. Pure Rust, own PRNG — the simulation must be reproducible or the search chases noise. |
 | `mtg-combo` | Combo detection, Commander bracket estimation. |
 | `mtg-journal` | Game log, win rate statistics. |
 | `mtg-vision` | Card detection, homography, pHash, matching. |
@@ -129,6 +129,17 @@ fix it, do not silence it with `#[allow]` unless you write the justification in 
   because the alternative is a whole format vanishing from search with nothing to explain it. If
   that warning fires: add the variant to `mtg_core::Format`, update `LEGALITY_SLOTS`, bump
   `FORMAT_VERSION`, and fix the pinned list in `format_list_matches_scryfall_as_observed`.
+- **The optimizer does not know what a card does.** It scores a mana base, a curve and an
+  opening hand — nothing reads rules text. Left unfiltered it proposes a white-black filter
+  land for a red-green deck, which is why candidates are gated on EDHREC rank as a stopgap
+  until the phase 8 embeddings. Say so in any UI that shows its output.
+- **`sources_for_confidence` is not Frank Karsten's number.** His tables condition on hands you
+  keep; ours is unconditional and asks for a couple more sources. Scoring uses the probability
+  directly rather than a threshold, so this only matters if someone quotes the function.
+- **Optimizer suggestions are a diff, never the search's path.** Annealing takes downhill steps
+  it later undoes; reporting that path and letting someone apply a subset produced six copies
+  of a four-of. Any change to how suggestions are built has to preserve "applicable in any
+  order, any subset".
 - **Do not add a search index without a measurement first.** The linear scan is ~5 ms over the
   whole catalog. An inverted index would be cost with no benefit today; see
   `docs/dev/architecture.md` for the numbers to beat.

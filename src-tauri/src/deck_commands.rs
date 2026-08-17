@@ -61,7 +61,7 @@ fn parse_style(style: &str) -> CommandResult<ExportStyle> {
 }
 
 /// Builds the view for a deck that is already saved.
-fn view(state: &AppState, id: DeckId, deck: Deck) -> CommandResult<DeckView> {
+pub(crate) fn build_view(state: &AppState, id: DeckId, deck: Deck) -> CommandResult<DeckView> {
     let (legality, stats) =
         state.with_catalog(|catalog| (check(&deck, catalog), mtg_deck::stats(&deck, catalog)))?;
     Ok(DeckView {
@@ -72,7 +72,7 @@ fn view(state: &AppState, id: DeckId, deck: Deck) -> CommandResult<DeckView> {
     })
 }
 
-fn load(state: &AppState, id: DeckId) -> CommandResult<Deck> {
+pub(crate) fn load_deck(state: &AppState, id: DeckId) -> CommandResult<Deck> {
     state
         .decks()
         .get(id)
@@ -89,8 +89,8 @@ pub fn deck_list(state: State<'_, AppState>) -> CommandResult<Vec<StoredDeck>> {
 #[tauri::command]
 pub fn deck_get(state: State<'_, AppState>, id: u64) -> CommandResult<DeckView> {
     let id = DeckId(id);
-    let deck = load(&state, id)?;
-    view(&state, id, deck)
+    let deck = load_deck(&state, id)?;
+    build_view(&state, id, deck)
 }
 
 #[tauri::command]
@@ -117,11 +117,11 @@ pub fn deck_rename(
     format: String,
 ) -> CommandResult<DeckView> {
     let id = DeckId(id);
-    let mut deck = load(&state, id)?;
+    let mut deck = load_deck(&state, id)?;
     deck.name = name;
     deck.format = parse_format(&format)?;
     state.decks().update(id, &deck).map_err(|e| e.to_string())?;
-    view(&state, id, deck)
+    build_view(&state, id, deck)
 }
 
 #[tauri::command]
@@ -134,7 +134,7 @@ pub fn deck_add_card(
 ) -> CommandResult<DeckView> {
     let id = DeckId(id);
     let zone = parse_zone(&zone)?;
-    let mut deck = load(&state, id)?;
+    let mut deck = load_deck(&state, id)?;
 
     // The name is denormalised into the entry, so it has to come from the catalog rather than
     // from the caller — otherwise a deck could hold a name that belongs to no card.
@@ -148,7 +148,7 @@ pub fn deck_add_card(
 
     deck.add(DeckEntry::new(oracle_id, name, quantity).in_zone(zone));
     state.decks().update(id, &deck).map_err(|e| e.to_string())?;
-    view(&state, id, deck)
+    build_view(&state, id, deck)
 }
 
 #[tauri::command]
@@ -161,10 +161,10 @@ pub fn deck_remove_card(
 ) -> CommandResult<DeckView> {
     let id = DeckId(id);
     let zone = parse_zone(&zone)?;
-    let mut deck = load(&state, id)?;
+    let mut deck = load_deck(&state, id)?;
     deck.remove(&oracle_id, zone, quantity);
     state.decks().update(id, &deck).map_err(|e| e.to_string())?;
-    view(&state, id, deck)
+    build_view(&state, id, deck)
 }
 
 /// Moves copies between zones, e.g. promoting a card to the command zone.
@@ -180,7 +180,7 @@ pub fn deck_move_card(
     let id = DeckId(id);
     let from = parse_zone(&from)?;
     let to = parse_zone(&to)?;
-    let mut deck = load(&state, id)?;
+    let mut deck = load_deck(&state, id)?;
 
     let Some(entry) = deck
         .entries_in(from)
@@ -194,7 +194,7 @@ pub fn deck_move_card(
     deck.remove(&oracle_id, from, moved);
     deck.add(DeckEntry::new(&entry.oracle_id, &entry.name, moved).in_zone(to));
     state.decks().update(id, &deck).map_err(|e| e.to_string())?;
-    view(&state, id, deck)
+    build_view(&state, id, deck)
 }
 
 #[tauri::command]
@@ -213,7 +213,7 @@ pub fn deck_import(
         .map_err(|e| e.to_string())?;
 
     Ok(ImportOutcome {
-        view: view(&state, id, result.deck)?,
+        view: build_view(&state, id, result.deck)?,
         messages: result.problems.iter().map(ToString::to_string).collect(),
         problems: result.problems,
     })
@@ -221,7 +221,7 @@ pub fn deck_import(
 
 #[tauri::command]
 pub fn deck_export(state: State<'_, AppState>, id: u64, style: String) -> CommandResult<String> {
-    let deck = load(&state, DeckId(id))?;
+    let deck = load_deck(&state, DeckId(id))?;
     Ok(export(&deck, parse_style(&style)?))
 }
 

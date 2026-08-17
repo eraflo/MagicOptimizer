@@ -251,3 +251,60 @@ export function describeViolation(violation: Violation): string {
       return violation.kind;
   }
 }
+
+// --- Optimizer -------------------------------------------------------------
+
+export type Criterion = {
+  name: string;
+  /** Always 0..1, so criteria are comparable. */
+  score: number;
+  weight: number;
+  detail: string;
+  /** False for the criteria that encode a convention rather than a calculation. */
+  derived: boolean;
+};
+
+export type SimulationResult = {
+  games: number;
+  keepable_opening_hands: number;
+  average_mulligans: number;
+  average_opening_lands: number;
+  land_drops_made: number[];
+  on_curve_by_turn: number[];
+  mana_screw: number;
+  mana_flood: number;
+};
+
+export type Score = {
+  /** Weighted average of the criteria, 0–100. */
+  total: number;
+  criteria: Criterion[];
+  simulation: SimulationResult;
+  /** False when the deck holds cards the catalog could not resolve. */
+  reliable: boolean;
+  unresolved_cards: number;
+};
+
+export type Suggestion = {
+  remove_oracle_id: string;
+  remove_name: string;
+  add_oracle_id: string;
+  add_name: string;
+  score_before: number;
+  score_after: number;
+  reasons: string[];
+};
+
+export type SearchResult = {
+  before: Score;
+  after: Score;
+  suggestions: Suggestion[];
+  candidates_considered: number;
+};
+
+export type Choice = { key: string; label: string };
+
+export type OptimizerOptions = {
+  archetypes: Choice[];
+  pools: Choice[];
+};

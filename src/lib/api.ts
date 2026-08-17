@@ -18,8 +18,11 @@ import type {
   Holding,
   NewHolding,
   Pool,
+  OptimizerOptions,
+  Score,
   SearchRequest,
   SearchResponse,
+  SearchResult,
   Stats,
 } from "./types";
 
@@ -142,4 +145,33 @@ export function deckExport(id: number, style: ExportStyle): Promise<string> {
 
 export function deckZones(): Promise<[Zone, string][]> {
   return invoke("deck_zones");
+}
+
+// --- Optimizer -------------------------------------------------------------
+
+export function deckScore(id: number, archetype: string): Promise<Score> {
+  return invoke("deck_score", { id, archetype });
+}
+
+export function deckOptimize(
+  id: number,
+  archetype: string,
+  pool: string,
+  iterations?: number,
+  onlyPlayedCards?: boolean,
+): Promise<SearchResult> {
+  return invoke("deck_optimize", { id, archetype, pool, iterations, onlyPlayedCards });
+}
+
+export function deckApplySuggestion(
+  id: number,
+  removeOracleId: string,
+  addOracleId: string,
+): Promise<DeckView> {
+  return invoke("deck_apply_suggestion", { id, removeOracleId, addOracleId });
+}
+
+/** Archetypes and card pools the optimizer offers. */
+export function optimizerOptions(): Promise<OptimizerOptions> {
+  return invoke("optimizer_options");
 }

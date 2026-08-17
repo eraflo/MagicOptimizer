@@ -13,7 +13,10 @@ use crate::card::{ArchivedCard, Card};
 use crate::error::{CatalogError, Result};
 
 /// Bumped whenever the archived layout changes in a way older readers cannot handle.
-pub const FORMAT_VERSION: u32 = 1;
+///
+/// 2 — added `produced_mana`, without which counting a deck's colour sources would have to
+/// guess from rules text.
+pub const FORMAT_VERSION: u32 = 2;
 
 /// The root of the catalog artifact.
 #[derive(Archive, Serialize, Deserialize, Debug)]
@@ -394,6 +397,7 @@ mod tests {
             mana_value: 0.0,
             colors: 0,
             color_identity: 0,
+            produced_mana: 0,
             type_line: type_line.to_owned(),
             oracle_text: String::new(),
             power: None,

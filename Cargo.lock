@@ -1922,6 +1922,7 @@ dependencies = [
  "mtg-core",
  "mtg-data",
  "mtg-deck",
+ "mtg-optimizer",
  "serde",
  "serde_json",
  "tauri",
@@ -2036,6 +2037,17 @@ dependencies = [
  "serde_json",
  "tempfile",
  "thiserror 2.0.20",
+]
+
+[[package]]
+name = "mtg-optimizer"
+version = "0.0.0"
+dependencies = [
+ "clap",
+ "mtg-core",
+ "mtg-data",
+ "mtg-deck",
+ "serde",
 ]
 
 [[package]]

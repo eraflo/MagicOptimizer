@@ -5,6 +5,7 @@
 mod commands;
 mod deck_commands;
 mod dto;
+mod optimize_commands;
 mod state;
 
 use tauri::Manager;
@@ -50,6 +51,10 @@ pub fn run() {
             deck_commands::deck_import,
             deck_commands::deck_export,
             deck_commands::deck_zones,
+            optimize_commands::deck_score,
+            optimize_commands::deck_optimize,
+            optimize_commands::deck_apply_suggestion,
+            optimize_commands::optimizer_options,
         ])
         .run(tauri::generate_context!())
         .expect("the application failed to start");

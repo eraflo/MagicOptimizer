@@ -26,6 +26,9 @@ pub struct ScryfallCard {
     pub colors: Option<Vec<String>>,
     #[serde(default)]
     pub color_identity: Vec<String>,
+    /// Mana this card can make. Absent on anything that makes none.
+    #[serde(default)]
+    pub produced_mana: Option<Vec<String>>,
     #[serde(default)]
     pub type_line: Option<String>,
     #[serde(default)]
@@ -166,6 +169,7 @@ impl Conversion {
             mana_value: raw.cmc.unwrap_or(0.0),
             colors: colors.bits(),
             color_identity: color_set(Some(&raw.color_identity)).bits(),
+            produced_mana: color_set(raw.produced_mana.as_deref()).bits(),
             type_line,
             oracle_text,
             power: raw.power,

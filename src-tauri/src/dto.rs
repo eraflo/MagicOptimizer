@@ -52,6 +52,7 @@ impl CardSummary {
             type_line: card.type_line().to_owned(),
             colors: card.colors().to_string(),
             color_identity: card.color_identity().to_string(),
+
             set_code: card.set_code.to_string(),
             collector_number: card.collector_number.to_string(),
             game_changer: card.is_game_changer(),

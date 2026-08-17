@@ -259,6 +259,7 @@ mod tests {
                 mana_value: 0.0,
                 colors: 0,
                 color_identity: 0,
+                produced_mana: 0,
                 type_line: "Instant".to_owned(),
                 oracle_text: String::new(),
                 power: None,

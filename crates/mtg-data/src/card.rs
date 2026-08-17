@@ -107,6 +107,14 @@ pub struct Card {
     pub colors: u8,
     /// [`ColorSet`] bits. This is what the Commander identity rule tests against.
     pub color_identity: u8,
+    /// [`ColorSet`] bits for the mana this card can produce, from Scryfall's `produced_mana`.
+    ///
+    /// Covers lands, mana creatures and artifacts alike, which is why counting sources does
+    /// not have to guess from rules text. Note that Scryfall reports the theoretical maximum:
+    /// Arcane Signet is listed as producing all five colours, though in play it produces only
+    /// the commander's. That overstates a mana base slightly and is the right way round — it
+    /// never invents a source a card cannot make.
+    pub produced_mana: u8,
     pub type_line: String,
     pub oracle_text: String,
     pub power: Option<String>,
@@ -160,6 +168,19 @@ impl ArchivedCard {
 
     pub fn color_identity(&self) -> ColorSet {
         ColorSet::from_bits(self.color_identity)
+    }
+
+    /// Colours of mana this card can produce.
+    pub fn produced_mana(&self) -> ColorSet {
+        ColorSet::from_bits(self.produced_mana)
+    }
+
+    /// True when the card can produce mana at all, of any colour or none.
+    ///
+    /// Lands count even when they tap for colourless, which `produced_mana` records as an
+    /// empty colour set — hence the type check alongside it.
+    pub fn produces_mana(&self) -> bool {
+        !self.produced_mana().is_colorless() || self.has_type("Land")
     }
 
     pub fn rarity(&self) -> Rarity {

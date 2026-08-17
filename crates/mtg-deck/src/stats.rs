@@ -133,6 +133,7 @@ pub fn stats(deck: &Deck, catalog: &Catalog) -> DeckStats {
             })
             .collect(),
         color_identity: identity.to_string(),
+
         unresolved_cards,
     }
 }
@@ -163,6 +164,7 @@ mod tests {
             color_identity: mtg_core::ManaCost::parse(mana_cost)
                 .map(|c| c.colors().bits())
                 .unwrap_or(0),
+            produced_mana: 0,
             type_line: type_line.to_owned(),
             oracle_text: String::new(),
             power: None,
