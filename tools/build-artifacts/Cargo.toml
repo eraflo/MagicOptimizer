@@ -19,6 +19,7 @@ workspace = true
 # stack underneath it) acceptable here and nowhere else. See docs/dev/architecture.md.
 [dependencies]
 mtg-core = { path = "../../crates/mtg-core" }
+mtg-combo = { path = "../../crates/mtg-combo" }
 mtg-data = { path = "../../crates/mtg-data" }
 anyhow = "1"
 clap = { version = "4", features = ["derive"] }

@@ -8,8 +8,11 @@
 import { invoke } from "@tauri-apps/api/core";
 
 import type {
+  BracketAssessment,
   CardDetails,
   CatalogStatus,
+  ComboMatch,
+  ComboStatus,
   DeckView,
   ExportStyle,
   ImportOutcome,
@@ -174,4 +177,18 @@ export function deckApplySuggestion(
 /** Archetypes and card pools the optimizer offers. */
 export function optimizerOptions(): Promise<OptimizerOptions> {
   return invoke("optimizer_options");
+}
+
+// --- Combos and brackets ---------------------------------------------------
+
+export function comboStatus(): Promise<ComboStatus> {
+  return invoke("combo_status");
+}
+
+export function deckCombos(id: number): Promise<ComboMatch[]> {
+  return invoke("deck_combos", { id });
+}
+
+export function deckBracket(id: number): Promise<BracketAssessment> {
+  return invoke("deck_bracket", { id });
 }

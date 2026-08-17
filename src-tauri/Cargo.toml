@@ -24,6 +24,7 @@ tauri-build = { version = "2", features = [] }
 mtg-core = { path = "../crates/mtg-core" }
 mtg-data = { path = "../crates/mtg-data" }
 mtg-collection = { path = "../crates/mtg-collection" }
+mtg-combo = { path = "../crates/mtg-combo" }
 mtg-deck = { path = "../crates/mtg-deck" }
 mtg-optimizer = { path = "../crates/mtg-optimizer" }
 tauri = { version = "2", features = [] }

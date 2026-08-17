@@ -77,7 +77,7 @@ which should hold only thin commands delegating to the crates.
 | `mtg-collection` | Physical and digital collections, storage locations, draft pools. `redb`. |
 | `mtg-deck` | Deck model, format rules, legality checking, import/export. |
 | `mtg-optimizer` | Scoring, simulated annealing, Monte Carlo simulation, hypergeometric math. Pure Rust, own PRNG — the simulation must be reproducible or the search chases noise. |
-| `mtg-combo` | Combo detection, Commander bracket estimation. |
+| `mtg-combo` | Combo detection, Commander bracket estimation. The combo artifact is **optional** — everything degrades to saying what it could not check. |
 | `mtg-journal` | Game log, win rate statistics. |
 | `mtg-vision` | Card detection, homography, pHash, matching. |
 | `mtg-ml` | Card embeddings and the personal re-ranker. |
@@ -140,6 +140,14 @@ fix it, do not silence it with `#[allow]` unless you write the justification in 
   it later undoes; reporting that path and letting someone apply a subset produced six copies
   of a four-of. Any change to how suggestions are built has to preserve "applicable in any
   order, any subset".
+- **The bracket estimate can only reach 2 to 4.** Brackets 1 and 5 are about how a deck is
+  played, not what is in it — two identical lists can sit in 2 and 1. Never present the number
+  as covering the full scale, and never drop the caveats from a UI that shows it.
+- **Commander Spellbook rate-limits.** A full combo fetch is a few hundred paginated requests
+  and gets `429` partway through without backoff. It is also an unofficial endpoint with no
+  contract: unexpected variant statuses are reported loudly, like the legality-key warning.
+- **Do not interpret Spellbook's `bracketTag`.** The values are single letters whose meaning is
+  undocumented. It is stored verbatim; the bracket comes from Wizards' published criteria.
 - **Do not add a search index without a measurement first.** The linear scan is ~5 ms over the
   whole catalog. An inverted index would be cost with no benefit today; see
   `docs/dev/architecture.md` for the numbers to beat.

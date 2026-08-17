@@ -1,6 +1,6 @@
 # Commander brackets and combos
 
-> **🚧 Not available yet.** Shipped in phase 5.
+> **Available now**, once the combo data is downloaded. See [what it cannot tell you](#what-this-cannot-tell-you).
 
 ## Brackets, briefly
 
@@ -35,6 +35,21 @@ this combo" — so you know what to cut if you are aiming lower.
 **Optimize while staying in a bracket.** This is the most useful part day to day: "improve this
 deck, but keep it bracket 2". If your playgroup has agreed on a level, the optimizer respects it
 instead of mechanically pushing you upward.
+
+## What this cannot tell you
+
+**The estimate only ever says 2, 3 or 4.** Brackets 1 and 5 are not about what is in a deck but
+about how it is played: bracket 1 is a theme deck where winning is beside the point, bracket 5 is
+a deck built to win a tournament. Two decks with identical cards can sit in 1 and 2, or in 4 and
+5. Nothing the app can see distinguishes them, so it does not pretend to.
+
+Tutors are reported but not counted. The published rules say they should be "sparse" below
+bracket 3 without saying how many is too many, and inventing a number would be presenting a
+guess as a rule.
+
+Mass land denial and extra turns are found by reading rules text, which is a heuristic. It looks
+for effects that destroy *all* lands, so stax pieces that merely slow lands down — Winter Orb and
+the like — are deliberately not counted.
 
 ## Combo detection
 

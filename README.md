@@ -50,7 +50,7 @@ The project ships in phases. It stays usable at the end of each one.
 | 2 | Desktop app, collection, storage locations | ✅ done |
 | 3 | Decks, format rules, legality, import/export | ✅ done |
 | 4 | Optimizer, simulation, collection constraint | ✅ done |
-| 5 | Combo detection, Commander brackets | ⬜ |
+| 5 | Combo detection, Commander brackets | ✅ done |
 | 6 | Android and video scanning | ⬜ |
 | 7 | Game log | ⬜ |
 | 8 | Continuously trained personal model | ⬜ |
@@ -91,6 +91,14 @@ Import a decklist and check it — paste from Arena, Moxfield, MTGO or plain tex
 
 ```bash
 cargo run --release -p mtg-deck --example deck -- --file mydeck.txt --format commander
+```
+
+Fetch the combo snapshot, which powers combo detection and the bracket estimate. Separate
+from the card build because it is several hundred paginated requests against a community
+project's servers:
+
+```bash
+cargo run --release -p build-artifacts -- --combos-only
 ```
 
 Score a deck and look for improvements:

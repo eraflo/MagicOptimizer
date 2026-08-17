@@ -2,6 +2,7 @@
 //!
 //! Everything of substance lives in the `mtg-*` crates. This layer only wires them to a window.
 
+mod combo_commands;
 mod commands;
 mod deck_commands;
 mod dto;
@@ -55,6 +56,9 @@ pub fn run() {
             optimize_commands::deck_optimize,
             optimize_commands::deck_apply_suggestion,
             optimize_commands::optimizer_options,
+            combo_commands::combo_status,
+            combo_commands::deck_combos,
+            combo_commands::deck_bracket,
         ])
         .run(tauri::generate_context!())
         .expect("the application failed to start");

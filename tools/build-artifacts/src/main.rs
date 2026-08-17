@@ -7,6 +7,7 @@
 
 mod oracle;
 mod scryfall;
+mod spellbook;
 
 use std::io::BufRead;
 use std::path::PathBuf;
@@ -40,11 +41,29 @@ struct Args {
     /// Stop after this many cards. For quick iteration only — never publish the result.
     #[arg(long)]
     limit: Option<usize>,
+
+    /// Also fetch the combo snapshot from Commander Spellbook into combos.rkyv.
+    ///
+    /// Off by default: it is several hundred paginated requests against a community project's
+    /// donated infrastructure, and the card catalog does not depend on it.
+    #[arg(long)]
+    combos: bool,
+
+    /// Only fetch combos, skipping the card catalog.
+    #[arg(long)]
+    combos_only: bool,
 }
 
 fn main() -> Result<()> {
     let args = Args::parse();
     let started = Instant::now();
+
+    std::fs::create_dir_all(&args.out)
+        .with_context(|| format!("creating {}", args.out.display()))?;
+
+    if args.combos_only {
+        return build_combos(&args.out, started);
+    }
 
     let (input_path, source_updated_at) = match &args.from_file {
         Some(path) => {
@@ -113,8 +132,6 @@ fn main() -> Result<()> {
         cards,
     };
 
-    std::fs::create_dir_all(&args.out)
-        .with_context(|| format!("creating {}", args.out.display()))?;
     let out_path = args.out.join("cards.rkyv");
     let bytes = mtg_data::serialize(&data).context("serializing the catalog")?;
     std::fs::write(&out_path, &bytes).with_context(|| format!("writing {}", out_path.display()))?;
@@ -126,7 +143,96 @@ fn main() -> Result<()> {
         data.cards.len(),
         started.elapsed().as_secs_f64()
     );
+
+    if args.combos {
+        println!();
+        build_combos(&args.out, Instant::now())?;
+    }
     Ok(())
+}
+
+/// Fetches the combo snapshot and writes `combos.rkyv`.
+fn build_combos(out: &std::path::Path, started: Instant) -> Result<()> {
+    println!("Fetching combos from Commander Spellbook...");
+    let (combos, report) = spellbook::fetch_combos()?;
+
+    println!(
+        "  {} pages, {} variants seen, {} kept",
+        report.pages, report.variants_seen, report.kept
+    );
+    if report.skipped_not_ok > 0 {
+        println!(
+            "  {} variants skipped as not valid combos",
+            report.skipped_not_ok
+        );
+    }
+    if report.skipped_without_oracle_id > 0 {
+        println!(
+            "  {} variants skipped for having no oracle id",
+            report.skipped_without_oracle_id
+        );
+    }
+    // Loud, like the legality-key warning: an unexpected status means the endpoint's contract
+    // moved, and the artifact may be quietly missing combos.
+    if !report.unexpected_statuses.is_empty() {
+        let list: Vec<&str> = report
+            .unexpected_statuses
+            .iter()
+            .map(String::as_str)
+            .collect();
+        eprintln!();
+        eprintln!("  WARNING: Commander Spellbook returned unexpected variant statuses:");
+        eprintln!("    {}", list.join(", "));
+        eprintln!("  Those variants were skipped. Check whether the endpoint's contract changed.");
+    }
+
+    let data = mtg_combo::ComboData {
+        format_version: mtg_combo::FORMAT_VERSION,
+        fetched_at: today(),
+        combos,
+    };
+    let bytes = mtg_combo::serialize(&data).context("serializing the combo database")?;
+    let path = out.join("combos.rkyv");
+    std::fs::write(&path, &bytes).with_context(|| format!("writing {}", path.display()))?;
+
+    println!(
+        "\nWrote {} ({:.1} MB, {} combos) in {:.1}s",
+        path.display(),
+        bytes.len() as f64 / 1e6,
+        data.combos.len(),
+        started.elapsed().as_secs_f64()
+    );
+    Ok(())
+}
+
+/// Today's date, for stamping the snapshot.
+///
+/// Computed from the system clock rather than pulling in a date library: the artifact only
+/// needs to say roughly how old it is, and that is not worth a dependency. This is the standard
+/// civil-from-days conversion.
+fn today() -> String {
+    let seconds = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+
+    let z = (seconds / 86_400) as i64 + 719_468;
+    let era = z.div_euclid(146_097);
+    let day_of_era = z.rem_euclid(146_097);
+    let year_of_era =
+        (day_of_era - day_of_era / 1_460 + day_of_era / 36_524 - day_of_era / 146_096) / 365;
+    let day_of_year = day_of_era - (365 * year_of_era + year_of_era / 4 - year_of_era / 100);
+    let shifted_month = (5 * day_of_year + 2) / 153;
+
+    let day = day_of_year - (153 * shifted_month + 2) / 5 + 1;
+    let month = if shifted_month < 10 {
+        shifted_month + 3
+    } else {
+        shifted_month - 9
+    };
+    let year = year_of_era + era * 400 + i64::from(month <= 2);
+
+    format!("{year:04}-{month:02}-{day:02}")
 }
 
 fn report(conversion: &Conversion, failed_lines: usize) {

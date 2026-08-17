@@ -308,3 +308,47 @@ export type OptimizerOptions = {
   archetypes: Choice[];
   pools: Choice[];
 };
+
+// --- Combos and brackets ---------------------------------------------------
+
+export type ComboMatch = {
+  /** Commander Spellbook's identifier, so it can be looked up on their site. */
+  id: string;
+  card_names: string[];
+  produces: string[];
+  card_count: number;
+  is_infinite: boolean;
+  wins_the_game: boolean;
+};
+
+export type Marker = { name: string; note: string };
+
+export type BracketAssessment = {
+  /** Between 2 and 4: brackets 1 and 5 depend on intent, not on contents. */
+  bracket: number;
+  reasons: string[];
+  game_changers: Marker[];
+  two_card_combos: ComboMatch[];
+  longer_combos: ComboMatch[];
+  mass_land_denial: Marker[];
+  extra_turns: Marker[];
+  tutors: Marker[];
+  /** What the estimate could not check. Shown, not hidden. */
+  caveats: string[];
+};
+
+export type ComboStatus = {
+  loaded: boolean;
+  combos: number;
+  fetchedAt: string;
+  path: string;
+  error: string | null;
+};
+
+export const BRACKET_LABELS: Record<number, string> = {
+  1: "Exhibition",
+  2: "Core",
+  3: "Upgraded",
+  4: "Optimized",
+  5: "cEDH",
+};

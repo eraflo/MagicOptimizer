@@ -4,6 +4,7 @@ use std::path::{Path, PathBuf};
 use std::sync::RwLock;
 
 use mtg_collection::CollectionStore;
+use mtg_combo::ComboDatabase;
 use mtg_data::Catalog;
 use mtg_deck::DeckStore;
 
@@ -16,6 +17,11 @@ pub struct AppState {
     /// Reason the last load attempt failed, for the UI to display.
     catalog_error: RwLock<Option<String>>,
     catalog_path: PathBuf,
+    /// Optional: the combo snapshot is a separate download, and everything that uses it says
+    /// what it could not check rather than assuming a deck is clean.
+    combos: RwLock<Option<ComboDatabase>>,
+    combo_error: RwLock<Option<String>>,
+    combo_path: PathBuf,
     collection: CollectionStore,
     decks: DeckStore,
 }
@@ -34,10 +40,14 @@ impl AppState {
             catalog: RwLock::new(None),
             catalog_error: RwLock::new(None),
             catalog_path: locate_catalog(data_dir),
+            combos: RwLock::new(None),
+            combo_error: RwLock::new(None),
+            combo_path: locate_artifact(data_dir, "combos.rkyv"),
             collection,
             decks,
         };
         state.reload_catalog();
+        state.reload_combos();
         Ok(state)
     }
 
@@ -79,6 +89,43 @@ impl AppState {
         }
     }
 
+    pub fn combo_path(&self) -> &Path {
+        &self.combo_path
+    }
+
+    /// Attempts to load the combo snapshot, recording the reason on failure.
+    pub fn reload_combos(&self) {
+        let (database, error) = match ComboDatabase::open(&self.combo_path) {
+            Ok(database) => (Some(database), None),
+            Err(error) => (None, Some(error.to_string())),
+        };
+        if let Ok(mut slot) = self.combos.write() {
+            *slot = database;
+        }
+        if let Ok(mut slot) = self.combo_error.write() {
+            *slot = error;
+        }
+    }
+
+    pub fn combo_error(&self) -> Option<String> {
+        self.combo_error.read().ok().and_then(|e| e.clone())
+    }
+
+    /// Runs `f` against the combo database, or returns `None` when there is none.
+    pub fn with_combos<T>(&self, f: impl FnOnce(&ComboDatabase) -> T) -> Option<T> {
+        let guard = self.combos.read().ok()?;
+        guard.as_ref().map(f)
+    }
+
+    /// Runs `f` with the combo database as an `Option`, so a caller can distinguish "no
+    /// combos found" from "the combo check never ran".
+    pub fn with_combos_ref<T>(&self, f: impl FnOnce(Option<&ComboDatabase>) -> T) -> T {
+        match self.combos.read() {
+            Ok(guard) => f(guard.as_ref()),
+            Err(_) => f(None),
+        }
+    }
+
     pub fn collection(&self) -> &CollectionStore {
         &self.collection
     }
@@ -94,19 +141,24 @@ impl AppState {
 /// checkout with `artifacts/cards.rkyv` already built is picked up automatically, so
 /// `cargo tauri dev` works straight after `cargo run -p build-artifacts`.
 fn locate_catalog(data_dir: &Path) -> PathBuf {
-    let installed = data_dir.join("cards.rkyv");
+    locate_artifact(data_dir, "cards.rkyv")
+}
+
+/// Finds an artifact by name, preferring the installed copy.
+fn locate_artifact(data_dir: &Path, name: &str) -> PathBuf {
+    let installed = data_dir.join(name);
     if installed.exists() {
         return installed;
     }
 
-    let in_checkout = Path::new("artifacts/cards.rkyv");
+    let in_checkout = Path::new("artifacts").join(name);
     if in_checkout.exists() {
-        return in_checkout.to_path_buf();
+        return in_checkout;
     }
     // Running from src-tauri/, as `tauri dev` does.
-    let from_src_tauri = Path::new("../artifacts/cards.rkyv");
+    let from_src_tauri = Path::new("../artifacts").join(name);
     if from_src_tauri.exists() {
-        return from_src_tauri.to_path_buf();
+        return from_src_tauri;
     }
 
     installed
@@ -154,6 +206,9 @@ mod tests {
             catalog: RwLock::new(None),
             catalog_error: RwLock::new(Some("file not found".to_owned())),
             catalog_path: dir.path().join("cards.rkyv"),
+            combos: RwLock::new(None),
+            combo_error: RwLock::new(None),
+            combo_path: dir.path().join("combos.rkyv"),
             collection: mtg_collection::CollectionStore::open(dir.path().join("c.redb")).unwrap(),
             decks: DeckStore::open(dir.path().join("d.redb")).unwrap(),
         };

@@ -2,6 +2,7 @@
   import * as api from "../api";
   import { describeViolation } from "../types";
   import type { DeckView, ExportStyle, StoredDeck, Zone } from "../types";
+  import BracketPanel from "./BracketPanel.svelte";
   import ManaCurve from "./ManaCurve.svelte";
   import OptimizePanel from "./OptimizePanel.svelte";
 
@@ -354,6 +355,10 @@
             colorPips={open.stats.color_pips}
             averageManaValue={open.stats.average_mana_value}
           />
+
+          {#if open.deck.format === "commander" || open.deck.format === "brawl" || open.deck.format === "duel" || open.deck.format === "predh"}
+            <BracketPanel deckId={open.id} />
+          {/if}
 
           <OptimizePanel
             deckId={open.id}
