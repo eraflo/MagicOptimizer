@@ -3,6 +3,7 @@
 //! Everything of substance lives in the `mtg-*` crates. This layer only wires them to a window.
 
 mod commands;
+mod deck_commands;
 mod dto;
 mod state;
 
@@ -38,6 +39,17 @@ pub fn run() {
             commands::collection_owned_quantities,
             commands::collection_containers,
             commands::formats,
+            deck_commands::deck_list,
+            deck_commands::deck_get,
+            deck_commands::deck_create,
+            deck_commands::deck_delete,
+            deck_commands::deck_rename,
+            deck_commands::deck_add_card,
+            deck_commands::deck_remove_card,
+            deck_commands::deck_move_card,
+            deck_commands::deck_import,
+            deck_commands::deck_export,
+            deck_commands::deck_zones,
         ])
         .run(tauri::generate_context!())
         .expect("the application failed to start");

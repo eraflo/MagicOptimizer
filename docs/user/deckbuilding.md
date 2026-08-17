@@ -1,7 +1,7 @@
 # Building and optimizing decks
 
-> **🚧 Not available yet.** Decks and formats arrive in phase 3, the optimizer in phase 4,
-> personalized recommendations in phase 8.
+> **Partly available.** Decks, formats and legality checking work now. The optimizer arrives in
+> phase 4 and personalised recommendations in phase 8; those sections are marked below.
 
 ## Formats
 
@@ -11,6 +11,23 @@ Pauper, Commander, Brawl, and Limited (draft and sealed).
 The format determines deck size, how many copies are allowed, the sideboard, banned and restricted
 cards, and color identity for Commander. Ban lists come straight from the card data, so they stay
 current on their own.
+
+## Importing a list
+
+Paste a decklist from anywhere — Arena, Moxfield, MTGO and plain text are all understood, and
+you do not have to say which one it is. Sections like `Deck`, `Sideboard` and `Commander` are
+followed if present, `SB:` prefixes work, and `4x Lightning Bolt` is as acceptable as
+`4 Lightning Bolt (M21) 137`.
+
+You also do not have to spell cards exactly. Accents, apostrophes and capitals are ignored, so
+`lim-duls vault` finds *Lim-Dûl's Vault*. Double-faced and adventure cards are found by their
+front face, which is how every site writes them: `Bonecrusher Giant` resolves to
+*Bonecrusher Giant // Stomp*.
+
+**Lines that cannot be read are listed, never dropped.** A list that quietly imports 58 of your
+60 cards is worse than one that tells you which two it could not place. The same goes for
+genuinely ambiguous names: `Fire` is half of both *Fire // Ice* and *Start // Fire*, so the app
+asks rather than guessing.
 
 ## Three ways to work
 
@@ -31,7 +48,28 @@ One setting decides what the optimizer is allowed to suggest:
 | **All cards** | No constraint — to see what the ideal deck would look like |
 | **Pool only** | In draft and sealed: restricted to the pool you scanned |
 
-## Reading the score
+## What the app tells you about a deck
+
+Every edit re-checks the deck immediately. Instead of a verdict, you get a list of specific
+problems you can act on:
+
+- the deck is the wrong size, and by how much
+- too many copies of a card — with basic lands and cards like *Relentless Rats* correctly exempt
+- a card that is banned, restricted, or simply not in the format
+- a card outside your commander's colour identity, naming both identities
+- a command zone that is empty, too full, or holds something that cannot be a commander
+
+Alongside it: the mana curve, how many coloured symbols each colour is asked for, and the land
+and creature counts.
+
+For two formats — Competitive Brawl and TLR — the construction rules are **inferred** rather
+than confirmed, because they are not publicly documented. The app says so rather than
+presenting a guess as a verdict.
+
+## Reading the optimizer's score
+
+> 🚧 Arrives in phase 4.
+
 
 A deck's score is not an opaque number. It breaks down into named criteria, and **every suggestion
 tells you which ones it improves**:

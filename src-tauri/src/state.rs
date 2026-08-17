@@ -5,6 +5,7 @@ use std::sync::RwLock;
 
 use mtg_collection::CollectionStore;
 use mtg_data::Catalog;
+use mtg_deck::DeckStore;
 
 /// Everything the commands need.
 ///
@@ -16,6 +17,7 @@ pub struct AppState {
     catalog_error: RwLock<Option<String>>,
     catalog_path: PathBuf,
     collection: CollectionStore,
+    decks: DeckStore,
 }
 
 impl AppState {
@@ -25,12 +27,15 @@ impl AppState {
 
         let collection = CollectionStore::open(data_dir.join("collection.redb"))
             .map_err(|e| format!("could not open the collection: {e}"))?;
+        let decks = DeckStore::open(data_dir.join("decks.redb"))
+            .map_err(|e| format!("could not open the deck database: {e}"))?;
 
         let state = AppState {
             catalog: RwLock::new(None),
             catalog_error: RwLock::new(None),
             catalog_path: locate_catalog(data_dir),
             collection,
+            decks,
         };
         state.reload_catalog();
         Ok(state)
@@ -76,6 +81,10 @@ impl AppState {
 
     pub fn collection(&self) -> &CollectionStore {
         &self.collection
+    }
+
+    pub fn decks(&self) -> &DeckStore {
+        &self.decks
     }
 }
 
@@ -146,6 +155,7 @@ mod tests {
             catalog_error: RwLock::new(Some("file not found".to_owned())),
             catalog_path: dir.path().join("cards.rkyv"),
             collection: mtg_collection::CollectionStore::open(dir.path().join("c.redb")).unwrap(),
+            decks: DeckStore::open(dir.path().join("d.redb")).unwrap(),
         };
 
         let error = state.with_catalog(|c| c.len()).unwrap_err();

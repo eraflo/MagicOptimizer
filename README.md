@@ -48,7 +48,7 @@ The project ships in phases. It stays usable at the end of each one.
 | 0 | Public repository, documentation, CI | ✅ done |
 | 1 | Data foundation, card catalog, search | ✅ done |
 | 2 | Desktop app, collection, storage locations | ✅ done |
-| 3 | Decks, format rules, legality, import/export | ⬜ |
+| 3 | Decks, format rules, legality, import/export | ✅ done |
 | 4 | Optimizer, simulation, collection constraint | ⬜ |
 | 5 | Combo detection, Commander brackets | ⬜ |
 | 6 | Android and video scanning | ⬜ |
@@ -85,6 +85,12 @@ The catalog is also queryable straight from the command line:
 
 ```bash
 cargo run --release -p mtg-data --example search -- --identity WU --format commander --type Legendary --type Creature
+```
+
+Import a decklist and check it — paste from Arena, Moxfield, MTGO or plain text:
+
+```bash
+cargo run --release -p mtg-deck --example deck -- --file mydeck.txt --format commander
 ```
 
 ---

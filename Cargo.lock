@@ -1921,6 +1921,7 @@ dependencies = [
  "mtg-collection",
  "mtg-core",
  "mtg-data",
+ "mtg-deck",
  "serde",
  "serde_json",
  "tauri",
@@ -2030,8 +2031,10 @@ dependencies = [
  "clap",
  "mtg-core",
  "mtg-data",
+ "redb",
  "serde",
  "serde_json",
+ "tempfile",
  "thiserror 2.0.20",
 ]
 

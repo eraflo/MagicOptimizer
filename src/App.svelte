@@ -3,16 +3,25 @@
   import CardDetail from "./lib/components/CardDetail.svelte";
   import CardList from "./lib/components/CardList.svelte";
   import CollectionView from "./lib/components/CollectionView.svelte";
+  import DecksView from "./lib/components/DecksView.svelte";
   import SearchPanel from "./lib/components/SearchPanel.svelte";
-  import type { CardDetails, CardSummary, CatalogStatus, SearchRequest } from "./lib/types";
+  import type {
+    CardDetails,
+    CardSummary,
+    CatalogStatus,
+    SearchRequest,
+    StoredDeck,
+    Zone,
+  } from "./lib/types";
 
-  let tab = $state<"browse" | "collection">("browse");
+  let tab = $state<"browse" | "decks" | "collection">("browse");
   /** Only has an effect below 1180px, where the filter panel is a drawer. */
   let filtersOpen = $state(false);
   let status = $state<CatalogStatus | null>(null);
   let formatList = $state<[string, string][]>([]);
   let containers = $state<string[]>([]);
   let owned = $state<Record<string, number>>({});
+  let decks = $state<StoredDeck[]>([]);
 
   let request = $state<SearchRequest>({
     text: "",
@@ -32,20 +41,37 @@
   let error = $state<string | null>(null);
 
   async function refreshCollectionSideData() {
-    try {
-      [owned, containers] = await Promise.all([
-        api.collectionOwnedQuantities("all"),
-        api.collectionContainers(),
-      ]);
-    } catch (e) {
-      error = String(e);
-    }
+    // allSettled rather than all: one failing lookup should not blank the other two.
+    const [ownedResult, containersResult, decksResult] = await Promise.allSettled([
+      api.collectionOwnedQuantities("all"),
+      api.collectionContainers(),
+      api.deckList(),
+    ]);
+    if (ownedResult.status === "fulfilled") owned = ownedResult.value;
+    if (containersResult.status === "fulfilled") containers = containersResult.value;
+    if (decksResult.status === "fulfilled") decks = decksResult.value;
+
+    const failure = [ownedResult, containersResult, decksResult].find(
+      (r) => r.status === "rejected",
+    );
+    if (failure && failure.status === "rejected") error = String(failure.reason);
   }
 
+  // Each of these is fetched independently. Chaining them behind one try block meant a
+  // failing catalog status also swallowed the format list and the collection, with nothing on
+  // screen to say why — the app just came up subtly empty.
   $effect(() => {
     void (async () => {
-      status = await api.catalogStatus();
-      formatList = await api.formats();
+      try {
+        status = await api.catalogStatus();
+      } catch (e) {
+        error = String(e);
+      }
+      try {
+        formatList = await api.formats();
+      } catch (e) {
+        error = String(e);
+      }
       await refreshCollectionSideData();
     })();
   });
@@ -151,6 +177,15 @@
     }
   }
 
+  async function addSelectedToDeck(deckId: number, quantity: number, zone: Zone) {
+    if (!selected) return;
+    try {
+      await api.deckAddCard(deckId, selected.oracle_id, quantity, zone);
+    } catch (e) {
+      error = String(e);
+    }
+  }
+
   async function reload() {
     status = await api.reloadCatalog();
   }
@@ -169,6 +204,9 @@
   <nav class="tabs">
     <button type="button" class="tab" class:active={tab === "browse"} onclick={() => (tab = "browse")}>
       Browse
+    </button>
+    <button type="button" class="tab" class:active={tab === "decks"} onclick={() => (tab = "decks")}>
+      Decks
     </button>
     <button
       type="button"
@@ -255,9 +293,15 @@
       card={selected}
       ownedCount={selected ? (owned[selected.oracle_id] ?? 0) : 0}
       {containers}
+      {decks}
       onadd={addSelected}
+      onaddtodeck={addSelectedToDeck}
       onclose={closeDetail}
     />
+  </main>
+{:else if tab === "decks"}
+  <main>
+    <DecksView {formatList} onchanged={refreshCollectionSideData} />
   </main>
 {:else}
   <main>

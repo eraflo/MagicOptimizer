@@ -141,3 +141,113 @@ export const LANGUAGES: { value: string; label: string }[] = [
   { value: "zhs", label: "Chinese (Simplified)" },
   { value: "zht", label: "Chinese (Traditional)" },
 ];
+
+// --- Decks -----------------------------------------------------------------
+// Snake_case throughout: these come from mtg-deck with serde's default naming.
+// `format` is a Scryfall key ("commander"), not a variant name — see mtg_core::Format.
+
+export type Zone = "main" | "sideboard" | "command";
+
+export type DeckEntry = {
+  oracle_id: string;
+  name: string;
+  quantity: number;
+  zone: Zone;
+  set_code: string;
+  collector_number: string;
+};
+
+export type Deck = {
+  name: string;
+  format: string;
+  entries: DeckEntry[];
+  notes: string;
+};
+
+/** StoredDeck flattens the deck into itself, so the id sits alongside the deck's own fields. */
+export type StoredDeck = Deck & { id: number };
+
+/** Tagged by `kind`; the remaining fields depend on which one it is. */
+export type Violation = { kind: string } & Record<string, unknown>;
+
+export type LegalityReport = {
+  format: string;
+  approximate_rules: boolean;
+  violations: Violation[];
+  main_count: number;
+  sideboard_count: number;
+  command_count: number;
+  commander_identity: string;
+};
+
+export type CurveBucket = {
+  mana_value: number;
+  count: number;
+  is_overflow: boolean;
+};
+
+export type ColorPips = { color: string; pips: number; cards: number };
+
+export type DeckStats = {
+  total_cards: number;
+  lands: number;
+  creatures: number;
+  curve: CurveBucket[];
+  average_mana_value: number;
+  color_pips: ColorPips[];
+  color_identity: string;
+  unresolved_cards: number;
+};
+
+export type DeckView = {
+  id: number;
+  deck: Deck;
+  legality: LegalityReport;
+  stats: DeckStats;
+};
+
+export type ImportOutcome = {
+  view: DeckView;
+  problems: unknown[];
+  /** Already-rendered messages, so the UI need not know each problem's shape. */
+  messages: string[];
+};
+
+export type ExportStyle = "plain" | "arena" | "mtgo";
+
+/** Turns a violation into a sentence. Mirrors the Display impl on the Rust side. */
+export function describeViolation(violation: Violation): string {
+  const v = violation as Record<string, string | number>;
+  switch (violation.kind) {
+    case "unknown_card":
+      return `${v.name} is not in the loaded card data`;
+    case "deck_too_small":
+      return `the deck has ${v.found} cards, ${v.required} are required`;
+    case "deck_too_large":
+      return `the deck has ${v.found} cards, only ${v.allowed} are allowed`;
+    case "sideboard_too_large":
+      return `the sideboard has ${v.found} cards, only ${v.allowed} are allowed`;
+    case "sideboard_not_allowed":
+      return `this format has no sideboard, but ${v.found} cards are in one`;
+    case "too_many_copies":
+      return `${v.found} copies of ${v.name}, only ${v.allowed} allowed`;
+    case "not_in_format":
+      return `${v.name} is not legal in this format`;
+    case "banned":
+      return `${v.name} is banned`;
+    case "restricted":
+      return `${v.name} is restricted to one copy, the deck has ${v.found}`;
+    case "outside_color_identity":
+      return `${v.name} has colour identity ${v.card_identity}, outside the commander's ${v.commander_identity}`;
+    case "command_zone_size":
+      return v.minimum === v.maximum
+        ? `the command zone has ${v.found} cards, ${v.minimum} is required`
+        : `the command zone has ${v.found} cards, between ${v.minimum} and ${v.maximum} are required`;
+    case "not_a_valid_commander":
+      return `${v.name} cannot be a commander`;
+    case "command_zone_not_allowed":
+      return `this format has no command zone, but ${v.found} cards are in one`;
+    default:
+      return violation.kind;
+  }
+}

@@ -6,9 +6,13 @@
 mod deck;
 mod legality;
 mod rules;
+mod stats;
+mod store;
 mod text;
 
 pub use deck::{Deck, DeckEntry, Zone};
 pub use legality::{check, LegalityReport, Violation};
 pub use rules::{CommanderRules, DeckSize, FormatRules};
+pub use stats::{stats, ColorPips, CurveBucket, DeckStats};
+pub use store::{DeckId, DeckStore, DeckStoreError, StoredDeck};
 pub use text::{export, import, ExportStyle, ImportProblem, ImportResult};

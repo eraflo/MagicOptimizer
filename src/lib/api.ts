@@ -10,6 +10,11 @@ import { invoke } from "@tauri-apps/api/core";
 import type {
   CardDetails,
   CatalogStatus,
+  DeckView,
+  ExportStyle,
+  ImportOutcome,
+  StoredDeck,
+  Zone,
   Holding,
   NewHolding,
   Pool,
@@ -75,4 +80,66 @@ export function collectionContainers(): Promise<string[]> {
 /** Format keys and display names, served from Rust so the two cannot drift apart. */
 export function formats(): Promise<[string, string][]> {
   return invoke("formats");
+}
+
+// --- Decks -----------------------------------------------------------------
+
+export function deckList(): Promise<StoredDeck[]> {
+  return invoke("deck_list");
+}
+
+export function deckGet(id: number): Promise<DeckView> {
+  return invoke("deck_get", { id });
+}
+
+export function deckCreate(name: string, format: string): Promise<number> {
+  return invoke("deck_create", { name, format });
+}
+
+export function deckDelete(id: number): Promise<boolean> {
+  return invoke("deck_delete", { id });
+}
+
+export function deckRename(id: number, name: string, format: string): Promise<DeckView> {
+  return invoke("deck_rename", { id, name, format });
+}
+
+export function deckAddCard(
+  id: number,
+  oracleId: string,
+  quantity: number,
+  zone: Zone,
+): Promise<DeckView> {
+  return invoke("deck_add_card", { id, oracleId, quantity, zone });
+}
+
+export function deckRemoveCard(
+  id: number,
+  oracleId: string,
+  quantity: number,
+  zone: Zone,
+): Promise<DeckView> {
+  return invoke("deck_remove_card", { id, oracleId, quantity, zone });
+}
+
+export function deckMoveCard(
+  id: number,
+  oracleId: string,
+  quantity: number,
+  from: Zone,
+  to: Zone,
+): Promise<DeckView> {
+  return invoke("deck_move_card", { id, oracleId, quantity, from, to });
+}
+
+export function deckImport(text: string, name: string, format: string): Promise<ImportOutcome> {
+  return invoke("deck_import", { text, name, format });
+}
+
+export function deckExport(id: number, style: ExportStyle): Promise<string> {
+  return invoke("deck_export", { id, style });
+}
+
+export function deckZones(): Promise<[Zone, string][]> {
+  return invoke("deck_zones");
 }

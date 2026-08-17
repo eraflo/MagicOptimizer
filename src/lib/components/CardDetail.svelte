@@ -1,18 +1,22 @@
 <script lang="ts">
   import ManaCost from "./ManaCost.svelte";
   import { CONDITIONS, FINISHES, LANGUAGES } from "../types";
-  import type { CardDetails, Condition, Finish, Pool } from "../types";
+  import type { CardDetails, Condition, Finish, Pool, StoredDeck, Zone } from "../types";
 
   let {
     card,
     ownedCount,
     containers,
+    decks,
     onadd,
+    onaddtodeck,
     onclose,
   }: {
     card: CardDetails | null;
     ownedCount: number;
     containers: string[];
+    decks: StoredDeck[];
+    onaddtodeck: (deckId: number, quantity: number, zone: Zone) => Promise<void>;
     /** Closes the sheet on phones, where the panel covers the list. */
     onclose: () => void;
     onadd: (options: {
@@ -35,6 +39,29 @@
   let section = $state("");
   let adding = $state(false);
   let justAdded = $state(false);
+
+  // Deck target, also kept between cards: building a deck means adding card after card.
+  let deckId = $state<number | null>(null);
+  let deckZone = $state<Zone>("main");
+  let deckQuantity = $state(1);
+  let addedToDeck = $state(false);
+
+  // Default to the first deck once the list arrives, so the button is never a no-op.
+  $effect(() => {
+    if (deckId === null && decks.length > 0) deckId = decks[0].id;
+  });
+
+  async function addToDeck() {
+    if (deckId === null) return;
+    adding = true;
+    try {
+      await onaddtodeck(deckId, deckQuantity, deckZone);
+      addedToDeck = true;
+      setTimeout(() => (addedToDeck = false), 1400);
+    } finally {
+      adding = false;
+    }
+  }
 
   // Location and printing settings are deliberately *not* reset between cards: entering a
   // binder means setting them once and then adding card after card.
@@ -111,6 +138,35 @@
         <p class="legal-list banned">Banned: {card.banned_formats.join(", ")}</p>
       {/if}
     </details>
+
+    {#if decks.length > 0}
+      <section class="add">
+        <h3>Add to deck</h3>
+        <div class="deck-row">
+          <select bind:value={deckId} aria-label="Deck">
+            {#each decks as deck}
+              <option value={deck.id}>{deck.name}</option>
+            {/each}
+          </select>
+          <select bind:value={deckZone} aria-label="Zone">
+            <option value="main">Deck</option>
+            <option value="sideboard">Sideboard</option>
+            <option value="command">Commander</option>
+          </select>
+          <input
+            type="number"
+            min="1"
+            max="99"
+            bind:value={deckQuantity}
+            aria-label="Copies"
+            class="deck-qty"
+          />
+          <button type="button" onclick={addToDeck} disabled={adding}>
+            {addedToDeck ? "Added" : "Add"}
+          </button>
+        </div>
+      </section>
+    {/if}
 
     <section class="add">
       <div class="add-head">
@@ -347,6 +403,27 @@
 
   .add-button {
     width: 100%;
+  }
+
+  .deck-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto 56px auto;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .deck-row select {
+    min-width: 0;
+  }
+
+  .deck-qty {
+    text-align: center;
+  }
+
+  @media (max-width: 420px) {
+    .deck-row {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    }
   }
 
   .hint {
