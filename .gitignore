@@ -1,0 +1,42 @@
+# --- Rust ---
+target/
+**/*.rs.bk
+*.pdb
+
+# --- Node / frontend ---
+node_modules/
+dist/
+.vite/
+*.tsbuildinfo
+
+# --- Tauri ---
+src-tauri/target/
+src-tauri/gen/
+gen/
+
+# --- Generated data artifacts ---
+# NEVER committed: produced by tools/build-artifacts, published as GitHub Releases.
+# See docs/dev/data-pipeline.md
+artifacts/
+*.rkyv
+arthashes.bin
+embeddings.bin
+
+# --- Downloaded raw data ---
+# Scryfall bulk, card images, API snapshots. Large and not ours to redistribute.
+.cache/
+data/raw/
+data/images/
+*.jsonl
+*.jsonl.gz
+
+# --- Local user database ---
+*.redb
+*.redb.lock
+
+# --- Misc ---
+.DS_Store
+Thumbs.db
+.env
+.env.local
+*.log
