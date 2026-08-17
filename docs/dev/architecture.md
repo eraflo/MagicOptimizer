@@ -84,6 +84,20 @@ order of magnitude faster than a UI needs, and an index would be memory and code
 problem that measurement says does not exist. The moment that stops being true — probably when
 search runs per keystroke on a low-end phone — the numbers above are the baseline to beat.
 
+### Measured, on the real 105,328-combo snapshot
+
+| Operation | Cost |
+|---|---|
+| Opening `combos.rkyv` | ~30 ms |
+| Building the card → combo index | ~17 ms |
+| Finding combos in a normal deck | under a millisecond |
+| Finding combos in a 100-card deck made entirely of combo pieces | ~4 ms |
+
+`ComboIndex` is rebuilt on each `deck_combos` call rather than cached. At 17 ms for a
+user-initiated action that is not worth the invalidation logic a cache would bring; it would be
+worth revisiting if combo detection ever moved into the optimizer's inner loop, where it would
+run thousands of times.
+
 ## Data flow
 
 ```

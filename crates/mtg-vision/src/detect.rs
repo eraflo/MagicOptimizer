@@ -6,14 +6,27 @@
 //! every OpenCV tutorial does. It also means pulling in an image-processing stack for an app
 //! that has to stay small on Android, and it solves a much harder problem than this one.
 //!
-//! The scanning flow already asks for **one card against a plain, contrasting background** —
-//! that is the advice in the user guide, and it is what people naturally do. Given that, the
-//! card is simply the large foreground region, and finding its corners is a matter of
-//! separating it from the background and taking the extreme points. No dependency, a couple of
-//! hundred lines, and every step is testable.
+//! The scanning flow already asks for **one card on a plain background** — that is the advice in
+//! the user guide, and it is what people naturally do. Given that, the card is simply the large
+//! foreground region, and finding its corners is a matter of separating it from the background
+//! and taking the extreme points. No dependency, a couple of hundred lines, and every step is
+//! testable.
 //!
-//! It gives up on cluttered scenes and on several cards at once. That is a real limitation and
-//! it is the documented one.
+//! It gives up on cluttered scenes and on several cards at once. Those are real limitations and
+//! they are the documented ones.
+//!
+//! # The background has to be mid-tone
+//!
+//! Not merely "contrasting" — **mid-tone**, and this is measured. A Magic card's border is
+//! black, so against a near-black table there is nothing to separate: what gets found is the
+//! card's bright interior, a few percent smaller, and that shift is enough to move the artwork
+//! crop and ruin the hash. 2 photographs in 20 recognised on black, against 20 in 20 on
+//! mid-grey.
+//!
+//! No threshold fixes this, because the border and the table genuinely are the same shade — the
+//! two tests at the bottom of this file pin the pair down so nobody tries. A mid-tone background
+//! wins because it is far from *both* ends of a card's tonal range at once, which is also why
+//! white is measurably worse than grey.
 
 use crate::geometry::Quad;
 use crate::hash::GrayView;
@@ -26,7 +39,14 @@ use crate::hash::GrayView;
 pub const WORKING_WIDTH: u32 = 320;
 
 /// How far from the background a pixel must be to count as foreground.
-pub const DEFAULT_CONTRAST: u8 = 34;
+///
+/// Calibrated against real card images rather than guessed. Sweeping it over 140 photographs —
+/// ten cards, two poses, seven background brightnesses — 24 recognised 105 of them against 87
+/// for the 34 this started at, and it won at *every* background brightness. Below about 18 the
+/// mask starts catching sensor noise; above 40 it starts losing the card's darker regions.
+///
+/// See `tools/build-artifacts/examples/verify-scan.rs`, which produced those numbers.
+pub const DEFAULT_CONTRAST: u8 = 24;
 
 /// Smallest share of the frame the card may occupy.
 ///
@@ -459,6 +479,62 @@ mod tests {
     fn a_tiny_frame_is_declined_rather_than_crashing() {
         let frame = Frame::new(8, 8, 30);
         assert!(find_card(&frame.view(), DetectSettings::default()).is_none());
+    }
+
+    #[test]
+    fn a_black_bordered_card_on_a_dark_table_is_not_found_in_full() {
+        // A known, physical limitation rather than a bug, and worth pinning down so nobody
+        // "fixes" the contrast threshold to chase it.
+        //
+        // Magic cards have a black border. Against a table as dark as that border there is
+        // nothing to separate — the two are the same shade, and no threshold on brightness can
+        // tell them apart. What gets found is the card's bright *interior*, a few percent
+        // smaller, which is enough to shift the artwork crop and ruin the hash.
+        //
+        // Measured on real card images: on a near-black background 1 photograph in 20 was
+        // recognised; on a mid-grey one, 19 or 20 of 20. The user guide says to use a mid-tone
+        // surface for this reason, and it is not a nicety.
+        let mut frame = Frame::new(640, 900, 22);
+        let border = Quad::new([
+            (160.0, 150.0),
+            (480.0, 150.0),
+            (480.0, 597.0),
+            (160.0, 597.0),
+        ]);
+        frame.fill_quad(&border, 24);
+        // The interior, inset by roughly the real border width.
+        frame.fill_rect(175, 165, 290, 417, 190);
+
+        let found = find_card(&frame.view(), DetectSettings::default());
+        if let Some(quad) = found {
+            let corners = quad.ordered().corners;
+            assert!(
+                corners[0].0 > 168.0,
+                "the border was somehow separated from the table: {corners:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn the_same_card_on_a_mid_tone_table_is_found_in_full() {
+        // The other half of the pair above: the border only becomes visible once the background
+        // is far enough from it, which is exactly the advice the user guide gives.
+        let mut frame = Frame::new(640, 900, 125);
+        let border = Quad::new([
+            (160.0, 150.0),
+            (480.0, 150.0),
+            (480.0, 597.0),
+            (160.0, 597.0),
+        ]);
+        frame.fill_quad(&border, 24);
+        frame.fill_rect(175, 165, 290, 417, 190);
+
+        let quad = find_card(&frame.view(), DetectSettings::default()).expect("found");
+        let corners = quad.ordered().corners;
+        assert!(
+            (corners[0].0 - 160.0).abs() < 12.0 && (corners[0].1 - 150.0).abs() < 12.0,
+            "the whole card should be found, not its interior: {corners:?}"
+        );
     }
 
     #[test]

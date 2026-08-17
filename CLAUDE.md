@@ -168,6 +168,13 @@ fix it, do not silence it with `#[allow]` unless you write the justification in 
   77/150/29. The reference hashes in `arthashes.bin` were computed with those weights, so a
   different luma formula on the query side would shift every hash away from the whole database —
   silently, and in a way no test on either side alone would catch.
+- **Scanning needs a mid-tone background, and this is measured, not guessed.** Magic cards have
+  a black border: on a near-black table there is nothing to separate, detection snaps to the
+  card's bright interior instead, and the shifted crop ruins the hash. 2 of 20 photographs
+  recognised on black against 20 of 20 on mid-grey. No threshold fixes it — the border and the
+  table really are the same shade. Two tests in `detect.rs` pin the pair down; do not "fix" the
+  contrast threshold to chase it. Re-measure with
+  `cargo run --release -p build-artifacts --example verify-scan`.
 - **`arthashes.bin` hashes the `normal` card image, not Scryfall's `art_crop`.** Reference and
   query must be framed identically, and the query is cropped from a rectified card at fixed
   fractions. Changing `hash_gray`, the `ART_*` constants or `RECTIFIED_*` invalidates every

@@ -294,8 +294,10 @@
         {:else}
           <p class="headline">Ready to scan</p>
           <p class="hint">
-            Hold one card at a time against a plain, contrasting background. Recognition uses the
-            artwork, so the card's language does not matter.
+            Hold one card at a time over a plain <strong>mid-grey or wooden</strong> surface —
+            not a black one. Magic cards have a black border, and on a dark table there is
+            nothing to tell the two apart. Recognition uses the artwork, so the card's language
+            does not matter.
           </p>
           <button class="primary" onclick={() => void start()}>Start the camera</button>
         {/if}
@@ -309,7 +311,10 @@
           <span class="name">{result.card?.name}</span>
           <span class="ring" style="--fill: {progress}"></span>
         {:else if result?.quad}
-          <span class="name muted">Card seen, no match</span>
+          <!-- The outline found an edge but the crop did not match anything. On a dark table
+               that edge is usually the card's *interior* rather than its border, so the
+               background is the first thing to change. -->
+          <span class="name muted">Card seen, no match — try a lighter background</span>
         {:else}
           <span class="name muted">Looking for a card…</span>
         {/if}
