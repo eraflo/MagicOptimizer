@@ -51,7 +51,16 @@ the user.** Each cost real time to establish.
    Double-faced, split, adventure, aftermath. A single-face model would have to be redone later,
    and that refactor would touch every part of the codebase.
 
-6. **No account, no telemetry, no user data leaving the device.**
+6. **Persisted data uses `oracle_id`, never `CardId`.**
+   `CardId` is a position in one catalog artifact and shifts on every rebuild. A collection or
+   deck keyed on it would appear to work, then silently become a different collection after the
+   next set release — nothing errors and the damage surfaces much later. `CardId` stays in
+   memory; anything written to disk uses Scryfall's stable `oracle_id`.
+
+7. **No account, no telemetry, no user data leaving the device.**
+   The one network host the app is allowed to reach is `cards.scryfall.io`, for card images, and
+   the content security policy in `tauri.conf.json` enforces exactly that. Widening it needs a
+   reason.
 
 ---
 

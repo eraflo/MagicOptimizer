@@ -1,0 +1,33 @@
+[package]
+name = "magicoptimizer"
+description = "MagicOptimizer desktop and mobile application"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+publish = false
+
+[lints]
+workspace = true
+
+[lib]
+# Required for the mobile targets: Android and iOS link against a library, not a binary.
+name = "magicoptimizer_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+mtg-core = { path = "../crates/mtg-core" }
+mtg-data = { path = "../crates/mtg-data" }
+mtg-collection = { path = "../crates/mtg-collection" }
+tauri = { version = "2", features = [] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+
+[dev-dependencies]
+tempfile = "3"

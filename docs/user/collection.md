@@ -1,7 +1,7 @@
 # Managing your collection
 
-> **🚧 Not available yet.** Shipped in phase 2 (manual entry and storage locations), extended in
-> phase 6 (scanning) and phase 9 (valuation).
+> **Available now** for manual entry, storage locations, conditions and finishes. Scanning
+> arrives in phase 6 and valuation in phase 9; those sections are marked below.
 
 ## Physical and digital, kept separate
 
@@ -16,9 +16,9 @@ The digital collection stays empty for now: importing from MTG Arena is not poss
 Each copy can carry a **storage location**: a container, optionally a section and a position. For
 example "Binder 3, page 12".
 
-During a scan session the location is **sticky**: you set it once at the start, it applies to
-everything you scan afterwards and increments as you turn pages. So there is nothing to type in
-card by card.
+The location you type is **kept between cards**, so entering a binder means setting it once and
+then adding card after card. Containers you have already used are offered as suggestions. Once
+scanning arrives in phase 6 the position will also increment on its own as you turn pages.
 
 After that, "where is my Rhystic Study?" becomes a simple search.
 

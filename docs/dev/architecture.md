@@ -102,6 +102,33 @@ unthinkable to ingest on a phone. Details in [data-pipeline.md](data-pipeline.md
 ## Frontend choice
 
 Svelte 5 + TypeScript. On Android the WebView is the bottleneck: a light bundle and little runtime
-work matter more than a rich component ecosystem.
+work matter more than a rich component ecosystem. The production bundle is currently **65 kB of
+JavaScript, 24 kB gzipped**, which is the number to watch as features land.
 
 The frontend holds **no domain logic**. It renders, and it sends commands.
+
+## Identifiers: `CardId` versus `oracle_id`
+
+Two identifiers exist and confusing them corrupts data silently, so the rule is worth stating
+plainly:
+
+* **`CardId` is a position in one catalog artifact.** It is fast, it is what search returns, and
+  it is meaningless the moment the catalog is rebuilt.
+* **`oracle_id` is Scryfall's stable identifier.** It survives rebuilds and printings.
+
+Anything written to disk — collections, decks, the game log — uses `oracle_id`. `CardId` never
+leaves memory. A collection keyed on `CardId` would appear to work and then quietly become a
+different collection after the next set release, which is the worst failure mode available:
+nothing errors, and the damage is only noticed much later.
+
+## Persisted data
+
+The collection lives in a `redb` database in the platform application data directory, holdings
+encoded as JSON. JSON rather than a compact binary format on purpose: it is the user's own data,
+it is small, and being able to read it with any tool is worth more than the bytes saved.
+
+A *holding* is a stack of interchangeable copies — same card, printing, language, finish,
+condition and location. Adding a card that matches an existing holding raises its quantity rather
+than creating a near-duplicate row, which is what stops a scanned binder from becoming thousands
+of rows of one. One index exists, mapping that merge key to a holding id, because scanning calls
+it once per card and a linear search there would be quadratic. Everything else scans.

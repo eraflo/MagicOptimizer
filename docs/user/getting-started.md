@@ -1,11 +1,45 @@
 # Getting started
 
-> **🚧 Not available yet.** No release has been published: the app is still being built (phases 1
-> and 2). This page will be filled in as it goes.
->
-> To build from source today, see [CONTRIBUTING.md](../../CONTRIBUTING.md).
+> **🚧 No release published yet**, but the desktop app runs from a checkout. Installers and the
+> in-app data download arrive later; this page grows as they do.
 
-This page will cover:
+## Running it today
+
+You need [Rust](https://rustup.rs), [Node.js](https://nodejs.org) and the
+[Tauri prerequisites](https://v2.tauri.app/start/prerequisites/).
+
+```bash
+npm install
+```
+
+The app ships with no card data at all, so build the catalog first. This downloads Scryfall's
+oracle bulk file — about 25 MB — and converts it:
+
+```bash
+cargo run --release -p build-artifacts
+```
+
+Then start the app:
+
+```bash
+npm run tauri dev
+```
+
+If you skip the first step the app opens on a screen telling you so, rather than looking broken.
+
+## What you can do so far
+
+- **Browse** every card, filtering by name and rules text, colour identity, type, format
+  legality and mana value.
+- **Add cards to your collection**, recording the printing, finish, condition, language and
+  where the card is stored.
+- **Keep physical and digital collections apart**, and see how many copies you own of anything
+  while browsing.
+
+Scanning with the camera, decks and the optimizer come in later phases — see
+[the project status](../../README.md#status).
+
+## Still to come on this page
 
 - **Installing on Windows** — download and launch.
 - **Installing on Android** — installing the APK, which permissions are requested and why.
