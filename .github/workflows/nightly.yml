@@ -123,6 +123,20 @@ jobs:
         with:
           workspaces: src-tauri -> target
 
+      # The bundlers fetch their own tooling on every run — WiX and NSIS on Windows, the
+      # AppImage toolchain on Linux — and a Linux build failed with `http status: 429` when
+      # GitHub rate-limited those downloads. Caching them removes the downloads, and with them
+      # most of the exposure. It does not eliminate it: a cold cache still has to fetch once.
+      - name: Cache bundler tooling
+        uses: actions/cache@v4
+        with:
+          # Both paths listed because the location differs by platform; a missing one is
+          # simply skipped.
+          path: |
+            ~/.cache/tauri
+            ~/AppData/Local/tauri
+          key: tauri-bundler-tools-${{ matrix.runner }}-v1
+
       - name: Install Linux dependencies
         if: matrix.runner == 'ubuntu-latest'
         run: |
