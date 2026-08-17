@@ -1,12 +1,13 @@
 //! Application state: the catalog and the collection database.
 
 use std::path::{Path, PathBuf};
-use std::sync::RwLock;
+use std::sync::{Mutex, RwLock};
 
 use mtg_collection::CollectionStore;
 use mtg_combo::ComboDatabase;
 use mtg_data::Catalog;
 use mtg_deck::DeckStore;
+use mtg_vision::{ArtDatabase, Scanner};
 
 /// Everything the commands need.
 ///
@@ -22,6 +23,14 @@ pub struct AppState {
     combos: RwLock<Option<ComboDatabase>>,
     combo_error: RwLock<Option<String>>,
     combo_path: PathBuf,
+    /// The live camera session, holding both the artwork fingerprints and the vote history
+    /// across frames. A `Mutex` rather than an `RwLock` because feeding a frame mutates it.
+    scanner: Mutex<Option<Scanner>>,
+    art_error: RwLock<Option<String>>,
+    art_path: PathBuf,
+    /// Kept separately so the status command does not have to take the scanner lock while a
+    /// frame is being processed.
+    artworks: RwLock<usize>,
     collection: CollectionStore,
     decks: DeckStore,
 }
@@ -43,11 +52,16 @@ impl AppState {
             combos: RwLock::new(None),
             combo_error: RwLock::new(None),
             combo_path: locate_artifact(data_dir, "combos.rkyv"),
+            scanner: Mutex::new(None),
+            art_error: RwLock::new(None),
+            art_path: locate_artifact(data_dir, "arthashes.bin"),
+            artworks: RwLock::new(0),
             collection,
             decks,
         };
         state.reload_catalog();
         state.reload_combos();
+        state.reload_artwork();
         Ok(state)
     }
 
@@ -63,11 +77,13 @@ impl AppState {
         Ok(AppState {
             catalog_path: data_dir.join("cards.rkyv"),
             combo_path: data_dir.join("combos.rkyv"),
+            art_path: data_dir.join("arthashes.bin"),
             ..state
         })
         .inspect(|state: &AppState| {
             state.reload_catalog();
             state.reload_combos();
+            state.reload_artwork();
         })
     }
 
@@ -143,6 +159,66 @@ impl AppState {
         match self.combos.read() {
             Ok(guard) => f(guard.as_ref()),
             Err(_) => f(None),
+        }
+    }
+
+    pub fn art_path(&self) -> &Path {
+        &self.art_path
+    }
+
+    pub fn art_error(&self) -> Option<String> {
+        self.art_error.read().ok().and_then(|e| e.clone())
+    }
+
+    /// How many artworks the scanner can recognise. Zero means the artifact is not installed.
+    pub fn artworks(&self) -> usize {
+        self.artworks.read().map(|count| *count).unwrap_or(0)
+    }
+
+    /// Loads the artwork fingerprints and builds a fresh scanner around them.
+    ///
+    /// The heaviest optional artifact, and the one most likely to be absent: someone who never
+    /// scans cards should not have to download 6 MB of fingerprints. Its absence is a state the
+    /// UI reports, not an error.
+    pub fn reload_artwork(&self) {
+        let (database, error) = match std::fs::File::open(&self.art_path) {
+            Ok(file) => {
+                let mut reader = std::io::BufReader::with_capacity(1 << 16, file);
+                match mtg_vision::archive::read(&mut reader) {
+                    Ok(database) => (Some(database), None),
+                    Err(error) => (None, Some(error.to_string())),
+                }
+            }
+            Err(error) => (None, Some(error.to_string())),
+        };
+
+        let count = database.as_ref().map(ArtDatabase::len).unwrap_or(0);
+        if let Ok(mut slot) = self.scanner.lock() {
+            *slot = database.map(Scanner::new);
+        }
+        if let Ok(mut slot) = self.art_error.write() {
+            *slot = error;
+        }
+        if let Ok(mut slot) = self.artworks.write() {
+            *slot = count;
+        }
+    }
+
+    /// Runs `f` against the live scanner, or reports that there is none.
+    ///
+    /// Takes `&mut` because feeding a frame advances the vote history — that history is the
+    /// whole reason the scanner is a long-lived object rather than a function.
+    pub fn with_scanner<T>(&self, f: impl FnOnce(&mut Scanner) -> T) -> Result<T, String> {
+        let mut guard = self
+            .scanner
+            .lock()
+            .map_err(|_| "the scanner lock was poisoned by an earlier panic".to_owned())?;
+        match guard.as_mut() {
+            Some(scanner) => Ok(f(scanner)),
+            None => Err(match self.art_error() {
+                Some(error) => format!("no artwork data loaded: {error}"),
+                None => "no artwork data loaded".to_owned(),
+            }),
         }
     }
 
@@ -229,6 +305,10 @@ mod tests {
             combos: RwLock::new(None),
             combo_error: RwLock::new(None),
             combo_path: dir.path().join("combos.rkyv"),
+            scanner: Mutex::new(None),
+            art_error: RwLock::new(None),
+            art_path: dir.path().join("arthashes.bin"),
+            artworks: RwLock::new(0),
             collection: mtg_collection::CollectionStore::open(dir.path().join("c.redb")).unwrap(),
             decks: DeckStore::open(dir.path().join("d.redb")).unwrap(),
         };

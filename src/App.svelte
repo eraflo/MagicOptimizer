@@ -4,6 +4,7 @@
   import CardList from "./lib/components/CardList.svelte";
   import CollectionView from "./lib/components/CollectionView.svelte";
   import DecksView from "./lib/components/DecksView.svelte";
+  import ScanView from "./lib/components/ScanView.svelte";
   import SearchPanel from "./lib/components/SearchPanel.svelte";
   import type {
     CardDetails,
@@ -14,7 +15,7 @@
     Zone,
   } from "./lib/types";
 
-  let tab = $state<"browse" | "decks" | "collection">("browse");
+  let tab = $state<"browse" | "decks" | "collection" | "scan">("browse");
   /** Only has an effect below 1180px, where the filter panel is a drawer. */
   let filtersOpen = $state(false);
   let status = $state<CatalogStatus | null>(null);
@@ -216,6 +217,9 @@
     >
       Collection
     </button>
+    <button type="button" class="tab" class:active={tab === "scan"} onclick={() => (tab = "scan")}>
+      Scan
+    </button>
   </nav>
 
   <div class="status">
@@ -303,9 +307,13 @@
   <main>
     <DecksView {formatList} onchanged={refreshCollectionSideData} />
   </main>
-{:else}
+{:else if tab === "collection"}
   <main>
     <CollectionView onchanged={refreshCollectionSideData} />
+  </main>
+{:else}
+  <main class="scan-main">
+    <ScanView {decks} {containers} onCommitted={refreshCollectionSideData} />
   </main>
 {/if}
 
@@ -386,6 +394,14 @@
     min-height: 0;
     overflow: hidden;
     position: relative;
+  }
+
+  /* The scan view lays itself out as a grid and needs to scroll on a phone, where the panel
+     sits under the viewfinder rather than beside it. */
+  .scan-main {
+    display: block;
+    overflow-y: auto;
+    padding: 16px;
   }
 
   .results {

@@ -1,7 +1,10 @@
 # Android build
 
-> **Status** — design document. Shipped in phase 6. Exact procedures will be completed and
-> verified then.
+> **Status** — the code is in place and the domain crates are **verified** to cross-compile to
+> `aarch64-linux-android`, which CI now enforces. The steps below that need an actual SDK, NDK
+> or device — `android init`, the manifest edit, and whether `getUserMedia` behaves in the
+> WebView — have **not** been run. They are marked where they appear. Treat them as the plan,
+> not as a report.
 
 ## Prerequisites
 
@@ -26,16 +29,55 @@ cargo tauri android dev
 toolchain far exceeds the benefit, for a need that 35,000 in-memory entries cover comfortably.
 
 **Rule: before adding a dependency, check it pulls in neither C nor C++**, or that it
-cross-compiles cleanly to `aarch64-linux-android`. The current stack (`rkyv`, `redb`,
-`fixedbitset`, `imageproc`) is pure Rust. Keep it that way.
+cross-compiles cleanly to `aarch64-linux-android`. The current stack — `rkyv`, `redb`,
+`fixedbitset` — is pure Rust, and `mtg-vision` deliberately has no image codec at all: frames
+arrive from the WebView canvas already decoded, so there was never a reason to carry one.
+
+CI checks this rather than trusting it:
+
+```bash
+cargo check --target aarch64-linux-android \
+  -p mtg-core -p mtg-data -p mtg-collection -p mtg-deck \
+  -p mtg-optimizer -p mtg-combo -p mtg-vision
+```
+
+`cargo check` does not link, so this needs the Rust target but neither the SDK nor the NDK — and
+a C dependency fails it at build-script time, which is the violation worth catching. Verified
+passing on 2026-08-17.
 
 ## Camera
 
-`CAMERA` permission in the manifest. The default approach is `getUserMedia` in the WebView, whose
-behavior varies across Android System WebView versions.
+The frame path is `getUserMedia` → `<canvas>` → greyscale in JavaScript → raw IPC → `mtg-vision`.
+The greyscale conversion happens on the JavaScript side using the same 77/150/29 weights as
+`mtg_vision::rgba_to_gray`, which cuts the bytes crossing the boundary to a quarter. Frames go
+over as a **raw IPC body**, not as a command argument: a 640×480 frame passed as a `number[]`
+would be three hundred thousand JSON numbers, ten times a second.
 
-**Planned fallback: a Kotlin CameraX plugin**, behind the `FrameSource` trait — the boundary is
-already in place so the switch touches nothing else.
+**Not yet verified on a device.** Two things need checking the first time this runs on hardware:
+
+1. **The `CAMERA` permission**, which `cargo tauri android init` does not add. After running it
+   once, add to `src-tauri/gen/android/app/src/main/AndroidManifest.xml`:
+
+   ```xml
+   <uses-permission android:name="android.permission.CAMERA" />
+   <uses-feature android:name="android.hardware.camera" android:required="false" />
+   ```
+
+   `required="false"` so the app still installs on a device without a rear camera; scanning is
+   one feature, not the application.
+
+2. **Whether the WebView grants the request.** `getUserMedia` needs both the Android permission
+   and the WebView's own `onPermissionRequest` to be granted. The app is served from
+   `http://tauri.localhost`, which Chromium treats as a potentially trustworthy origin, so the
+   secure-context requirement should be satisfied — but "should" is doing real work in that
+   sentence and it has not been observed.
+
+`ScanView` surfaces whatever `getUserMedia` throws instead of swallowing it, so the first device
+run will say what actually went wrong.
+
+**Fallback if the WebView proves unreliable: a Kotlin CameraX plugin.** This is a plan, not a
+prepared boundary — the frame source is currently the `grab()` function in `ScanView.svelte`, and
+swapping it would mean introducing the abstraction at that point.
 
 ## Layout
 
@@ -63,7 +105,15 @@ The WebView is the bottleneck, which is why the frontend is Svelte with a light 
 
 For the vision pipeline, the dominant cost is transferring the frame from the WebView into Rust,
 not computing the hash. Measure before optimizing, but hold the 5–10 fps processing target on a
-mid-range phone.
+mid-range phone. Three things are already in place for it:
+
+* Frames are captured at **640 wide**, not at the sensor's resolution. Detection works at 320
+  internally and the artwork hash is box-sampled to a 17×16 grid, so more pixels buy nothing.
+* The scanner **drops frames that arrive mid-recognition** rather than queueing them. The voter
+  needs agreement, not every frame, and an unbounded queue on a slow device is a stall that
+  looks like a crash.
+* The greyscale buffer is **reused across frames**, so a video stream does not allocate three
+  hundred kilobytes ten times a second.
 
 The optimizer's Monte Carlo runs **single-threaded and bounded** on Android, against `rayon` on
 desktop: do not saturate a phone's cores or drain its battery.

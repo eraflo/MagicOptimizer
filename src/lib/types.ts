@@ -352,3 +352,40 @@ export const BRACKET_LABELS: Record<number, string> = {
   4: "Optimized",
   5: "cEDH",
 };
+
+// --- Camera scanning -------------------------------------------------------
+
+export type ScanStatus = {
+  loaded: boolean;
+  artworks: number;
+  path: string;
+  error: string | null;
+};
+
+export type ScannedCard = {
+  oracleId: string;
+  printingId: string;
+  name: string;
+  /** Bits of difference from the reference artwork. Lower is closer. */
+  distance: number;
+  /** How much worse the nearest different card was. Larger is more certain. */
+  margin: number;
+};
+
+export type ScanResult = {
+  /**
+   * `searching` — nothing recognised.
+   * `tracking` — a card matches but not enough frames agree yet.
+   * `confirmed` — act on this, emitted exactly once per card presented.
+   * `holding` — the confirmed card is still in view; do nothing.
+   */
+  state: "searching" | "tracking" | "confirmed" | "holding";
+  card: ScannedCard | null;
+  votes: number;
+  needed: number;
+  /**
+   * The card's outline in frame coordinates, top-left first and clockwise.
+   * Present whenever a card was *seen*, even if it could not be named.
+   */
+  quad: [number, number][] | null;
+};

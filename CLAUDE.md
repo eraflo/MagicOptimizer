@@ -157,9 +157,26 @@ fix it, do not silence it with `#[allow]` unless you write the justification in 
 - **Do not add a search index without a measurement first.** The linear scan is ~5 ms over the
   whole catalog. An inverted index would be cost with no benefit today; see
   `docs/dev/architecture.md` for the numbers to beat.
-- **`getUserMedia` in the Android WebView** can misbehave depending on the version. The planned
-  fallback is a Kotlin CameraX plugin behind the `FrameSource` trait — do not invent a different
-  approach without discussing it.
+- **`getUserMedia` in the Android WebView** can misbehave depending on the version, and none of
+  the Android path has been run on a device — no SDK or NDK was available. The planned fallback
+  is a Kotlin CameraX plugin; that boundary does **not** exist yet, the frame source is `grab()`
+  in `ScanView.svelte`. Do not describe it as prepared.
+- **Camera frames go over raw IPC, never as a command argument.** A 640×480 greyscale frame is
+  300 KB; as a `Vec<u8>` argument Tauri would serialize three hundred thousand JSON numbers ten
+  times a second. `scan_frame` takes a `tauri::ipc::Request` and reads dimensions from headers.
+- **The greyscale weights in `ScanView.svelte` must match `mtg_vision::rgba_to_gray`.** Both use
+  77/150/29. The reference hashes in `arthashes.bin` were computed with those weights, so a
+  different luma formula on the query side would shift every hash away from the whole database —
+  silently, and in a way no test on either side alone would catch.
+- **`arthashes.bin` hashes the `normal` card image, not Scryfall's `art_crop`.** Reference and
+  query must be framed identically, and the query is cropped from a rectified card at fixed
+  fractions. Changing `hash_gray`, the `ART_*` constants or `RECTIFIED_*` invalidates every
+  published hash: bump `ARCHIVE_VERSION` so old files are refused rather than silently matching
+  nothing.
+- **A test that asserts fresh-install behaviour must use `AppState::without_artifacts`.**
+  `AppState::new` falls back to `artifacts/` in the checkout so `tauri dev` works after a build,
+  which means a test using it passes or fails depending on what the developer has generated.
+  That already happened once, to the combo test.
 - **EDHREC and Commander Spellbook are unofficial endpoints.** They can break without notice. Only
   `build-artifacts` talks to them, never the app, and missing data must degrade gracefully to
   heuristics alone.

@@ -45,6 +45,29 @@ jobs:
       - name: Test
         run: cargo test --workspace
 
+  # Invariant 1 in CLAUDE.md — no crate under `crates/` may pull in C or C++, because the
+  # domain has to cross-compile to Android. `cargo check` does not link, so this needs the Rust
+  # target but neither the SDK nor the NDK: it fails on a C dependency at build-script time,
+  # which is exactly the violation worth catching. `src-tauri` and `tools/` are excluded on
+  # purpose — the tool is the documented exception, and the shell needs a real Android setup.
+  android:
+    name: domain crates cross-compile
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Check against aarch64-linux-android
+        run: |
+          cargo check --target aarch64-linux-android \
+            -p mtg-core -p mtg-data -p mtg-collection -p mtg-deck \
+            -p mtg-optimizer -p mtg-combo -p mtg-vision
+
   frontend:
     name: svelte-check, build
     runs-on: ubuntu-latest

@@ -1948,6 +1948,7 @@ dependencies = [
  "mtg-data",
  "mtg-deck",
  "mtg-optimizer",
+ "mtg-vision",
  "serde",
  "serde_json",
  "tauri",

@@ -7,6 +7,7 @@ mod commands;
 mod deck_commands;
 mod dto;
 mod optimize_commands;
+mod scan_commands;
 mod state;
 
 use tauri::Manager;
@@ -59,6 +60,10 @@ pub fn run() {
             combo_commands::combo_status,
             combo_commands::deck_combos,
             combo_commands::deck_bracket,
+            scan_commands::scan_status,
+            scan_commands::scan_reload,
+            scan_commands::scan_reset,
+            scan_commands::scan_frame,
         ])
         .run(tauri::generate_context!())
         .expect("the application failed to start");

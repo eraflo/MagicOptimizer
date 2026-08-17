@@ -25,6 +25,8 @@ import type {
   Score,
   SearchRequest,
   SearchResponse,
+  ScanResult,
+  ScanStatus,
   SearchResult,
   Stats,
 } from "./types";
@@ -191,4 +193,32 @@ export function deckCombos(id: number): Promise<ComboMatch[]> {
 
 export function deckBracket(id: number): Promise<BracketAssessment> {
   return invoke("deck_bracket", { id });
+}
+
+// --- Camera scanning -------------------------------------------------------
+
+export function scanStatus(): Promise<ScanStatus> {
+  return invoke("scan_status");
+}
+
+export function scanReload(): Promise<ScanStatus> {
+  return invoke("scan_reload");
+}
+
+export function scanReset(): Promise<void> {
+  return invoke("scan_reset");
+}
+
+/**
+ * Feeds one greyscale frame to the scanner.
+ *
+ * Sent as a raw body rather than a normal argument. A 640x480 frame is 300 KB, and passing it
+ * as a `number[]` would have Tauri serialize three hundred thousand JSON numbers ten times a
+ * second — the encoding would cost far more than the recognition does. The dimensions ride
+ * along as headers because a raw body cannot carry anything else.
+ */
+export function scanFrame(gray: Uint8Array, width: number, height: number): Promise<ScanResult> {
+  return invoke("scan_frame", gray, {
+    headers: { width: String(width), height: String(height) },
+  });
 }
