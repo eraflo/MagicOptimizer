@@ -41,6 +41,24 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
+
+          # Every call here is retried. A single transient 503 from the GitHub API took down a
+          # whole nightly once — the release was never created, so all three platform builds
+          # were skipped, over a hiccup that had nothing to do with the code.
+          retry() {
+            local attempt delay=5
+            for attempt in 1 2 3 4 5; do
+              if "$@"; then
+                return 0
+              fi
+              echo "attempt $attempt failed, retrying in ${delay}s" >&2
+              sleep "$delay"
+              delay=$(( delay * 2 ))
+            done
+            echo "gave up after 5 attempts: $*" >&2
+            return 1
+          }
+
           short="${GITHUB_SHA:0:7}"
           {
             printf 'Built from [`%s`](https://github.com/%s/commit/%s) on `main`.\n\n' \
@@ -48,16 +66,27 @@ jobs:
             cat .github/release-notes/nightly.md
           } > notes.md
 
-          gh release create nightly \
-            --target "$GITHUB_SHA" \
-            --title "Nightly build ($short)" \
-            --prerelease \
-            --notes-file notes.md
+          # Idempotent, so a retry after a half-succeeded call does not fail with
+          # "release already exists" and mask the original error.
+          create_release() {
+            if gh release view nightly >/dev/null 2>&1; then
+              return 0
+            fi
+            gh release create nightly \
+              --target "$GITHUB_SHA" \
+              --title "Nightly build ($short)" \
+              --prerelease \
+              --notes-file notes.md
+          }
+          retry create_release
 
           # Handed to tauri-action so it uploads into this release instead of trying to
           # create its own — three matrix jobs racing to create one release ends badly.
-          id=$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/nightly" --jq .id)
-          echo "release_id=$id" >> "$GITHUB_OUTPUT"
+          read_release_id() {
+            gh api "repos/$GITHUB_REPOSITORY/releases/tags/nightly" --jq .id > release_id.txt
+          }
+          retry read_release_id
+          echo "release_id=$(cat release_id.txt)" >> "$GITHUB_OUTPUT"
 
   build:
     name: ${{ matrix.name }}
