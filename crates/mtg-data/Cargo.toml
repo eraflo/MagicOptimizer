@@ -16,6 +16,9 @@ mtg-core = { path = "../mtg-core" }
 rkyv = "0.8"
 memmap2 = "0.9"
 thiserror = "2"
+# Pure Rust. Needed to fold accents when matching card names: someone typing "Lim-Dul" must
+# find "Lim-Dûl's Vault", and a decklist exported by another tool may spell it either way.
+unicode-normalization = "0.1"
 
 [dev-dependencies]
 clap = { version = "4", features = ["derive"] }

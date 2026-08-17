@@ -2006,6 +2006,10 @@ dependencies = [
 [[package]]
 name = "mtg-core"
 version = "0.0.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
 
 [[package]]
 name = "mtg-data"
@@ -2015,6 +2019,19 @@ dependencies = [
  "memmap2",
  "mtg-core",
  "rkyv",
+ "thiserror 2.0.20",
+ "unicode-normalization",
+]
+
+[[package]]
+name = "mtg-deck"
+version = "0.0.0"
+dependencies = [
+ "clap",
+ "mtg-core",
+ "mtg-data",
+ "serde",
+ "serde_json",
  "thiserror 2.0.20",
 ]
 
@@ -4055,6 +4072,15 @@ name = "unicode-ident"
 version = "1.0.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e6e4313cd5fcd3dad5cafa179702e2b244f760991f45397d14d4ebf38247da75"
+
+[[package]]
+name = "unicode-normalization"
+version = "0.1.25"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5fd4f6878c9cb28d874b009da9e8d183b5abc80117c40bbd187a1fde336be6e8"
+dependencies = [
+ "tinyvec",
+]
 
 [[package]]
 name = "unicode-segmentation"

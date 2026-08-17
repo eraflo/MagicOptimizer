@@ -13,7 +13,7 @@ use std::time::Instant;
 
 use clap::Parser;
 use mtg_core::{ColorSet, Format};
-use mtg_data::{Catalog, Query};
+use mtg_data::{Catalog, Query, Resolution};
 
 #[derive(Parser, Debug)]
 #[command(about = "Query a MagicOptimizer card catalog artifact")]
@@ -22,7 +22,7 @@ struct Args {
     #[arg(long, default_value = "artifacts/cards.rkyv")]
     catalog: PathBuf,
 
-    /// Exact card name. Prints full details for that one card.
+    /// Card name, resolved the way a decklist writes it. Prints full details.
     #[arg(long)]
     name: Option<String>,
 
@@ -66,12 +66,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     if let Some(name) = &args.name {
-        return match catalog.find_by_name(name) {
-            Some((id, card)) => {
+        return match catalog.resolve(name) {
+            Resolution::Found(id, card) => {
                 print_details(id, card);
                 Ok(())
             }
-            None => Err(format!("no card named {name:?}").into()),
+            // Worth distinguishing from "not found": the name is real, it just belongs to
+            // several cards. Deck import has to make the same distinction.
+            Resolution::Ambiguous(candidates) => {
+                let names: Vec<&str> = candidates.iter().map(|(_, c)| c.name()).collect();
+                Err(format!("{name:?} is a face of several cards: {}", names.join(", ")).into())
+            }
+            Resolution::NotFound => Err(format!("no card named {name:?}").into()),
         };
     }
 

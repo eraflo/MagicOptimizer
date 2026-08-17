@@ -1,6 +1,6 @@
 [package]
-name = "mtg-core"
-description = "Core types shared across MagicOptimizer crates"
+name = "mtg-deck"
+description = "Deck model, format rules, legality checking, and decklist import/export"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -12,7 +12,11 @@ authors.workspace = true
 workspace = true
 
 [dependencies]
+mtg-core = { path = "../mtg-core" }
+mtg-data = { path = "../mtg-data" }
 serde = { version = "1", features = ["derive"] }
+thiserror = "2"
 
 [dev-dependencies]
+clap = { version = "4", features = ["derive"] }
 serde_json = "1"

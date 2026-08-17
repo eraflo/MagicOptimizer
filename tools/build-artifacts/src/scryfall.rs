@@ -139,7 +139,6 @@ pub fn cache_file_name(entry: &BulkEntry) -> String {
 
 #[cfg(test)]
 mod tests {
-    #![allow(clippy::unwrap_used)]
 
     use super::*;
 

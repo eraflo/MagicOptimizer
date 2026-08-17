@@ -242,7 +242,6 @@ fn contains_ignore_ascii_case(haystack: &str, needle_lower: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
-    #![allow(clippy::unwrap_used)]
 
     use super::*;
     use crate::card::{legality_to_u8, rarity_to_u8, Card, CardFace, Layout, LEGALITY_SLOTS};

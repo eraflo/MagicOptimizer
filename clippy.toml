@@ -1,0 +1,5 @@
+# `unwrap` and `expect` are denied in the workspace lints because domain code must not panic on
+# data that came off the network. Tests are the exception: there, a panic *is* the failure
+# report, and threading Results through every assertion would obscure what is being tested.
+allow-unwrap-in-tests = true
+allow-expect-in-tests = true

@@ -56,9 +56,15 @@ impl Backing {
 /// so pages are only faulted in as they are touched.
 pub struct Catalog {
     backing: Backing,
-    /// Lowercased full name to id. Built eagerly because deck import resolves thousands of
+    /// Normalised full name to id. Built eagerly because deck import resolves thousands of
     /// names in a row and cannot afford a scan each time.
     by_name: HashMap<String, CardId>,
+    /// Normalised face names of multi-faced cards. Kept separate from `by_name` so a real card
+    /// always wins over a face that happens to share its name.
+    ///
+    /// A `Vec` because face names are not unique: `Fire` is a half of both `Fire // Ice` and
+    /// `Start // Fire`. Silently picking one would put the wrong card in an imported deck.
+    by_alias: HashMap<String, Vec<CardId>>,
     source_updated_at: String,
 }
 
@@ -99,17 +105,31 @@ impl Catalog {
 
         let source_updated_at = data.source_updated_at.to_string();
         let mut by_name = HashMap::with_capacity(data.cards.len());
+        let mut by_alias = HashMap::new();
         for (position, card) in data.cards.iter().enumerate() {
+            let id = CardId(position as u32);
             // Duplicate names should not happen in oracle data; if they do, first wins and
             // the later one stays reachable by id.
-            by_name
-                .entry(card.name().to_lowercase())
-                .or_insert(CardId(position as u32));
+            by_name.entry(normalize_name(card.name())).or_insert(id);
+
+            // Face names, so a decklist saying "Bonecrusher Giant" finds
+            // "Bonecrusher Giant // Stomp". Only useful for multi-faced cards, and only when
+            // the face name is not itself a real card — "Fire" and "Ice" are both.
+            if card.is_multi_faced() {
+                for face in card.faces() {
+                    let candidates: &mut Vec<CardId> =
+                        by_alias.entry(normalize_name(face.name())).or_default();
+                    if !candidates.contains(&id) {
+                        candidates.push(id);
+                    }
+                }
+            }
         }
 
         Ok(Catalog {
             backing,
             by_name,
+            by_alias,
             source_updated_at,
         })
     }
@@ -135,14 +155,82 @@ impl Catalog {
         self.data().cards.get(id.index())
     }
 
-    /// Looks up a card by its exact full name, case-insensitively.
+    /// Looks up a card by its full name.
     ///
-    /// Multi-part cards are keyed on the joined name, e.g. `"fire // ice"`. Deck lists
-    /// commonly write only the first half, so `mtg-deck` will need a friendlier resolver;
-    /// this one stays exact on purpose.
+    /// Matching ignores case, accents and punctuation, so `"Ajani's Pridemate"`,
+    /// `"ajanis pridemate"` and `"Ajani’s Pridemate"` with a typographic apostrophe all find the
+    /// same card. It does **not** accept a single face of a multi-part card — use
+    /// [`Catalog::resolve_name`] for that.
     pub fn find_by_name(&self, name: &str) -> Option<(CardId, &ArchivedCard)> {
-        let id = *self.by_name.get(&name.to_lowercase())?;
+        let id = *self.by_name.get(&normalize_name(name))?;
         self.get(id).map(|card| (id, card))
+    }
+
+    /// Looks up a card the way a decklist writes it.
+    ///
+    /// Decklists exported by other tools rarely spell multi-part cards in full: they say
+    /// `Bonecrusher Giant`, not `Bonecrusher Giant // Stomp`. Resolution goes, in order:
+    ///
+    /// 1. the full name;
+    /// 2. the part before `//`, for lists that write only the front face;
+    /// 3. any face name.
+    ///
+    /// The order matters. `Fire` and `Ice` are each a real card as well as a face of
+    /// `Fire // Ice`, and a real card must always win over a face of something else.
+    pub fn resolve_name(&self, name: &str) -> Option<(CardId, &ArchivedCard)> {
+        match self.resolve(name) {
+            Resolution::Found(id, card) => Some((id, card)),
+            Resolution::Ambiguous(_) | Resolution::NotFound => None,
+        }
+    }
+
+    /// Resolves a name, reporting ambiguity instead of guessing.
+    ///
+    /// Importers should use this rather than [`Catalog::resolve_name`]: a face name can belong
+    /// to more than one card, and picking one at random puts a card the user never chose into
+    /// their deck, with nothing on screen to say so.
+    pub fn resolve(&self, name: &str) -> Resolution<'_> {
+        match self.lookup(name) {
+            Resolution::NotFound => {}
+            other => return other,
+        }
+        // Only reached when the whole string is not a card: an exporter may have written
+        // "Front // Back" using face names that do not form the card's actual full name.
+        match name.split_once("//") {
+            Some((front, _)) => self.lookup(front.trim()),
+            None => Resolution::NotFound,
+        }
+    }
+
+    /// Full names first, then face names.
+    ///
+    /// The order is the whole point: a card printed under its own name has to win over a face
+    /// of some other card that happens to share it.
+    fn lookup(&self, name: &str) -> Resolution<'_> {
+        let key = normalize_name(name);
+
+        if let Some(&id) = self.by_name.get(&key) {
+            if let Some(card) = self.get(id) {
+                return Resolution::Found(id, card);
+            }
+        }
+
+        let Some(candidates) = self.by_alias.get(&key) else {
+            return Resolution::NotFound;
+        };
+        let found: Vec<(CardId, &ArchivedCard)> = candidates
+            .iter()
+            .filter_map(|&id| self.get(id).map(|card| (id, card)))
+            .collect();
+
+        match found.len() {
+            0 => Resolution::NotFound,
+            1 => {
+                let (id, card) = found[0];
+                Resolution::Found(id, card)
+            }
+            _ => Resolution::Ambiguous(found),
+        }
     }
 
     pub fn iter(&self) -> impl Iterator<Item = (CardId, &ArchivedCard)> {
@@ -152,6 +240,81 @@ impl Catalog {
             .enumerate()
             .map(|(position, card)| (CardId(position as u32), card))
     }
+}
+
+/// What looking a name up produced.
+#[derive(Debug)]
+pub enum Resolution<'a> {
+    Found(CardId, &'a ArchivedCard),
+    /// The name matches a face shared by several cards, e.g. `Fire`, which is half of both
+    /// `Fire // Ice` and `Start // Fire`. The caller has to ask rather than pick.
+    Ambiguous(Vec<(CardId, &'a ArchivedCard)>),
+    NotFound,
+}
+
+impl Resolution<'_> {
+    pub fn is_found(&self) -> bool {
+        matches!(self, Resolution::Found(..))
+    }
+}
+
+/// Folds a card name into the form used as an index key.
+///
+/// Lowercases, strips accents, drops punctuation and collapses whitespace, so all of
+/// `"Lim-Dûl's Vault"`, `"lim-duls vault"` and `"Lim-Dul’s  Vault"` land on the same key. Card
+/// names arrive from decklists other tools exported, from users typing on a phone keyboard
+/// with no easy circumflex, and from Scryfall itself — matching has to survive all three.
+fn normalize_name(name: &str) -> String {
+    use unicode_normalization::UnicodeNormalization;
+
+    let mut out = String::with_capacity(name.len());
+    let mut pending_space = false;
+
+    // NFD splits "û" into "u" plus a combining circumflex, which the filter below then drops.
+    for ch in name.nfd() {
+        // Combining diacritical marks.
+        if ('\u{0300}'..='\u{036F}').contains(&ch) {
+            continue;
+        }
+
+        for lower in ch.to_lowercase() {
+            // Ligatures and strokes do not decompose under NFD, so they are spelled out here.
+            // "Æther" was the old spelling of what Scryfall now writes "Aether".
+            let expansion = match lower {
+                'æ' => Some("ae"),
+                'œ' => Some("oe"),
+                'ø' => Some("o"),
+                'ß' => Some("ss"),
+                'đ' | 'ð' => Some("d"),
+                'ł' => Some("l"),
+                'þ' => Some("th"),
+                _ => None,
+            };
+
+            if let Some(expansion) = expansion {
+                if pending_space && !out.is_empty() {
+                    out.push(' ');
+                }
+                pending_space = false;
+                out.push_str(expansion);
+            } else if lower.is_alphanumeric() {
+                if pending_space && !out.is_empty() {
+                    out.push(' ');
+                }
+                pending_space = false;
+                out.push(lower);
+            } else if lower.is_whitespace() || lower == '/' {
+                // Slashes count as separators, not as droppable punctuation: without this,
+                // "Bonecrusher Giant//Stomp" would fold to "bonecrusher giantstomp" and match
+                // nothing, while the spaced spelling folded correctly.
+                pending_space = true;
+            }
+            // Everything else — apostrophes, commas, hyphens — is dropped, so the straight and
+            // typographic apostrophes cannot disagree.
+        }
+    }
+
+    out
 }
 
 /// Written by hand rather than derived: a derived impl would dump the whole name index and
@@ -205,7 +368,6 @@ mod raw {
 
 #[cfg(test)]
 mod tests {
-    #![allow(clippy::unwrap_used)]
 
     use super::*;
     use crate::card::{legality_to_u8, rarity_to_u8, CardFace, Layout, LEGALITY_SLOTS};
@@ -305,6 +467,144 @@ mod tests {
             assert_eq!(found.name(), "Sol Ring");
         }
         assert!(catalog.find_by_name("Sol").is_none());
+    }
+
+    #[test]
+    fn name_lookup_folds_accents_and_punctuation() {
+        let catalog = round_trip(vec![
+            card("Lim-Dûl's Vault", "{1}{U}{B}", "Instant"),
+            card("Æther Vial", "{1}", "Artifact"),
+        ]);
+
+        // A phone keyboard with no circumflex, a straight apostrophe, a typographic one, and a
+        // decklist that dropped the hyphen: all the same card.
+        for query in [
+            "Lim-Dûl's Vault",
+            "Lim-Dul's Vault",
+            "lim-duls vault",
+            "Lim-Dûl’s Vault",
+            "  Lim-Dûl's   Vault  ",
+        ] {
+            assert!(catalog.find_by_name(query).is_some(), "{query:?}");
+        }
+
+        // The ligature does not decompose under NFD, so it is spelled out explicitly.
+        assert!(catalog.find_by_name("Aether Vial").is_some());
+        assert!(catalog.find_by_name("æther vial").is_some());
+    }
+
+    #[test]
+    fn resolve_accepts_a_single_face_of_a_multi_part_card() {
+        // The reason this exists: decklists exported by other tools write "Bonecrusher Giant",
+        // never "Bonecrusher Giant // Stomp".
+        let mut giant = card(
+            "Bonecrusher Giant // Stomp",
+            "{2}{R} // {1}{R}",
+            "Creature — Giant // Instant — Adventure",
+        );
+        giant.layout = Layout::Adventure;
+        giant.faces = vec![
+            face("Bonecrusher Giant", "{2}{R}", "Creature — Giant"),
+            face("Stomp", "{1}{R}", "Instant — Adventure"),
+        ];
+
+        let catalog = round_trip(vec![giant]);
+
+        for query in [
+            "Bonecrusher Giant // Stomp",
+            "Bonecrusher Giant",
+            "bonecrusher giant",
+            "Stomp",
+        ] {
+            let (_, found) = catalog.resolve_name(query).expect(query);
+            assert_eq!(found.name(), "Bonecrusher Giant // Stomp");
+        }
+
+        // The strict lookup still refuses a partial name.
+        assert!(catalog.find_by_name("Bonecrusher Giant").is_none());
+    }
+
+    #[test]
+    fn a_real_card_wins_over_a_face_of_the_same_name() {
+        let mut split = card("Fire // Ice", "{1}{R} // {1}{U}", "Instant // Instant");
+        split.layout = Layout::Split;
+        split.faces = vec![
+            face("Fire", "{1}{R}", "Instant"),
+            face("Ice", "{1}{U}", "Instant"),
+        ];
+
+        let catalog = round_trip(vec![split, card("Fire", "{1}{R}", "Instant")]);
+
+        assert_eq!(catalog.resolve_name("Fire").unwrap().0, CardId(1));
+        assert_eq!(catalog.resolve_name("Fire // Ice").unwrap().0, CardId(0));
+        // "Ice" has no standalone printing here, so it falls through to the face.
+        assert_eq!(catalog.resolve_name("Ice").unwrap().0, CardId(0));
+    }
+
+    #[test]
+    fn a_face_name_shared_by_several_cards_is_ambiguous_not_guessed() {
+        // Real case: in the oracle catalog there is no standalone "Fire" card, but "Fire" is a
+        // half of both "Fire // Ice" and "Start // Fire". Picking one would silently put a card
+        // the user never asked for into their deck.
+        let mut fire_ice = card("Fire // Ice", "{1}{R} // {1}{U}", "Instant // Instant");
+        fire_ice.layout = Layout::Split;
+        fire_ice.faces = vec![
+            face("Fire", "{1}{R}", "Instant"),
+            face("Ice", "{1}{U}", "Instant"),
+        ];
+
+        let mut start_fire = card("Start // Fire", "{2}{W} // {1}{R}", "Sorcery // Sorcery");
+        start_fire.layout = Layout::Split;
+        start_fire.faces = vec![
+            face("Start", "{2}{W}", "Sorcery"),
+            face("Fire", "{1}{R}", "Sorcery"),
+        ];
+
+        let catalog = round_trip(vec![fire_ice, start_fire]);
+
+        match catalog.resolve("Fire") {
+            Resolution::Ambiguous(candidates) => {
+                let names: Vec<&str> = candidates.iter().map(|(_, c)| c.name()).collect();
+                assert_eq!(names, ["Fire // Ice", "Start // Fire"]);
+            }
+            other => panic!("expected ambiguity, got {other:?}"),
+        }
+
+        // The convenience wrapper refuses to guess.
+        assert!(catalog.resolve_name("Fire").is_none());
+
+        // Unambiguous faces still resolve straight through.
+        assert_eq!(catalog.resolve_name("Ice").unwrap().0, CardId(0));
+        assert_eq!(catalog.resolve_name("Start").unwrap().0, CardId(1));
+    }
+
+    #[test]
+    fn resolve_falls_back_to_the_front_half_of_a_written_out_name() {
+        // Some exporters write "Front // Back" using the *face* names of a card whose full
+        // name differs, or with odd spacing around the slashes.
+        let mut giant = card(
+            "Bonecrusher Giant // Stomp",
+            "{2}{R} // {1}{R}",
+            "Creature — Giant // Instant",
+        );
+        giant.layout = Layout::Adventure;
+        giant.faces = vec![
+            face("Bonecrusher Giant", "{2}{R}", "Creature — Giant"),
+            face("Stomp", "{1}{R}", "Instant"),
+        ];
+        let catalog = round_trip(vec![giant]);
+
+        assert!(catalog.resolve_name("Bonecrusher Giant//Stomp").is_some());
+        assert!(catalog
+            .resolve_name("Bonecrusher Giant // Whatever")
+            .is_some());
+    }
+
+    #[test]
+    fn unknown_names_resolve_to_nothing() {
+        let catalog = round_trip(vec![card("Sol Ring", "{1}", "Artifact")]);
+        assert!(catalog.resolve_name("Not A Card").is_none());
+        assert!(catalog.resolve_name("").is_none());
     }
 
     #[test]

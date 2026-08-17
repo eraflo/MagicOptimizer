@@ -161,8 +161,30 @@ impl Format {
     }
 }
 
+/// Serialized as the Scryfall key, not as the variant name.
+///
+/// The wire format therefore matches what the catalog stores and what the frontend already
+/// sends, and it stays stable if a variant is ever renamed. A derived impl would emit
+/// `"StandardBrawl"` where everything else in the system says `"standardbrawl"`.
+impl serde::Serialize for Format {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        serializer.serialize_str(self.scryfall_key())
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for Format {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Format, D::Error> {
+        let key = <std::borrow::Cow<'_, str>>::deserialize(deserializer)?;
+        Format::from_scryfall_key(&key)
+            .ok_or_else(|| serde::de::Error::custom(format!("unknown format {key:?}")))
+    }
+}
+
 /// How a card stands in a given format.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Hash, Default, serde::Serialize, serde::Deserialize,
+)]
+#[serde(rename_all = "snake_case")]
 #[repr(u8)]
 pub enum Legality {
     /// Playable without restriction.
@@ -204,7 +226,20 @@ impl Legality {
 }
 
 /// Rarity of a printing.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    Default,
+    serde::Serialize,
+    serde::Deserialize,
+)]
+#[serde(rename_all = "snake_case")]
 #[repr(u8)]
 pub enum Rarity {
     #[default]
@@ -231,6 +266,7 @@ impl Rarity {
 
 #[cfg(test)]
 mod tests {
+
     use super::*;
 
     #[test]
@@ -334,6 +370,27 @@ mod tests {
         assert_eq!(Legality::Restricted.max_copies(), Some(1));
         assert_eq!(Legality::Banned.max_copies(), Some(0));
         assert_eq!(Legality::Legal.max_copies(), None);
+    }
+
+    #[test]
+    fn formats_serialize_as_their_scryfall_key() {
+        // Not as the variant name: everything else in the system speaks Scryfall keys, and a
+        // renamed variant must not change the wire format.
+        let json = serde_json::to_string(&Format::StandardBrawl).expect("serialize");
+        assert_eq!(json, "\"standardbrawl\"");
+
+        for format in Format::ALL {
+            let json = serde_json::to_string(&format).expect("serialize");
+            let back: Format = serde_json::from_str(&json).expect("deserialize");
+            assert_eq!(back, format);
+        }
+    }
+
+    #[test]
+    fn an_unknown_format_key_fails_to_deserialize() {
+        // Rather than silently becoming some default format and mis-checking a whole deck.
+        let error = serde_json::from_str::<Format>("\"explorer\"").unwrap_err();
+        assert!(error.to_string().contains("unknown format"), "{error}");
     }
 
     #[test]

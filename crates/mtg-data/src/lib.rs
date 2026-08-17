@@ -13,6 +13,6 @@ pub use card::{
     legality_to_u8, rarity_to_u8, ArchivedCard, ArchivedCardFace, Card, CardFace, Layout,
     LEGALITY_SLOTS,
 };
-pub use catalog::{serialize, Catalog, CatalogData, FORMAT_VERSION};
+pub use catalog::{serialize, Catalog, CatalogData, Resolution, FORMAT_VERSION};
 pub use error::{CatalogError, Result};
 pub use search::Query;

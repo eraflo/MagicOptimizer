@@ -207,7 +207,6 @@ fn color_set(symbols: Option<&[String]>) -> ColorSet {
 
 #[cfg(test)]
 mod tests {
-    #![allow(clippy::unwrap_used)]
 
     use super::*;
 

@@ -342,7 +342,6 @@ fn db_error(error: impl std::fmt::Display) -> CollectionError {
 
 #[cfg(test)]
 mod tests {
-    #![allow(clippy::unwrap_used)]
 
     use super::*;
     use crate::model::{Condition, Finish};

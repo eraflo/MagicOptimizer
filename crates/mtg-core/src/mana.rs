@@ -209,7 +209,6 @@ fn single_color(s: &str) -> Option<Color> {
 
 #[cfg(test)]
 mod tests {
-    #![allow(clippy::unwrap_used)]
 
     use super::*;
 

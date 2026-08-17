@@ -1,0 +1,15 @@
+# Normalise line endings so a Windows checkout does not show files as modified when nothing
+# about them has changed. Everything is stored LF in the repository.
+* text=auto eol=lf
+
+# Binary assets: never touched.
+*.png binary
+*.ico binary
+*.icns binary
+*.jpg binary
+*.rkyv binary
+*.bin binary
+
+# Generated; keep it out of diffs and out of language statistics.
+package-lock.json linguist-generated=true -diff
+Cargo.lock linguist-generated=true
