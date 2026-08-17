@@ -67,6 +67,23 @@ milliseconds, which is plenty for a UI. So:
 The consequence is that no C toolchain appears anywhere in the build. **Every new dependency must
 be checked against that criterion** before being added.
 
+The one documented exception is `tools/build-artifacts`, which uses an HTTP client and therefore
+a TLS stack. It is a development tool that runs on a PC, is never built for Android and is never
+bundled into the app, so the constraint does not apply to it.
+
+### Measured, on the real 35,306-card catalog
+
+| Operation | Cost |
+|---|---|
+| Opening the artifact | ~22 ms, nearly all of it building the name index |
+| Full scan with color, type and format filters | ~2 ms |
+| Full scan including a rules-text substring search | ~5 ms |
+
+This is why `mtg-data` ships **no inverted index and no bitsets**. A linear scan is already an
+order of magnitude faster than a UI needs, and an index would be memory and code spent against a
+problem that measurement says does not exist. The moment that stops being true — probably when
+search runs per keystroke on a low-end phone — the numbers above are the baseline to beat.
+
 ## Data flow
 
 ```

@@ -1,0 +1,28 @@
+[package]
+name = "build-artifacts"
+description = "Development CLI: turns public card sources into the binary artifacts the app ships"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+publish = false
+
+[lints]
+workspace = true
+
+# NOTE ON NATIVE DEPENDENCIES
+# The workspace rule is that nothing may pull in C or C++, because it has to cross-compile to
+# Android. This crate is the documented exception: it is a development tool that runs on a PC
+# and is never built for mobile or bundled into the app. That is what makes `ureq` (and the TLS
+# stack underneath it) acceptable here and nowhere else. See docs/dev/architecture.md.
+[dependencies]
+mtg-core = { path = "../../crates/mtg-core" }
+mtg-data = { path = "../../crates/mtg-data" }
+anyhow = "1"
+clap = { version = "4", features = ["derive"] }
+flate2 = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+ureq = "3"

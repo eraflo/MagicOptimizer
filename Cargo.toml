@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/mtg-core"]
+members = ["crates/mtg-core", "crates/mtg-data", "tools/build-artifacts"]
 
 [workspace.package]
 version = "0.0.0"

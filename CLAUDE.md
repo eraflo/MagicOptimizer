@@ -20,10 +20,15 @@ the user.** Each cost real time to establish.
 
 1. **No native dependencies, never SQLite.**
    `rusqlite` / `libsqlite3-sys` cross-compiled to Android is a documented, recurring pain point
-   (NDK not found, unresolved symbols at link time, runtime crashes). The catalog is 35,000
-   entries: a read-only `rkyv` mmap plus `redb` for mutable state is more than enough, and both
-   compile everywhere without a C toolchain. **Do not add any crate that pulls in C or C++**
-   without first checking it cross-compiles to `aarch64-linux-android`.
+   (NDK not found, unresolved symbols at link time, runtime crashes). The catalog is 35,306
+   cards: a read-only `rkyv` mmap plus `redb` for mutable state is more than enough — measured
+   at ~22 ms to open and ~5 ms for a full scan including rules-text search. **Do not add any
+   crate that pulls in C or C++** without first checking it cross-compiles to
+   `aarch64-linux-android`.
+
+   The single exception is `tools/build-artifacts`, which needs an HTTP client and therefore a
+   TLS stack. It runs on a PC only, is never built for mobile and is never bundled into the app.
+   Do not use it as precedent for anything under `crates/` or `src-tauri/`.
 
 2. **The app is never used during a game.**
    A product constraint set by the user: pulling out your phone at the table is socially frowned
@@ -108,8 +113,16 @@ fix it, do not silence it with `#[allow]` unless you write the justification in 
 - **Scryfall blocks generic User-Agents.** Observed directly: their own documentation returns 403
   for a default UA. Always send a descriptive User-Agent and an `Accept` header. Stay under 10
   requests/second, and under 2/s on `/cards/collection`.
-- **The Game Changers list changes over time** (53 cards as of 2026-02-09). It must come from the
-  artifact, never be hardcoded.
+- **Do not maintain a Game Changers list.** Scryfall ships a `game_changer` boolean on every
+  card; the build produces exactly the 53 flagged cards on its own. Never hardcode the list.
+- **The format list drifts, and silently.** Already observed: `explorer` retired, `competitivebrawl`
+  and `tlr` added. `build-artifacts` prints a loud warning for any legality key it cannot map,
+  because the alternative is a whole format vanishing from search with nothing to explain it. If
+  that warning fires: add the variant to `mtg_core::Format`, update `LEGALITY_SLOTS`, bump
+  `FORMAT_VERSION`, and fix the pinned list in `format_list_matches_scryfall_as_observed`.
+- **Do not add a search index without a measurement first.** The linear scan is ~5 ms over the
+  whole catalog. An inverted index would be cost with no benefit today; see
+  `docs/dev/architecture.md` for the numbers to beat.
 - **`getUserMedia` in the Android WebView** can misbehave depending on the version. The planned
   fallback is a Kotlin CameraX plugin behind the `FrameSource` trait — do not invent a different
   approach without discussing it.

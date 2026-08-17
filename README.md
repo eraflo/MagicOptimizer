@@ -45,8 +45,8 @@ The project ships in phases. It stays usable at the end of each one.
 
 | Phase | Scope | State |
 |:---:|---|:---:|
-| 0 | Public repository, documentation, CI | 🚧 in progress |
-| 1 | Data foundation, card catalog, search | ⬜ |
+| 0 | Public repository, documentation, CI | ✅ done |
+| 1 | Data foundation, card catalog, search | ✅ done |
 | 2 | Desktop app, collection, storage locations | ⬜ |
 | 3 | Decks, format rules, legality, import/export | ⬜ |
 | 4 | Optimizer, simulation, collection constraint | ⬜ |
@@ -61,6 +61,23 @@ The project ships in phases. It stays usable at the end of each one.
 ## Installation
 
 No release yet. See [CONTRIBUTING.md](CONTRIBUTING.md) to build from source.
+
+What works today, from a checkout:
+
+```bash
+cargo run --release -p build-artifacts
+```
+
+Downloads Scryfall's oracle bulk file and writes `artifacts/cards.rkyv` — 35,306 cards,
+25.9 MB, about 6 seconds. Then query it:
+
+```bash
+cargo run --release -p mtg-data --example search -- --name "Bonecrusher Giant // Stomp"
+```
+
+```bash
+cargo run --release -p mtg-data --example search -- --identity WU --format commander --type Legendary --type Creature
+```
 
 ---
 

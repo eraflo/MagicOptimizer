@@ -1,6 +1,7 @@
 # Data pipeline
 
-> **Status** — design document. Shipped in phase 1.
+> **Status** — the oracle catalog half is **implemented** (phase 1). The remaining artifacts
+> are design only.
 
 `tools/build-artifacts` is a development CLI that turns public sources into compact binary
 artifacts. **It never runs inside the app.**
@@ -13,9 +14,9 @@ device only has to memory-map.
 
 ## Artifacts produced
 
-| File | Source | Target size | Contents |
+| File | Source | Size | Contents |
 |---|---|---|---|
-| `cards.rkyv` | Scryfall bulk `oracle-cards` | 15–25 MB | One entry per oracle card: name, cost, cmc, colors, identity, types, text, P/T, keywords, legalities, EDHREC rank, Game Changer flag |
+| `cards.rkyv` ✅ | Scryfall bulk `oracle-cards` | **25.9 MB measured** | One entry per oracle card: name, cost, cmc, colors, identity, types, text, P/T, keywords, legalities, EDHREC rank, Game Changer flag |
 | `printings.rkyv` | Scryfall bulk `default-cards` | ~10 MB | Printings: set, collector number, language, artwork, prices |
 | `arthashes.bin` | Scryfall `unique-artwork` + images | ~2 MB | 50,000 × 256-bit pHash with the matching printing id |
 | `meta.rkyv` | `json.edhrec.com` | ~5 MB | Inclusion rates, synergy scores |
@@ -35,6 +36,31 @@ startup.
 - Stay under **10 requests/second**, and under **2/s** on `/cards/collection`.
 - Downloading the ~50,000 artwork images to compute hashes is the longest step. It runs once per
   build, rate-limited and resumable after an interruption.
+
+### Measured, 2026-08-17
+
+Building `cards.rkyv` from a cold cache: a 24.5 MB gzipped download, then **35,306 cards and
+3,320 tokens and emblems skipped, in 5.6 seconds**, producing a 25.9 MB artifact.
+
+Two findings from that first real run are worth keeping:
+
+* **`game_changer` is a field Scryfall already provides.** The build produced exactly **53**
+  flagged cards, matching the official Commander list. No separate Game Changers list has to be
+  fetched or maintained anywhere.
+* **The format list had already drifted** from what the docs suggested: `explorer` is gone, and
+  `competitivebrawl` and `tlr` are new. This is exactly the failure the unknown-key report below
+  exists to catch.
+
+### Detecting format drift
+
+Every legality key Scryfall sends is mapped through `Format::from_scryfall_key`. Unmapped keys
+are collected and printed as a loud warning at the end of the run, because the alternative is
+invisible data loss — cards would simply stop appearing in searches for that format, with
+nothing anywhere saying why.
+
+When the warning fires: add the variant to `mtg_core::Format`, update `LEGALITY_SLOTS`, bump
+`FORMAT_VERSION`, and update the pinned list in the `format_list_matches_scryfall_as_observed`
+test.
 
 ### EDHREC and Commander Spellbook
 
