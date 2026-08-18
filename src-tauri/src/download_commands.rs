@@ -33,9 +33,11 @@ type CommandResult<T> = Result<T, String>;
 
 /// Where the artifacts live.
 ///
-/// The rolling `nightly` release, because that is what the build publishes. A tagged release
-/// would be steadier, and there is not one yet.
-const BASE: &str = "https://github.com/eraflo/MagicOptimizer/releases/download/nightly";
+/// A release of their own, **not** `nightly`. The nightly workflow deletes and recreates its
+/// release on every push to `main`, which already threw away an APK that had been attached by
+/// hand. Data has a different lifetime from builds anyway: it changes when Scryfall publishes a
+/// set, not when someone edits a comment.
+const BASE: &str = "https://github.com/eraflo/MagicOptimizer/releases/download/data";
 
 /// One downloadable artifact.
 pub struct Artifact {

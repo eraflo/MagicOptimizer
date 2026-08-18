@@ -24,8 +24,18 @@ device only has to memory-map.
 | `combos.rkyv` ✅ | Commander Spellbook bulk dump | **53.8 MB measured** | Combos: required cards, produced result, colour identity, Commander legality |
 | `embeddings.bin` ⛔ | Public decklist corpus | 5–9 MB | 35,000 × 64 dimensions in f16. **Blocked**: no such corpus is actually available — see [ml.md](ml.md#corpus--this-is-the-blocker-and-it-was-an-assumption-rather-than-a-fact) |
 
-Published as **GitHub Releases**, never committed. The app checks a version and a checksum at
-startup.
+Published as **GitHub Releases**, never committed. They live in a release tagged `data`,
+deliberately **not** `nightly`: the nightly workflow deletes and recreates its release on every
+push to `main`, which already destroyed an APK attached by hand. Data also has a different
+lifetime from builds — it changes when Scryfall publishes a set, not when someone edits a
+comment.
+
+The app downloads them itself on first run; see `src-tauri/src/download_commands.rs`. Refresh
+them after a set release with `--all`, then re-upload:
+
+```bash
+gh release upload data artifacts/cards.rkyv artifacts/arthashes.bin artifacts/combos.rkyv --clobber
+```
 
 ## Source constraints
 

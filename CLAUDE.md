@@ -200,6 +200,9 @@ fix it, do not silence it with `#[allow]` unless you write the justification in 
 - **Do not add a search index without a measurement first.** The linear scan is ~5 ms over the
   whole catalog. An inverted index would be cost with no benefit today; see
   `docs/dev/architecture.md` for the numbers to beat.
+- **Data artifacts live in the `data` release, never `nightly`.** The nightly workflow deletes
+  and recreates its release on every push to `main` — that already destroyed an APK someone had
+  attached by hand. Anything meant to outlive a push goes in `data`, which CI does not touch.
 - **The Android build has host requirements that cost an hour each to rediscover**, and none of
   them is about this project's code: Tauri needs the SDK **Command-line Tools** as well as the
   NDK; Android refuses a version of `0.0.0`; Windows refuses the symlink Tauri makes into
