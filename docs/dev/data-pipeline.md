@@ -30,7 +30,11 @@ push to `main`, which already destroyed an APK attached by hand. Data also has a
 lifetime from builds — it changes when Scryfall publishes a set, not when someone edits a
 comment.
 
-The app downloads them itself on first run; see `src-tauri/src/download_commands.rs`. Refresh
+The app downloads them itself on first run; see `src-tauri/src/download_commands.rs`. That
+module carries its own TLS stack — `rustls` with `ring` and bundled roots — because Tauri's
+`reqwest` brings no TLS backend of its own and the default one does not cross-compile to Android.
+`cargo test -p magicoptimizer -- --ignored` fetches one byte of each URL and checks the size, and
+is the only test that can catch either the stack or the release being wrong. Refresh
 them after a set release with `--all`, then re-upload:
 
 ```bash

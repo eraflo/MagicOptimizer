@@ -15,13 +15,21 @@
 //! deliberate restriction for no gain. Rust has no such limit, and a command is the natural
 //! place for something that writes to the app's data directory anyway.
 //!
-//! `reqwest` is already in the tree — Tauri depends on it and has already chosen a TLS backend.
-//! No provider is named in `Cargo.toml` on purpose: asking for `rustls` explicitly pulls in
-//! `aws-lc-rs`, which is C, and Cargo's feature unification means the app links whatever Tauri
-//! enabled either way. Invariant 1 is about the crates under `crates/`; `src-tauri` was always
-//! going to link whatever the shell needs.
+//! # Why the TLS stack is spelled out
+//!
+//! `reqwest` is already in the tree because Tauri depends on it — but Tauri enables only `json`,
+//! **not** a TLS backend. Relying on that was this module's first bug: with no TLS feature the
+//! binary cannot open an `https` URL at all, so every download failed with "could not reach",
+//! on the phone and on the desktop alike.
+//!
+//! The backend is therefore named here, and named narrowly. reqwest's own `rustls` feature pulls
+//! `aws-lc-rs`, which is C and wants cmake, so it does not cross-compile to Android without the
+//! pain invariant 1 exists to avoid. `ring` does. Roots are bundled rather than read from the
+//! platform, because reqwest 0.13 verifies through `rustls-platform-verifier`, and on Android
+//! that has to be handed a JVM over JNI before it will trust anything.
 
 use std::path::PathBuf;
+use std::sync::Arc;
 
 use serde::Serialize;
 use tauri::{AppHandle, Emitter, Manager, State};
@@ -105,6 +113,29 @@ struct Progress {
     total: u64,
 }
 
+/// An HTTPS client with an explicit provider and an explicit root store.
+///
+/// Built per download rather than kept around: one runs at a time, started by hand, and a client
+/// held in state would be one more thing to keep alive across a suspend on Android.
+fn client() -> CommandResult<reqwest::Client> {
+    let roots = rustls::RootCertStore {
+        roots: webpki_roots::TLS_SERVER_ROOTS.to_vec(),
+    };
+
+    let config = rustls::ClientConfig::builder_with_provider(Arc::new(
+        rustls::crypto::ring::default_provider(),
+    ))
+    .with_safe_default_protocol_versions()
+    .map_err(|e| format!("the TLS configuration was refused: {e}"))?
+    .with_root_certificates(roots)
+    .with_no_client_auth();
+
+    reqwest::Client::builder()
+        .use_preconfigured_tls(config)
+        .build()
+        .map_err(|e| format!("could not start the downloader: {e}"))
+}
+
 fn find(name: &str) -> CommandResult<&'static Artifact> {
     ARTIFACTS
         .iter()
@@ -159,7 +190,9 @@ pub async fn artifacts_download(
         .map_err(|e| format!("could not create {}: {e}", dir.display()))?;
 
     let url = format!("{BASE}/{}", artifact.file);
-    let response = reqwest::get(&url)
+    let response = client()?
+        .get(&url)
+        .send()
         .await
         .map_err(|e| format!("could not reach {url}: {e}"))?;
 
@@ -313,5 +346,60 @@ mod tests {
             .map(|a| a.name)
             .collect();
         assert_eq!(required, ["cards"]);
+    }
+
+    /// Every published artifact is actually fetchable, over real TLS, from a real network.
+    ///
+    /// `#[ignore]` because it needs the internet and CI must not depend on GitHub being up. Run
+    /// it after changing anything about the TLS stack, the URL, or the release:
+    ///
+    /// ```text
+    /// cargo test -p magicoptimizer -- --ignored --nocapture
+    /// ```
+    ///
+    /// It exists because the failure it catches is invisible to every other test here. The
+    /// downloader once shipped with no TLS backend compiled in at all — the constants were
+    /// right, the names matched, the unit tests passed, and not one byte could ever arrive.
+    #[tokio::test]
+    #[ignore = "needs the network"]
+    async fn every_published_artifact_can_actually_be_fetched() {
+        let client = client().expect("the downloader should start");
+        for artifact in ARTIFACTS {
+            let url = format!("{BASE}/{}", artifact.file);
+            // One byte, by range. A `HEAD` reaches the CDN the release redirects to and comes
+            // back without a `Content-Length`, which would leave the size unchecked; a range
+            // request answers `206` with the full length in `Content-Range`.
+            let response = client
+                .get(&url)
+                .header("range", "bytes=0-0")
+                .send()
+                .await
+                .unwrap_or_else(|e| panic!("could not reach {url}: {e}"));
+            assert!(
+                response.status().is_success(),
+                "{url} answered {}",
+                response.status()
+            );
+            let bytes = response
+                .headers()
+                .get("content-range")
+                .and_then(|value| value.to_str().ok())
+                .and_then(|value| value.rsplit('/').next())
+                .and_then(|total| total.parse::<u64>().ok())
+                .unwrap_or_else(|| panic!("{url} did not say how large it is"));
+            println!(
+                "{:>14}  {}  {bytes} bytes",
+                artifact.file,
+                response.status()
+            );
+            // Within a factor of two of the advertised size: enough to catch an asset replaced
+            // by an error page, without pinning a number that grows with every set.
+            let advertised = u64::from(artifact.megabytes) * 1_000_000;
+            assert!(
+                bytes > advertised / 2 && bytes < advertised * 2,
+                "{} is {bytes} bytes but the UI promises about {advertised}",
+                artifact.file
+            );
+        }
     }
 }

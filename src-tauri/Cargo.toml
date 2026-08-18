@@ -30,11 +30,31 @@ mtg-journal = { path = "../crates/mtg-journal" }
 mtg-optimizer = { path = "../crates/mtg-optimizer" }
 mtg-vision = { path = "../crates/mtg-vision" }
 tauri = { version = "2", features = [] }
-# Already in the tree: Tauri depends on it and has already chosen a TLS backend. No provider is
-# named here on purpose — selecting one pulls `aws-lc-rs`, which is C, and Cargo's feature
-# unification means the app links whatever Tauri already enabled either way. The app fetches
-# static release assets over HTTPS; there is no server anywhere in this.
-reqwest = { version = "0.13", default-features = false, features = ["stream", "charset"] }
+# HTTPS for the artifact downloader. Every part of this line was chosen against a constraint.
+#
+# `default-features = false` first: reqwest's default is `rustls`, which pulls `aws-lc-rs` — C,
+# and it needs cmake to cross-compile. That is exactly what invariant 1 exists to prevent, and
+# the resolver refuses it for `aarch64-linux-android` outright.
+#
+# `rustls-no-provider` therefore, with `ring` supplied as the provider below: pure enough to
+# cross-compile to Android with nothing but the NDK.
+#
+# An earlier version of this line named no TLS feature at all, on the assumption that Tauri had
+# already chosen a backend. It has not — Tauri enables only `json` — so the app shipped with no
+# way to open an `https` URL, and every download failed with "could not reach". Check
+# `cargo tree -e features` before believing that again.
+reqwest = { version = "0.13", default-features = false, features = [
+    "stream",
+    "charset",
+    "rustls-no-provider",
+] }
+# The provider and the root store, both explicit. reqwest 0.13 verifies against
+# `rustls-platform-verifier`, which on Android has to be handed a JVM through JNI before it can
+# read the system trust store — a setup step this app has no other reason to carry. Bundled
+# Mozilla roots behave identically on both targets and on a device that has never been updated,
+# which suits an app whose whole point is working offline.
+rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
+webpki-roots = "1"
 tokio = { version = "1", features = ["fs", "io-util"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
@@ -42,3 +62,6 @@ thiserror = "2"
 
 [dev-dependencies]
 tempfile = "3"
+# Only the test runtime. The app's own tokio features stay narrow; a `#[tokio::test]` needs a
+# scheduler and the macro, neither of which belongs in a shipped binary.
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }

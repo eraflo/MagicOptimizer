@@ -200,6 +200,20 @@ fix it, do not silence it with `#[allow]` unless you write the justification in 
 - **Do not add a search index without a measurement first.** The linear scan is ~5 ms over the
   whole catalog. An inverted index would be cost with no benefit today; see
   `docs/dev/architecture.md` for the numbers to beat.
+- **Tauri does not give you a TLS backend, and nothing warns you.** `reqwest` is in the tree
+  because Tauri depends on it, but Tauri enables only `json`. The downloader shipped with
+  `default-features = false` and no TLS feature, on the assumption that feature unification would
+  supply one; it does not, so the binary could not open an `https` URL at all and every download
+  failed with "could not reach" — on the phone and on the desktop alike, with every unit test
+  green. `src-tauri` now names the stack explicitly: `rustls-no-provider` with **`ring`**, because
+  reqwest's own `rustls` feature pulls `aws-lc-rs`, which is C, wants cmake, and the resolver
+  refuses it for `aarch64-linux-android` outright. Roots are **bundled** (`webpki-roots`) rather
+  than the platform's, because reqwest 0.13 verifies through `rustls-platform-verifier` and on
+  Android that must be handed a JVM over JNI first. `ring` is C, and is the deliberate second
+  exception to invariant 1 — checked against `aarch64-linux-android` before being added, and it
+  needs the NDK's clang, which `cargo tauri android` puts on the path. Run
+  `cargo test -p magicoptimizer -- --ignored` to prove the artifacts really arrive; that test
+  exists because no offline test can catch a missing TLS backend.
 - **Data artifacts live in the `data` release, never `nightly`.** The nightly workflow deletes
   and recreates its release on every push to `main` — that already destroyed an APK someone had
   attached by hand. Anything meant to outlive a push goes in `data`, which CI does not touch.
