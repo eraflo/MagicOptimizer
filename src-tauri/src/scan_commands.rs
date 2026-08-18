@@ -274,6 +274,14 @@ mod tests {
 
         assert_eq!(state.artworks(), 0);
         assert!(state.art_error().is_some(), "the reason should be recorded");
-        assert!(state.with_scanner(|_| ()).is_err());
+
+        // The scanner still exists, around an empty database. Detection, rectification and the
+        // outline all work without the fingerprints — only naming a card does not — and
+        // refusing here used to hide the start button, which made it impossible to find out
+        // whether the camera opens at all. That was reported from a phone.
+        assert!(
+            state.with_scanner(|_| ()).is_ok(),
+            "the camera must be able to run before the fingerprints are downloaded"
+        );
     }
 }
