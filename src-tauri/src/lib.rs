@@ -10,6 +10,7 @@ mod journal_commands;
 mod optimize_commands;
 mod scan_commands;
 mod state;
+mod sync_commands;
 
 use tauri::Manager;
 
@@ -69,6 +70,9 @@ pub fn run() {
             journal_commands::journal_remove,
             journal_commands::journal_list,
             journal_commands::journal_deck_history,
+            sync_commands::sync_status,
+            sync_commands::sync_export,
+            sync_commands::sync_import,
         ])
         .run(tauri::generate_context!())
         .expect("the application failed to start");

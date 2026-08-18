@@ -56,7 +56,7 @@ The project ships in phases. It stays usable at the end of each one.
 | 6 | Android and video scanning | 🟨 scanning done, Android untested on a device |
 | 7 | Game log | ✅ done |
 | 8 | Continuously trained personal model | ⬜ |
-| 9 | Sync, pricing, translations | ⬜ |
+| 9 | Sync, pricing, translations | 🟨 backup and transfer done; pricing and translations to come |
 
 ---
 

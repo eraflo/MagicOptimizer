@@ -28,8 +28,10 @@ import type {
   DeckHistory,
   Game,
   GameInput,
+  ImportSummary,
   ScanResult,
   ScanStatus,
+  SyncStatus,
   SearchResult,
   Stats,
 } from "./types";
@@ -257,4 +259,25 @@ export function journalList(): Promise<Game[]> {
  */
 export function journalDeckHistory(deckId: number, since?: string): Promise<DeckHistory> {
   return invoke("journal_deck_history", { deckId, since: since ?? null });
+}
+
+// --- Backup and transfer ---------------------------------------------------
+
+export function syncStatus(): Promise<SyncStatus> {
+  return invoke("sync_status");
+}
+
+/** Everything the user created, as JSON text for the page to save. */
+export function syncExport(): Promise<string> {
+  return invoke("sync_export");
+}
+
+/**
+ * Reads a backup back in.
+ *
+ * `force` is required when anything is already stored: importing adds to what is there rather
+ * than replacing it, so the same cards entered twice would count twice.
+ */
+export function syncImport(contents: string, force: boolean): Promise<ImportSummary> {
+  return invoke("sync_import", { contents, force });
 }

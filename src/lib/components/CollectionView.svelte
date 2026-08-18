@@ -1,5 +1,6 @@
 <script lang="ts">
   import * as api from "../api";
+  import BackupPanel from "./BackupPanel.svelte";
   import { CONDITIONS } from "../types";
   import type { Holding, Pool, Stats } from "../types";
 
@@ -171,6 +172,10 @@
       {/each}
     </div>
   {/if}
+
+  <!-- Placed here rather than in a settings screen the app does not have: the collection is
+       the largest thing a person would hate to lose, so this is where they will look for it. -->
+  <BackupPanel onImported={onchanged} />
 </section>
 
 <style>

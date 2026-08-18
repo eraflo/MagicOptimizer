@@ -465,3 +465,14 @@ export type GameInput = {
   endedOnTurn?: number | null;
   notes?: string;
 };
+
+// --- Backup and transfer ---------------------------------------------------
+
+export type SyncStatus = {
+  holdings: number;
+  decks: number;
+  games: number;
+  empty: boolean;
+};
+
+export type ImportSummary = { holdings: number; decks: number; games: number };
