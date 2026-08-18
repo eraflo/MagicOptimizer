@@ -29,7 +29,7 @@ canvas already decoded.
 4. **Hash** (`hash.rs`) — box-sample to a 17×16 grid, compare horizontally: **256 bits**.
 5. **Match** (`matcher.rs`) — brute force over `arthashes.bin`. 50,391 entries at 32 bytes is
    1.6 MB, small enough to sit in cache; an approximate index would be more code and another
-   failure mode for microseconds nobody would notice.
+   failure mode for microseconds nobody would notice. The 6.2 MB archive opens in **10 ms**.
 6. **Vote** (`vote.rs`) — 5 agreeing frames out of a window of 12, then one confirmation per
    card presented.
 
@@ -50,22 +50,27 @@ out of scope.
 build, downloads the real images again, and distorts them the way a camera would — perspective,
 blur, sensor noise, an unevenly lit table. Ten cards × two poses × seven background shades.
 
-Background brightness turned out to dominate everything else. With the shipped settings, ten
-cards per cell:
+Background brightness turned out to dominate everything else. With the shipped settings, against
+the complete 50,391-artwork archive, ten cards per cell:
 
 | Table brightness | Square on | Tilted and blurred |
 |---|---|---|
-| 18 (near black) | 2 | 0 |
-| 50 | 7 | 7 |
-| 80 | 9 | 8 |
-| 110 | **10** | **10** |
+| 18 (near black) | 2 | 2 |
+| 50 | 8 | 7 |
+| 80 | 6 | 7 |
+| 110 | 9 | 9 |
 | 140 | **10** | **10** |
-| 170 | 5 | 6 |
-| 210 (near white) | 10 | 2 |
+| 170 | 6 | 10 |
+| 210 (near white) | 9 | 4 |
 
-Run it again and the numbers move by a card or two: the sample is drawn from whatever
-`.cache/arthashes.jsonl` holds, which grows as the artwork build progresses. The shape is
-stable, and the shape is the point.
+Run it again and the numbers move by a card or two — the sample is ten cards drawn across the
+archive, so which ten changes the totals. The shape does not: near-black fails, mid-tone is
+where it works, and the very light end starts losing the pale parts of the artwork.
+
+The full archive is the load-bearing part of that table. An earlier run over a *partial* build of
+19,000 artworks scored much the same, which was the open question: 50,391 entries give every card
+two and a half times as many chances to have a near neighbour close enough to look ambiguous.
+The rate held and the `wrong` column stayed at zero, so the margin rule scales.
 
 **Magic cards have a black border.** Against a table as dark as that border there is nothing to
 separate: what gets found is the card's bright interior, a few percent smaller, and that shift is
@@ -79,10 +84,10 @@ intuitive advice. Two tests, `a_black_bordered_card_on_a_dark_table_is_not_found
 The contrast threshold was calibrated the same way rather than guessed: 24 recognised 105 of 140
 photographs against 87 for the 34 it started at, and won at every background brightness.
 
-**Across all 280 attempts the scanner named a card correctly or declined — it never named the
-wrong one.** That is the property `DEFAULT_MAX_DISTANCE` and `DEFAULT_MARGIN` exist to protect,
-and it is why declined frames are not worth optimising away: the voter simply waits for the next
-one.
+**Across every run — 280 attempts during calibration, 140 more against the finished archive —
+the scanner named a card correctly or declined. It has never named the wrong one.** That is the
+property `DEFAULT_MAX_DISTANCE` and `DEFAULT_MARGIN` exist to protect, and it is why declined
+frames are not worth optimising away: the voter simply waits for the next one.
 
 ## Sensitive points
 

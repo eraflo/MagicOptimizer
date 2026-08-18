@@ -1,7 +1,8 @@
 # Data pipeline
 
-> **Status** — the oracle catalog half is **implemented** (phase 1). The remaining artifacts
-> are design only.
+> **Status** — `cards.rkyv`, `combos.rkyv` and `arthashes.bin` are **built and measured**; the
+> sizes below marked "measured" come from real runs. `printings.rkyv`, `meta.rkyv` and
+> `embeddings.bin` are design only.
 
 `tools/build-artifacts` is a development CLI that turns public sources into compact binary
 artifacts. **It never runs inside the app.**
@@ -18,7 +19,7 @@ device only has to memory-map.
 |---|---|---|---|
 | `cards.rkyv` ✅ | Scryfall bulk `oracle-cards` | **25.9 MB measured** | One entry per oracle card: name, cost, cmc, colors, identity, types, text, P/T, keywords, legalities, EDHREC rank, Game Changer flag |
 | `printings.rkyv` | Scryfall bulk `default-cards` | ~10 MB | Printings: set, collector number, language, artwork, prices |
-| `arthashes.bin` ✅ | Scryfall `unique-artwork` + images | ~6.5 MB | **50,391 measured** × 256-bit pHash with the matching printing and oracle id |
+| `arthashes.bin` ✅ | Scryfall `unique-artwork` + images | **6.2 MB measured** | **50,391 measured** × 256-bit pHash with the matching printing and oracle id |
 | `meta.rkyv` | `json.edhrec.com` | ~5 MB | Inclusion rates, synergy scores |
 | `combos.rkyv` ✅ | Commander Spellbook bulk dump | **53.8 MB measured** | Combos: required cards, produced result, colour identity, Commander legality |
 | `embeddings.bin` | Public decklist corpus | 5–9 MB | 35,000 × 64 dimensions in f16 |
@@ -84,8 +85,8 @@ sniffs the gzip magic number instead of assuming either way.
 ### Artwork hashes
 
 `arthashes.bin` is what the camera scanner matches against. Building it means downloading one
-image per distinct artwork — 50,391 of them as of 2026-08-17, roughly 5 GB and 84 minutes at the
-100 ms spacing Scryfall asks for.
+image per distinct artwork — 50,391 of them as of 2026-08-17. A full run took **1 h 52 min** and
+produced a 6.2 MB artifact, with **no image failing to download**.
 
 Two decisions in there are load-bearing.
 

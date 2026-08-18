@@ -17,7 +17,8 @@ use std::io::BufRead;
 
 use anyhow::{Context, Result};
 use mtg_vision::{
-    homography_from_quads, rgba_to_gray, ArtDatabase, ArtEntry, ArtHash, GrayImage, Quad, Scanner,
+    archive, homography_from_quads, rgba_to_gray, ArtDatabase, ArtEntry, ArtHash, GrayImage, Quad,
+    Scanner,
 };
 use serde::Deserialize;
 
@@ -92,25 +93,46 @@ fn poses() -> Vec<Pose> {
 }
 
 fn main() -> Result<()> {
+    // The resume file is what a partial build leaves behind and is what makes this runnable
+    // before the hours-long download finishes. Once `arthashes.bin` exists it is preferred:
+    // that is the file the app actually reads, so verifying against it exercises the shipping
+    // path — including the archive reader — rather than a lookalike built here.
     let records = load_records(".cache/arthashes.jsonl")?;
-    if records.is_empty() {
-        anyhow::bail!("no hashes in .cache/arthashes.jsonl — run `--art-only` first, even briefly");
-    }
+    let archive_path = std::path::Path::new("artifacts/arthashes.bin");
 
-    let database = ArtDatabase::new(
-        records
-            .iter()
-            .filter_map(|record| {
-                Some(ArtEntry {
-                    hash: ArtHash::from_hex(&record.hash)?,
-                    printing_id: record.printing_id.clone(),
-                    oracle_id: record.oracle_id.clone(),
-                    name: record.name.clone(),
+    let database = if archive_path.exists() {
+        let file = std::fs::File::open(archive_path)?;
+        let started = std::time::Instant::now();
+        let database = archive::read(&mut std::io::BufReader::with_capacity(1 << 16, file))
+            .context("reading artifacts/arthashes.bin")?;
+        println!(
+            "Database: {} artworks from arthashes.bin, opened in {:.0} ms",
+            database.len(),
+            started.elapsed().as_secs_f64() * 1000.0
+        );
+        database
+    } else if !records.is_empty() {
+        let database = ArtDatabase::new(
+            records
+                .iter()
+                .filter_map(|record| {
+                    Some(ArtEntry {
+                        hash: ArtHash::from_hex(&record.hash)?,
+                        printing_id: record.printing_id.clone(),
+                        oracle_id: record.oracle_id.clone(),
+                        name: record.name.clone(),
+                    })
                 })
-            })
-            .collect(),
-    );
-    println!("Database: {} artworks", database.len());
+                .collect(),
+        );
+        println!(
+            "Database: {} artworks from a partial build (no arthashes.bin yet)",
+            database.len()
+        );
+        database
+    } else {
+        anyhow::bail!("no hashes anywhere — run `--art-only` first, even briefly");
+    };
 
     // Spread across the file rather than the first few, which are all basic lands from one set.
     let step = (records.len() / 12).max(1);
