@@ -53,7 +53,7 @@ The project ships in phases. It stays usable at the end of each one.
 | 3 | Decks, format rules, legality, import/export | ✅ done |
 | 4 | Optimizer, simulation, collection constraint | ✅ done |
 | 5 | Combo detection, Commander brackets | ✅ done |
-| 6 | Android and video scanning | 🟨 scanning done, Android untested on a device |
+| 6 | Android and video scanning | 🟨 APK builds and installs; not yet run on a device |
 | 7 | Game log | ✅ done |
 | 8 | Continuously trained personal model | ⬜ |
 | 9 | Sync, pricing, translations | 🟨 backup and transfer done; pricing and translations to come |

@@ -157,3 +157,59 @@ jobs:
           tagName: nightly
           releaseId: ${{ needs.prepare.outputs.release_id }}
           args: ${{ matrix.args }}
+
+  # Android is a separate job rather than a matrix row: it needs a JDK, the NDK and four Rust
+  # targets, and it produces its artifact through Gradle rather than through tauri-action.
+  #
+  # It exists because the release is deleted and recreated on every push, which quietly threw
+  # away an APK that had been uploaded by hand. Anything that should be in a release has to be
+  # built by the release.
+  android:
+    name: Android (arm64)
+    needs: prepare
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # 21, not the newest available. The generated project uses Android Gradle Plugin 8.11,
+      # which answers `Unsupported class file major version 69` to a Java 25 toolchain.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+          key: android
+
+      - run: npm ci
+
+      # The runner ships an NDK; Tauri wants to be told which one.
+      - name: Point at the NDK
+        run: echo "NDK_HOME=$ANDROID_NDK_LATEST_HOME" >> "$GITHUB_ENV"
+
+      # Linux has no trouble with the symlink into jniLibs that fails on Windows, so the
+      # ordinary command works here and the local workaround in docs/dev/android.md is not
+      # needed. The APK is signed with Gradle's generated debug key, which is enough to install
+      # but not to publish — a real signing key is still to come.
+      - name: Build the APK
+        run: npm run tauri -- android build --debug --target aarch64
+
+      - name: Attach it to the nightly release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          apk=$(find src-tauri/gen/android -name "*.apk" | head -1)
+          test -n "$apk" || { echo "no APK was produced"; exit 1; }
+          cp "$apk" "MagicOptimizer-arm64-debug.apk"
+          gh release upload nightly "MagicOptimizer-arm64-debug.apk" --clobber

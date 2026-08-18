@@ -73,6 +73,16 @@ is what stands between here and an APK in a GitHub release.
 *Settings -> Build Tools -> Gradle -> Gradle JDK -> Download JDK*, or `winget install
 Microsoft.OpenJDK.21`.
 
+## The nightly release deletes and recreates itself
+
+Every push to `main` deletes the `nightly` release and makes a new one, so **anything uploaded by
+hand disappears at the next push**. That happened once: an APK was attached manually and was gone
+within the hour.
+
+Whatever belongs in a release has to be built by the release. `nightly.yml` therefore has an
+`android` job that builds the APK on Ubuntu — where the jniLibs symlink causes no trouble — with
+a Temurin 21 toolchain, and attaches it. Do not go back to uploading by hand.
+
 ## The version cannot be 0.0.0
 
 Android refuses it outright. That is why the workspace moved to `0.0.1`; `Cargo.toml`,
