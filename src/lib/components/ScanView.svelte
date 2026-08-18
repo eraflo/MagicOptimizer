@@ -20,8 +20,30 @@
    */
   const CAPTURE_WIDTH = 640;
 
-  /** Between frames. Ten a second is well inside the budget and feels immediate. */
+  /**
+   * The same, on a phone.
+   *
+   * Every frame is a fresh buffer crossing the IPC bridge, and at 640 wide, ten times a second,
+   * that is 3 MB a second of garbage for the WebView to collect. A phone reported the camera
+   * dying after fifteen to twenty seconds, which is about what that adds up to. Detection works
+   * at 320 internally, so 480 loses nothing that mattered.
+   */
+  const CAPTURE_WIDTH_TOUCH = 480;
+
+  /** Between frames. */
   const FRAME_INTERVAL = 100;
+
+  /**
+   * The same, on a phone: five a second rather than ten.
+   *
+   * The documented budget was always 5–10 fps on a mid-range phone, and the voter needs five
+   * frames to agree — one second at this rate, which is the pause a person makes anyway.
+   */
+  const FRAME_INTERVAL_TOUCH = 200;
+
+  /** Coarse pointer rather than width: a narrow desktop window is still a desktop. */
+  const onTouch =
+    typeof matchMedia === "function" && matchMedia("(pointer: coarse)").matches;
 
   /** Consecutive failures before the camera is given up on. */
   const MAX_FRAME_FAILURES = 15;
@@ -120,7 +142,7 @@
     }
 
     running = true;
-    timer = setInterval(() => void grab(), FRAME_INTERVAL);
+    timer = setInterval(() => void grab(), onTouch ? FRAME_INTERVAL_TOUCH : FRAME_INTERVAL);
   }
 
   function stop() {
@@ -147,7 +169,7 @@
     const sourceHeight = video.videoHeight;
     if (!sourceWidth || !sourceHeight) return;
 
-    const width = Math.min(CAPTURE_WIDTH, sourceWidth);
+    const width = Math.min(onTouch ? CAPTURE_WIDTH_TOUCH : CAPTURE_WIDTH, sourceWidth);
     const height = Math.round((sourceHeight / sourceWidth) * width);
 
     if (!grabber) grabber = document.createElement("canvas");

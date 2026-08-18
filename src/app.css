@@ -39,13 +39,13 @@ html,
 body {
   margin: 0;
   height: 100%;
-}
-
-body {
-  /* Keeps content clear of notches and gesture bars on Android. Paired with
-     viewport-fit=cover in index.html. */
-  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
-    env(safe-area-inset-left);
+  /* The shell fills the window exactly; only panes inside it scroll. Without this the page
+     itself scrolled on a phone and took the bottom bar below the fold with it. */
+  overflow: hidden;
+  /* Insets are applied by the pieces that touch the edges — the top bar and the bottom
+     navigation — rather than here. Padding on `body` sat *outside* a `100vh` shell, which made
+     the document taller than the window by exactly the inset. */
+  overscroll-behavior: none;
 }
 
 body {
@@ -58,9 +58,13 @@ body {
 }
 
 #app {
+  /* `dvh`, not `vh`: on a phone `100vh` is the *large* viewport height and ignores the browser
+     chrome, so the last hundred pixels sit off-screen. The `vh` line is the fallback. */
   height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 button {

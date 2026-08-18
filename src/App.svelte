@@ -369,6 +369,8 @@
 
 <style>
   .app-bar {
+    /* The inset lives here now, on the element that actually touches the notch. */
+    padding-top: calc(9px + env(safe-area-inset-top, 0px));
     display: flex;
     align-items: center;
     gap: 24px;
