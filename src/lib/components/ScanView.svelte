@@ -299,21 +299,26 @@ ${written} card${written === 1 ? "" : "s"} were added. ` +
 
     {#if !running}
       <div class="curtain">
-        {#if status && !status.loaded}
-          <p class="headline">No artwork fingerprints installed</p>
-          <p class="hint">
-            Recognition needs <code>arthashes.bin</code>, an optional download of about 6 MB.
-            Build it yourself with:
-          </p>
-          <pre>cargo run --release -p build-artifacts -- --art-only</pre>
-          {#if status.error}<p class="reason">{status.error}</p>{/if}
-          <button onclick={() => void api.scanReload().then((s) => (status = s))}>
-            Check again
-          </button>
-        {:else if cameraError}
+        {#if cameraError}
           <p class="headline">Camera unavailable</p>
           <p class="reason">{cameraError}</p>
           <button onclick={() => void start()}>Try again</button>
+        {:else if status && !status.loaded}
+          <!-- The camera still starts. Detection, rectification and the outline all work
+               without the fingerprints — only naming a card does not — and blocking the button
+               here made it impossible to find out whether the camera opens at all, which is the
+               one thing a fresh install needs to tell us. -->
+          <p class="headline">No artwork fingerprints installed</p>
+          <p class="hint">
+            The camera works, and the outline will show what it finds — but nothing can be named
+            without <code>arthashes.bin</code>, an optional download of about 6 MB. Build it with:
+          </p>
+          <pre>cargo run --release -p build-artifacts -- --art-only</pre>
+          {#if status.error}<p class="reason">{status.error}</p>{/if}
+          <button class="primary" onclick={() => void start()}>Start the camera anyway</button>
+          <button onclick={() => void api.scanReload().then((s) => (status = s))}>
+            Check again
+          </button>
         {:else}
           <p class="headline">Ready to scan</p>
           <p class="hint">

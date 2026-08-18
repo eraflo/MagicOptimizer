@@ -201,8 +201,12 @@ impl AppState {
         };
 
         let count = database.as_ref().map(ArtDatabase::len).unwrap_or(0);
+        // A scanner is built even when the fingerprints are missing, around an empty database.
+        // Detection, rectification and the outline all still work — only naming a card does not
+        // — and refusing to start the camera would make the one thing worth testing on a fresh
+        // install impossible to test. `mtg-vision` has a test for exactly this case.
         if let Ok(mut slot) = self.scanner.lock() {
-            *slot = database.map(Scanner::new);
+            *slot = Some(Scanner::new(database.unwrap_or_default()));
         }
         if let Ok(mut slot) = self.art_error.write() {
             *slot = error;

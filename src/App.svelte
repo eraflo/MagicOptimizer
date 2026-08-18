@@ -247,7 +247,11 @@
   <p class="error">{error}</p>
 {/if}
 
-{#if status && !status.loaded}
+<!-- Only Browse actually needs the catalog. Decks, the collection, the journal and the backup
+     panel all work without it, and gating every tab on it left the whole app frozen on this
+     screen — clicking a tab changed `tab` while this branch kept winning. That is exactly what a
+     fresh Android install looks like, since the in-app downloader does not exist yet. -->
+{#if tab === "browse" && status && !status.loaded}
   <div class="setup">
     <h2>No card data yet</h2>
     <p>
