@@ -77,6 +77,7 @@ pub fn deck_optimize(
     pool: String,
     iterations: Option<u32>,
     only_played_cards: Option<bool>,
+    max_bracket: Option<u8>,
 ) -> CommandResult<SearchResult> {
     let archetype = parse_archetype(&archetype)?;
     let card_pool = build_pool(&state, &pool)?;
@@ -92,6 +93,9 @@ pub fn deck_optimize(
         // Capped: this runs on the UI thread's command worker, and an unbounded value from
         // the frontend would freeze the window.
         settings.iterations = iterations.unwrap_or(1_200).clamp(50, 5_000);
+        // Only meaningful where brackets exist. Applying it elsewhere would quietly forbid
+        // cards in a format that has never heard of Game Changers.
+        settings.max_bracket = max_bracket.filter(|_| deck.format == mtg_core::Format::Commander);
         if let Some(only_played) = only_played_cards {
             settings.only_played_cards = only_played;
         }

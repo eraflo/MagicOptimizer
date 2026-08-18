@@ -4,9 +4,12 @@
 
   let {
     deckId,
+    format = "",
     onapplied,
   }: {
     deckId: number;
+    /** The deck's format. Brackets only exist in Commander, so the control only shows there. */
+    format?: string;
     /** The deck changed; the editor has to redraw. */
     onapplied: (view: DeckView) => void;
   } = $props();
@@ -16,6 +19,10 @@
   let archetype = $state("midrange");
   let pool = $state("everything");
   let onlyPlayedCards = $state(true);
+  /** Empty means no bracket constraint, which is the default. */
+  let maxBracket = $state("");
+
+  const isCommander = $derived(format === "commander");
 
   let current = $state<Score | null>(null);
   let result = $state<SearchResult | null>(null);
@@ -56,7 +63,14 @@
     result = null;
     applied = new Set();
     try {
-      result = await api.deckOptimize(deckId, archetype, pool, undefined, onlyPlayedCards);
+      result = await api.deckOptimize(
+        deckId,
+        archetype,
+        pool,
+        undefined,
+        onlyPlayedCards,
+        maxBracket === "" ? undefined : Number(maxBracket),
+      );
     } catch (e) {
       error = String(e);
     } finally {
@@ -156,6 +170,22 @@
     <input type="checkbox" bind:checked={onlyPlayedCards} />
     Only cards people actually play
   </label>
+
+  {#if isCommander}
+    <div class="control">
+      <label for="max-bracket">Stay within bracket</label>
+      <select id="max-bracket" bind:value={maxBracket}>
+        <option value="">No limit</option>
+        <option value="2">2 — Core</option>
+        <option value="3">3 — Upgraded</option>
+      </select>
+    </div>
+    <p class="limitation">
+      This holds the deck to the Game Changer count the bracket allows — the one rule that can be
+      checked from the card data alone. It cannot see two-card combos or mass land denial, so
+      check the finished deck against the bracket panel rather than trusting it.
+    </p>
+  {/if}
 
   <button type="button" class="primary run" onclick={optimize} disabled={busy}>
     {busy ? "Searching…" : "Suggest improvements"}

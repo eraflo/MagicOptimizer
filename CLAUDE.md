@@ -175,6 +175,14 @@ fix it, do not silence it with `#[allow]` unless you write the justification in 
   it later undoes; reporting that path and letting someone apply a subset produced six copies
   of a four-of. Any change to how suggestions are built has to preserve "applicable in any
   order, any subset".
+- **The optimizer's bracket constraint enforces one criterion of three.** `max_bracket` limits
+  the **Game Changer count**, which Scryfall flags per card and is therefore exact. It does not
+  check two-card combos or mass land denial: both live in `mtg-combo`, the combo artifact is an
+  optional download, and building its index is 17 ms inside a loop that runs thousands of times.
+  A constrained deck can still sit above its target for a reason the search cannot see, so the
+  UI says to check the finished deck against the bracket panel. The allowances are duplicated
+  from `mtg_combo::assess` and a test pins them to it — if the two ever drift, the optimizer
+  builds decks the panel then calls out.
 - **The bracket estimate can only reach 2 to 4.** Brackets 1 and 5 are about how a deck is
   played, not what is in it — two identical lists can sit in 2 and 1. Never present the number
   as covering the full scale, and never drop the caveats from a UI that shows it.

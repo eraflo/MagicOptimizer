@@ -362,6 +362,7 @@
 
           <OptimizePanel
             deckId={open.id}
+            format={open.deck.format}
             onapplied={(view) => {
               // Guarded: a command that answered with nothing would otherwise blank the
               // editor out from under the reader.

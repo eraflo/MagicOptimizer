@@ -167,8 +167,17 @@ export function deckOptimize(
   pool: string,
   iterations?: number,
   onlyPlayedCards?: boolean,
+  /** Keep a Commander deck inside a bracket. Ignored in every other format. */
+  maxBracket?: number,
 ): Promise<SearchResult> {
-  return invoke("deck_optimize", { id, archetype, pool, iterations, onlyPlayedCards });
+  return invoke("deck_optimize", {
+    id,
+    archetype,
+    pool,
+    iterations,
+    onlyPlayedCards,
+    maxBracket: maxBracket ?? null,
+  });
 }
 
 export function deckApplySuggestion(

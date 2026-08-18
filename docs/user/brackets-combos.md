@@ -59,3 +59,16 @@ changes the deck's bracket.
 
 The combo database comes from [Commander Spellbook](https://commanderspellbook.com), a community
 project unaffiliated with MagicOptimizer.
+
+## Building to a bracket
+
+When optimising a Commander deck you can ask the search to **stay within a bracket**. It then
+refuses any suggestion that would push the deck past the Game Changer count that bracket allows:
+none for bracket 2, three for bracket 3.
+
+One honest limit. That is the only bracket rule the optimizer can check on its own, because
+Scryfall flags Game Changers on the card itself. Two-card combos and mass land denial need the
+combo database and the card's rules text, which the search cannot afford to consult thousands of
+times per run. So a deck built under this constraint can still land above its target for a reason
+the search never saw — **check the finished deck against the bracket panel**, which does look at
+all three.

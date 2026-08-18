@@ -72,6 +72,23 @@ pub struct SearchSettings {
     pub only_played_cards: bool,
     /// With [`SearchSettings::only_played_cards`], how far down the popularity list to go.
     pub popularity_limit: u32,
+    /// Keep the deck inside a Commander bracket, if one is asked for.
+    ///
+    /// # What this enforces, and what it cannot
+    ///
+    /// Only the **Game Changer count**, which is the one bracket criterion computable from the
+    /// catalog alone: Scryfall ships the flag, so it is exact. Brackets 1 and 2 allow none,
+    /// bracket 3 allows three, bracket 4 is unbounded.
+    ///
+    /// It does **not** enforce the other two criteria. Two-card combos need the combo artifact,
+    /// which is an optional download, and mass land denial needs rules text — both live in
+    /// `mtg-combo`, and reaching for them here would put a 17 ms index build inside a loop that
+    /// runs thousands of times. A deck can therefore still sit above its target for a reason
+    /// the search cannot see, which is why `BracketPanel` assesses the finished deck properly
+    /// rather than trusting this.
+    ///
+    /// `None` means no constraint.
+    pub max_bracket: Option<u8>,
     /// Games per simulation *during the search*.
     ///
     /// Lower than the final figure on purpose: the search runs thousands of evaluations and
@@ -89,6 +106,9 @@ impl SearchSettings {
             max_suggestions: 12,
             only_played_cards: true,
             popularity_limit: 8_000,
+            // Unconstrained by default: most formats have no brackets, and a Commander player
+            // who has not said which bracket they are aiming for has not asked to be limited.
+            max_bracket: None,
             seed: 0x0B71_D0C0,
             games_while_searching: 1_500,
         }
@@ -128,6 +148,34 @@ pub struct SearchResult {
     pub candidates_considered: usize,
 }
 
+/// Most Game Changers a deck may hold to stay inside a bracket.
+///
+/// Mirrors `mtg_combo::assess`, which is the authority: more than three puts a deck in bracket
+/// 4, any at all puts it in 3, and brackets 1 and 2 allow none. Duplicated rather than shared
+/// because importing `mtg-combo` here would drag the combo artifact into the search loop for
+/// one integer.
+fn game_changer_allowance(max_bracket: Option<u8>) -> Option<usize> {
+    match max_bracket {
+        Some(1) | Some(2) => Some(0),
+        Some(3) => Some(3),
+        _ => None,
+    }
+}
+
+/// How many Game Changers a deck holds, counting copies.
+fn game_changers_in(deck: &Deck, index: &CardIndex<'_>) -> usize {
+    deck.entries
+        .iter()
+        .filter(|entry| entry.zone != Zone::Sideboard)
+        .filter(|entry| {
+            index
+                .get(&entry.oracle_id)
+                .is_some_and(|card| card.is_game_changer())
+        })
+        .map(|entry| entry.quantity as usize)
+        .sum()
+}
+
 /// Looks for swaps that raise the deck's score.
 pub fn search(deck: &Deck, index: &CardIndex<'_>, settings: &SearchSettings) -> SearchResult {
     let rules = FormatRules::for_format(deck.format);
@@ -149,7 +197,20 @@ pub fn search(deck: &Deck, index: &CardIndex<'_>, settings: &SearchSettings) -> 
         };
     }
 
-    let improved = anneal(deck, index, &candidates, &rules, settings, fast_settings);
+    // A deck already over its target is not made unoptimisable: the ceiling is whichever is
+    // higher, so the search can still improve everything else rather than returning nothing.
+    let ceiling = game_changer_allowance(settings.max_bracket)
+        .map(|allowance| allowance.max(game_changers_in(deck, index)));
+
+    let improved = anneal(
+        deck,
+        index,
+        &candidates,
+        &rules,
+        settings,
+        fast_settings,
+        ceiling,
+    );
     let (suggestions, after) =
         suggestions_from_diff(deck, &improved, index, settings, full_settings);
 
@@ -169,6 +230,7 @@ fn anneal(
     rules: &FormatRules,
     settings: &SearchSettings,
     fast_settings: ScoreSettings,
+    game_changer_ceiling: Option<usize>,
 ) -> Deck {
     let mut rng = Rng::new(settings.seed);
     let mut current = deck.clone();
@@ -183,6 +245,15 @@ fn anneal(
         let mut trial = current.clone();
         trial.remove(&removed.oracle_id, Zone::Main, 1);
         trial.add(DeckEntry::new(&added.0, &added.1, 1));
+
+        // Checked on the trial rather than filtered out of the candidate list, because the
+        // limit is a property of the whole deck: a Game Changer is only forbidden once the deck
+        // already holds its quota.
+        if let Some(ceiling) = game_changer_ceiling {
+            if game_changers_in(&trial, index) > ceiling {
+                continue;
+            }
+        }
 
         let trial_score = score(&profile_with_index(&trial, index), fast_settings).total;
         let delta = trial_score - current_score;
@@ -737,6 +808,125 @@ mod tests {
             .into_iter()
             .map(|(_, name)| name)
             .collect()
+    }
+
+    /// A catalog where some cards are flagged as Game Changers.
+    fn bracket_catalog() -> Catalog {
+        let mut island = card("Island", "Basic Land — Island", "", "U");
+        island.edhrec_rank = Some(1);
+        let mut plain_spell = card("Ponder", "Sorcery", "{U}", "");
+        plain_spell.edhrec_rank = Some(2);
+
+        let mut cards = vec![island, plain_spell];
+        for name in [
+            "Rhystic Study",
+            "Cyclonic Rift",
+            "Mystical Tutor",
+            "Fierce Guardianship",
+        ] {
+            let mut changer = card(name, "Instant", "{U}", "");
+            changer.game_changer = true;
+            changer.edhrec_rank = Some(3);
+            cards.push(changer);
+        }
+
+        let data = CatalogData {
+            format_version: mtg_data::FORMAT_VERSION,
+            source_updated_at: String::new(),
+            cards,
+        };
+        Catalog::from_bytes(mtg_data::serialize(&data).unwrap()).unwrap()
+    }
+
+    #[test]
+    fn the_allowance_matches_what_assess_would_say() {
+        // These mirror `mtg_combo::assess`, which is the authority. If the two ever disagree
+        // the optimizer would build a deck the bracket panel then calls out.
+        assert_eq!(game_changer_allowance(Some(1)), Some(0));
+        assert_eq!(game_changer_allowance(Some(2)), Some(0));
+        assert_eq!(game_changer_allowance(Some(3)), Some(3));
+        assert_eq!(
+            game_changer_allowance(Some(4)),
+            None,
+            "bracket 4 is unbounded"
+        );
+        assert_eq!(
+            game_changer_allowance(None),
+            None,
+            "and so is asking for nothing"
+        );
+    }
+
+    #[test]
+    fn a_bracket_two_search_never_adds_a_game_changer() {
+        let catalog = bracket_catalog();
+        let index = CardIndex::build(&catalog);
+        let deck = deck_of(&[("Island", 40), ("Ponder", 20)]);
+
+        let mut config = settings();
+        config.max_bracket = Some(2);
+        let result = search(&deck, &index, &config);
+
+        for suggestion in &result.suggestions {
+            let card = index.get(&suggestion.add_oracle_id).expect("candidate");
+            assert!(
+                !card.is_game_changer(),
+                "{} would push the deck out of bracket 2",
+                suggestion.add_name
+            );
+        }
+    }
+
+    #[test]
+    fn a_deck_already_over_its_target_is_still_optimisable() {
+        // A constraint that returns nothing helps nobody. The ceiling is whichever is higher —
+        // the allowance or what the deck already holds — so everything else can still improve.
+        let catalog = bracket_catalog();
+        let index = CardIndex::build(&catalog);
+        let deck = deck_of(&[
+            ("Island", 34),
+            ("Rhystic Study", 4),
+            ("Cyclonic Rift", 4),
+            ("Mystical Tutor", 4),
+            ("Fierce Guardianship", 4),
+            ("Ponder", 10),
+        ]);
+
+        let mut config = settings();
+        config.max_bracket = Some(2);
+        let result = search(&deck, &index, &config);
+        assert!(
+            result.candidates_considered > 0,
+            "the search must still run"
+        );
+    }
+
+    #[test]
+    fn an_unconstrained_search_is_free_to_use_game_changers() {
+        // The other half: the constraint only applies when a bracket was actually asked for.
+        let catalog = bracket_catalog();
+        let index = CardIndex::build(&catalog);
+        let deck = deck_of(&[("Island", 40), ("Ponder", 20)]);
+
+        assert_eq!(settings().max_bracket, None);
+        let ceiling = game_changer_allowance(settings().max_bracket)
+            .map(|allowance| allowance.max(game_changers_in(&deck, &index)));
+        assert_eq!(ceiling, None);
+    }
+
+    #[test]
+    fn game_changers_are_counted_per_copy_and_ignore_the_sideboard() {
+        // Four copies of one Game Changer are four Game Changers, and a card on the bench is
+        // not in the deck at all.
+        let catalog = bracket_catalog();
+        let index = CardIndex::build(&catalog);
+
+        let mut deck = deck_of(&[("Rhystic Study", 3)]);
+        let mut benched = DeckEntry::new("o-Cyclonic Rift", "Cyclonic Rift", 5);
+        benched.zone = Zone::Sideboard;
+        deck.add(benched);
+
+        assert_eq!(game_changers_in(&deck, &index), 3);
     }
 
     #[test]
