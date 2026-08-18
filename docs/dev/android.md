@@ -1,12 +1,13 @@
 # Android build
 
-> **Status, 2026-08-18** — the Android project now exists and is committed, and the **whole Rust
-> workspace compiles to a real `aarch64-linux-android` shared library** (147 MB debug, 3 min 22).
-> That is the invariant that mattered: no C toolchain problem anywhere, on a real NDK rather than
-> a `cargo check`.
+> **Status, 2026-08-18** — **an APK exists.** `app-arm64-debug.apk`, 154 MB, package
+> `dev.eraflo.magicoptimizer`, with the `CAMERA` permission confirmed present by `aapt2 dump
+> permissions` rather than assumed from the manifest. The whole Rust workspace builds into a real
+> `aarch64-linux-android` shared library, so invariant 1 holds against a real NDK rather than a
+> `cargo check`.
 >
-> The APK itself has **not** been produced yet, and nothing has run on a device. Two host
-> problems stand in the way, both recorded below under *Building on Windows*.
+> **Nothing has run on a device yet.** Whether `getUserMedia` works in the Android WebView is
+> still open, and no amount of building answers it.
 
 ## Prerequisites
 
@@ -34,7 +35,38 @@ rediscovered.
 
 **Symlinks.** Tauri links the built `.so` into `app/src/main/jniLibs/<abi>/`, and Windows refuses
 without Developer Mode or an elevated shell: *Creation symbolic link is not allowed for this
-system*. Enable Developer Mode, or copy the library across and drive Gradle directly.
+system*. Enable Developer Mode, or use the recipe below.
+
+### The recipe that works without Developer Mode
+
+Three steps, and the third carries the subtlety. Tauri's Gradle plugin adds a
+`rustBuild<Abi><Variant>` task that re-invokes the Tauri CLI through `npm`, which fails inside
+Gradle — and would only walk back into the symlink anyway. The library is already in place by
+then, so that task is skipped.
+
+```powershell
+$env:ANDROID_HOME = "$env:LOCALAPPDATA\Android\Sdk"
+$env:NDK_HOME = "$env:ANDROID_HOME
+dk\<version>"
+$env:JAVA_HOME = "C:\Program Files\Microsoft\jdk-21.0.12.8-hotspot"
+
+# 1. Build the Rust library. This succeeds; only the symlink afterwards fails.
+npm run tauri -- android build --debug --target aarch64
+
+# 2. Put it where Gradle expects it.
+copy targetarch64-linux-android\debug\libmagicoptimizer_lib.so `
+     src-tauri\genndroidpp\src\main\jniLibsrm64-v8a
+# 3. Assemble, skipping the task that would rebuild it.
+cd src-tauri\genndroid
+.\gradlew.bat assembleArm64Debug -x :app:rustBuildArm64Debug
+```
+
+The APK lands in `app/build/outputs/apk/arm64/debug/`, signed with the debug key, so it installs
+straight onto a phone.
+
+**It is 154 MB**, because a debug build carries its symbols. Fine for trying it, wrong for
+shipping: a release build needs signing keys this project does not have yet, and sorting that out
+is what stands between here and an APK in a GitHub release.
 
 **The JDK.** Android Studio ships JBR 25 and Gradle answers `Unsupported class file major version
 69`. Install a JDK 21 and point `JAVA_HOME` at it — Android Studio can fetch one from
