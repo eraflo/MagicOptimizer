@@ -37,6 +37,11 @@ rediscovered.
 without Developer Mode or an elevated shell: *Creation symbolic link is not allowed for this
 system*. Enable Developer Mode, or use the recipe below.
 
+**The JDK.** Android Studio ships JBR 25 and Gradle answers `Unsupported class file major version
+69`. Install a JDK 21 and point `JAVA_HOME` at it — Android Studio can fetch one from
+*Settings -> Build Tools -> Gradle -> Gradle JDK -> Download JDK*, or `winget install
+Microsoft.OpenJDK.21`.
+
 ### The recipe that works without Developer Mode
 
 Three steps, and the third carries the subtlety. Tauri's Gradle plugin adds a
@@ -46,18 +51,18 @@ then, so that task is skipped.
 
 ```powershell
 $env:ANDROID_HOME = "$env:LOCALAPPDATA\Android\Sdk"
-$env:NDK_HOME = "$env:ANDROID_HOME
-dk\<version>"
-$env:JAVA_HOME = "C:\Program Files\Microsoft\jdk-21.0.12.8-hotspot"
+$env:NDK_HOME     = "$env:ANDROID_HOME\ndk\<version>"
+$env:JAVA_HOME    = "C:\Program Files\Microsoft\jdk-21.0.12.8-hotspot"
 
 # 1. Build the Rust library. This succeeds; only the symlink afterwards fails.
 npm run tauri -- android build --debug --target aarch64
 
 # 2. Put it where Gradle expects it.
-copy targetarch64-linux-android\debug\libmagicoptimizer_lib.so `
-     src-tauri\genndroidpp\src\main\jniLibsrm64-v8a
+Copy-Item target\aarch64-linux-android\debug\libmagicoptimizer_lib.so `
+          src-tauri\gen\android\app\src\main\jniLibs\arm64-v8a\
+
 # 3. Assemble, skipping the task that would rebuild it.
-cd src-tauri\genndroid
+cd src-tauri\gen\android
 .\gradlew.bat assembleArm64Debug -x :app:rustBuildArm64Debug
 ```
 
@@ -67,11 +72,6 @@ straight onto a phone.
 **It is 154 MB**, because a debug build carries its symbols. Fine for trying it, wrong for
 shipping: a release build needs signing keys this project does not have yet, and sorting that out
 is what stands between here and an APK in a GitHub release.
-
-**The JDK.** Android Studio ships JBR 25 and Gradle answers `Unsupported class file major version
-69`. Install a JDK 21 and point `JAVA_HOME` at it — Android Studio can fetch one from
-*Settings -> Build Tools -> Gradle -> Gradle JDK -> Download JDK*, or `winget install
-Microsoft.OpenJDK.21`.
 
 ## The nightly release deletes and recreates itself
 
