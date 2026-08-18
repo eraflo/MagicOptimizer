@@ -60,13 +60,15 @@ pub struct SearchSettings {
     /// The score measures a mana base, a curve and an opening hand. It has **no idea what a
     /// card does** — nothing here reads rules text or knows that a counterspell is better than
     /// a vanilla 2/2. Left unfiltered, the search happily proposes Maze Skullbomb because it
-    /// nudges the curve, and a white-black filter land in a red-green deck because it counts
-    /// as a land drop.
+    /// nudges the curve.
     ///
     /// Scryfall's EDHREC rank is a blunt but available proxy: a card with a rank is one people
     /// actually play. It is a Commander statistic, so it is a weaker signal in other formats,
     /// and it is a popularity measure rather than a quality one. It is a stopgap until the
     /// embeddings of phase 8 give the search a real notion of what a card is for.
+    ///
+    /// It does **not** keep suggestions on colour — see [`candidate_identity`], which is a
+    /// separate filter and the one that does that job.
     pub only_played_cards: bool,
     /// With [`SearchSettings::only_played_cards`], how far down the popularity list to go.
     pub popularity_limit: u32,
@@ -129,7 +131,7 @@ pub struct SearchResult {
 /// Looks for swaps that raise the deck's score.
 pub fn search(deck: &Deck, index: &CardIndex<'_>, settings: &SearchSettings) -> SearchResult {
     let rules = FormatRules::for_format(deck.format);
-    let identity = commander_identity(deck, index, &rules);
+    let identity = candidate_identity(deck, index, &rules);
     let candidates = candidate_cards(deck, index, settings, &rules, identity);
 
     let full_settings = settings.score;
@@ -382,19 +384,47 @@ fn is_candidate(
 }
 
 /// The colour identity the deck is bound to, if its format binds one.
-fn commander_identity(deck: &Deck, index: &CardIndex<'_>, rules: &FormatRules) -> Option<ColorSet> {
-    let commander = rules.commander.as_ref()?;
-    if !commander.enforce_color_identity {
-        return None;
+/// The colours the search is allowed to reach for.
+///
+/// In Commander this is a rule: the deck's colour identity comes from its commander, and a card
+/// outside it is illegal. Everywhere else there is no such rule — a Modern deck may legally play
+/// any card of any colour — but proposing one is still wrong, and measurement said so loudly.
+///
+/// Run against the real catalog, a mono-red burn deck was offered Horizon Canopy, Yavimaya Coast
+/// and Nomad Outpost: eight of twelve suggestions were off colour. The score cannot see the
+/// mistake, because a land it cannot use still counts as a land drop. The `only_played_cards`
+/// gate does not catch it either — popularity says nothing about colour, and an earlier version
+/// of this file claimed otherwise.
+///
+/// So outside Commander the identity is derived from the deck itself. The cost is that the
+/// search will never suggest a splash or a colour change; that is the right trade, because a
+/// scorer with no idea what a card does has no business proposing one.
+fn candidate_identity(deck: &Deck, index: &CardIndex<'_>, rules: &FormatRules) -> Option<ColorSet> {
+    if let Some(commander) = rules.commander.as_ref() {
+        if commander.enforce_color_identity {
+            let mut identity = ColorSet::COLORLESS;
+            for entry in deck.entries_in(Zone::Command) {
+                if let Some(card) = index.get(&entry.oracle_id) {
+                    identity = identity.union(card.color_identity());
+                }
+            }
+            return Some(identity);
+        }
     }
 
     let mut identity = ColorSet::COLORLESS;
-    for entry in deck.entries_in(Zone::Command) {
+    for entry in &deck.entries {
+        if entry.zone == Zone::Sideboard {
+            continue;
+        }
         if let Some(card) = index.get(&entry.oracle_id) {
             identity = identity.union(card.color_identity());
         }
     }
-    Some(identity)
+
+    // An empty deck, or one built entirely of colourless cards, constrains nothing — returning
+    // `Some(COLORLESS)` there would leave the search with basics and artifacts to choose from.
+    (!identity.is_empty()).then_some(identity)
 }
 
 #[cfg(test)]
@@ -677,7 +707,7 @@ mod tests {
 
     #[test]
     fn the_popularity_filter_keeps_out_cards_nobody_plays() {
-        // Without it the search proposed a white-black filter land for a red-green deck,
+        // Without it the search proposed cards nobody plays, such as a Maze filter land,
         // because the score can measure a land drop but not what a card is for.
         let catalog = catalog();
         let index = CardIndex::build(&catalog);
@@ -698,17 +728,97 @@ mod tests {
         }
     }
 
+    /// The candidate list by name, which is what the colour and popularity rules act on.
+    fn candidates_for(deck: &Deck, index: &CardIndex<'_>, config: &SearchSettings) -> Vec<String> {
+        let rules = FormatRules::for_format(deck.format);
+        let identity = candidate_identity(deck, index, &rules);
+        candidate_cards(deck, index, config, &rules, identity)
+            .into_iter()
+            .map(|(_, name)| name)
+            .collect()
+    }
+
     #[test]
     fn basic_lands_survive_the_popularity_filter() {
         // They carry no rank either, and excluding them would leave the search unable to
         // adjust a mana base at all.
         let catalog = catalog();
         let index = CardIndex::build(&catalog);
-        let deck = deck_of(&[("Island", 10), ("Colossus", 50)]);
+        // All three basics, so the deck's own colours do not narrow the answer — this test is
+        // about the popularity gate, not about colour.
+        let deck = deck_of(&[("Island", 4), ("Swamp", 4), ("Forest", 4), ("Colossus", 48)]);
 
         let mut config = settings();
         config.only_played_cards = true;
-        assert!(search(&deck, &index, &config).candidates_considered >= 3);
+        let names = candidates_for(&deck, &index, &config);
+
+        for basic in ["Island", "Swamp", "Forest"] {
+            assert!(
+                names.iter().any(|name| name == basic),
+                "{basic} was filtered out: {names:?}"
+            );
+        }
+        // Everything else in the fixture is unranked and not basic, so nothing else survives.
+        assert_eq!(names.len(), 3, "{names:?}");
+    }
+
+    #[test]
+    fn the_search_stays_inside_the_decks_own_colours() {
+        // Measured against the real catalog, a mono-red deck was offered Horizon Canopy,
+        // Yavimaya Coast and Nomad Outpost — eight of twelve suggestions off colour. Nothing in
+        // the score can see that mistake: a land it cannot use still counts as a land drop.
+        let catalog = catalog();
+        let index = CardIndex::build(&catalog);
+        let deck = deck_of(&[("Island", 20), ("Counterspell", 40)]);
+
+        let names = candidates_for(&deck, &index, &settings());
+
+        assert!(names.iter().any(|name| name == "Ponder"), "{names:?}");
+        assert!(
+            names.iter().any(|name| name == "Colossus"),
+            "colourless is always allowed"
+        );
+        for off_colour in ["Swamp", "Forest", "Doom Blade"] {
+            assert!(
+                !names.iter().any(|name| name == off_colour),
+                "{off_colour} is outside the deck's colours: {names:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn a_colourless_deck_is_not_locked_out_of_every_colour() {
+        // An all-artifact list constrains nothing, and returning an empty identity would leave
+        // the search with almost nothing to choose from.
+        let catalog = catalog();
+        let index = CardIndex::build(&catalog);
+        let deck = deck_of(&[("Colossus", 60)]);
+
+        let names = candidates_for(&deck, &index, &settings());
+        assert!(names.iter().any(|name| name == "Swamp"), "{names:?}");
+        assert!(names.iter().any(|name| name == "Counterspell"), "{names:?}");
+    }
+
+    #[test]
+    fn a_commanders_identity_still_wins_over_the_decks_own_cards() {
+        // In Commander the identity is a rule, not a heuristic: a card outside the commander's
+        // colours is illegal however many of them the ninety-nine happen to contain.
+        let catalog = catalog();
+        let index = CardIndex::build(&catalog);
+        let rules = FormatRules::for_format(Format::Commander);
+
+        let mut deck = Deck::new("EDH", Format::Commander);
+        let mut commander = DeckEntry::new("o-Ponder", "Ponder", 1);
+        commander.zone = Zone::Command;
+        deck.add(commander);
+        deck.add(DeckEntry::new("o-Swamp", "Swamp", 40));
+
+        let identity = candidate_identity(&deck, &index, &rules).expect("an identity");
+        assert!(identity.contains(mtg_core::Color::Blue));
+        assert!(
+            !identity.contains(mtg_core::Color::Black),
+            "the Swamps in the deck must not widen the commander's identity"
+        );
     }
 
     #[test]

@@ -130,9 +130,12 @@ fix it, do not silence it with `#[allow]` unless you write the justification in 
   that warning fires: add the variant to `mtg_core::Format`, update `LEGALITY_SLOTS`, bump
   `FORMAT_VERSION`, and fix the pinned list in `format_list_matches_scryfall_as_observed`.
 - **The optimizer does not know what a card does.** It scores a mana base, a curve and an
-  opening hand — nothing reads rules text. Left unfiltered it proposes a white-black filter
-  land for a red-green deck, which is why candidates are gated on EDHREC rank as a stopgap
-  until the phase 8 embeddings. Say so in any UI that shows its output.
+  opening hand — nothing reads rules text, so it cannot tell Lightning Bolt from a Mountain and
+  will happily suggest trading one for the other. Two separate guards exist and they do
+  different jobs: **colour identity** keeps candidates castable, derived from the deck itself
+  outside Commander, and **EDHREC rank** drops cards nobody plays. An earlier version of this
+  note credited the rank gate with the colour job; measured against the real catalog it caught
+  none of it — popularity says nothing about colour. Say so in any UI that shows the output.
 - **`sources_for_confidence` is not Frank Karsten's number.** His tables condition on hands you
   keep; ours is unconditional and asks for a couple more sources. Scoring uses the probability
   directly rather than a threshold, so this only matters if someone quotes the function.
