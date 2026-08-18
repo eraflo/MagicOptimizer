@@ -68,6 +68,14 @@
    */
   let failures = 0;
 
+  /**
+   * Whether the destination sheet is expanded, on a phone.
+   *
+   * Collapsed while scanning so the camera keeps the screen, and opened by tapping the summary
+   * line. It has no effect above 860px, where the panel sits beside the viewfinder.
+   */
+  let sheetOpen = $state(false);
+
   $effect(() => {
     void (async () => {
       try {
@@ -309,6 +317,17 @@ ${written} card${written === 1 ? "" : "s"} were added. ` +
     }
   }
 
+  /** What the collapsed sheet says: where cards are going, in the words the user chose. */
+  const destinationLabel = $derived(
+    destination === "deck"
+      ? (decks.find((deck) => deck.id === deckId)?.name ?? "Choose a deck")
+      : destination === "pool"
+        ? poolName.trim() || "Name the pool"
+        : destination === "digital"
+          ? "Digital collection"
+          : "Physical collection",
+  );
+
   const progress = $derived(
     result?.state === "tracking" && result.needed > 0 ? result.votes / result.needed : 0,
   );
@@ -376,7 +395,21 @@ ${written} card${written === 1 ? "" : "s"} were added. ` +
     {/if}
   </div>
 
-  <div class="panel">
+  <div class="panel" class:open={sheetOpen}>
+    <!-- Only rendered as a control on a phone; on a desktop it is hidden and the panel is
+         simply always open. -->
+    <button
+      type="button"
+      class="handle"
+      aria-expanded={sheetOpen}
+      onclick={() => (sheetOpen = !sheetOpen)}
+    >
+      <span class="grab" aria-hidden="true"></span>
+      <span class="summary">
+        {destinationLabel}{#if totalPending > 0} · {totalPending} scanned{/if}
+      </span>
+    </button>
+
     <h3>Where these go</h3>
     <div class="destinations">
       <label class:active={destination === "physical"}>
@@ -608,6 +641,10 @@ ${written} card${written === 1 ? "" : "s"} were added. ` +
     right: 12px;
   }
 
+  .handle {
+    display: none;
+  }
+
   .panel {
     background: var(--panel);
     border: 1px solid var(--border);
@@ -752,8 +789,8 @@ ${written} card${written === 1 ? "" : "s"} were added. ` +
     margin-top: 12px;
   }
 
-  /* The filter-drawer breakpoint: the side panel no longer fits beside the viewfinder. */
-  @media (max-width: 1180px) {
+  /* The side panel no longer fits beside the viewfinder. */
+  @media (max-width: 1180px) and (min-width: 861px) {
     .scan {
       grid-template-columns: 1fr;
       grid-template-rows: minmax(280px, 1fr) auto;
@@ -764,11 +801,98 @@ ${written} card${written === 1 ? "" : "s"} were added. ` +
     }
   }
 
-  /* Phone: the viewfinder takes the screen, since that is the whole task. */
+  /* Phone: the camera owns the screen and everything else floats over it.
+     Splitting the height between a viewfinder and a panel gave the camera a letterbox, on the
+     one screen that exists *for* the phone. See docs/dev/ui.md. */
   @media (max-width: 860px) {
     .scan {
-      grid-template-rows: minmax(0, 60vh) auto;
-      gap: 12px;
+      display: block;
+      position: relative;
+      height: 100%;
+      gap: 0;
+    }
+
+    .viewfinder {
+      position: absolute;
+      inset: 0;
+      border: 0;
+      border-radius: 0;
+    }
+
+    .panel {
+      position: absolute;
+      left: 8px;
+      right: 8px;
+      bottom: 8px;
+      /* Collapsed to the handle: enough to say where cards are going and how many, no more. */
+      max-height: 52px;
+      padding: 0 12px 10px;
+      background: rgba(22, 26, 36, 0.94);
+      backdrop-filter: blur(8px);
+      border-color: var(--border-strong);
+      overflow: hidden;
+      transition: max-height 0.18s ease;
+    }
+
+    .panel.open {
+      max-height: 72%;
+      overflow-y: auto;
+    }
+
+    .handle {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+      width: 100%;
+      /* Sticky so the summary stays reachable once the sheet is scrolled. */
+      position: sticky;
+      top: 0;
+      background: inherit;
+      /* The one control between the user and the camera; it gets a real target. */
+      min-height: 44px;
+      padding: 8px 0 6px;
+      border: 0;
+      border-radius: 0;
+      color: var(--text);
+      font-size: 13px;
+    }
+
+    .grab {
+      width: 34px;
+      height: 3px;
+      border-radius: 2px;
+      background: var(--border-strong);
+    }
+
+    .summary {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 100%;
+    }
+
+    /* Over a camera image, a translucent readout is unreadable. */
+    .readout {
+      bottom: 70px;
+      background: rgba(13, 15, 22, 0.92);
+    }
+
+    .curtain {
+      padding: 20px 16px;
+    }
+
+    /* Below the 44px rule, and these sit in a scrolling list where a mis-tap deletes a row. */
+    .quantity button,
+    .remove {
+      width: 34px;
+      height: 34px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .panel {
+      transition: none;
     }
   }
 </style>

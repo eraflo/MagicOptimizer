@@ -340,6 +340,25 @@
   </main>
 {/if}
 
+<!-- Bottom navigation, phone only. The top tab bar is out of thumb reach, which is the single
+     biggest thing wrong with the phone build. Order is by what the device is for: the camera is
+     why the app is on a phone at all, and Browse — the view a phone handles worst — goes last.
+     See docs/dev/ui.md. -->
+<nav class="bottom-nav" aria-label="Sections">
+  {#each [["scan", "◎", "Scan"], ["collection", "▤", "Cards"], ["decks", "◈", "Decks"], ["journal", "✓", "Log"], ["browse", "⌕", "Browse"]] as [value, icon, label] (value)}
+    <button
+      type="button"
+      class="dest"
+      class:active={tab === value}
+      aria-current={tab === value ? "page" : undefined}
+      onclick={() => (tab = value as typeof tab)}
+    >
+      <span class="icon" aria-hidden="true">{icon}</span>
+      {label}
+    </button>
+  {/each}
+</nav>
+
 <svelte:window
   onkeydown={(event) => {
     if (event.key !== "Escape") return;
@@ -425,6 +444,60 @@
     display: block;
     overflow-y: auto;
     padding: 16px;
+  }
+
+  /* Hidden on a desktop, where the top tab bar is a perfectly good mouse target. */
+  .bottom-nav {
+    display: none;
+  }
+
+  @media (max-width: 860px) {
+    .bottom-nav {
+      display: flex;
+      flex: none;
+      background: var(--panel);
+      border-top: 1px solid var(--border);
+      /* On the bar itself, not only on `body`: a navigation bar under the gesture bar is a
+         navigation bar that cannot be tapped. */
+      padding-bottom: env(safe-area-inset-bottom, 0);
+    }
+
+    .dest {
+      flex: 1;
+      /* Above the 44px minimum, because these are the most-tapped controls in the app. */
+      min-height: 48px;
+      padding: 4px 0;
+      border: 0;
+      border-radius: 0;
+      background: none;
+      color: var(--text-dim);
+      font-size: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+    }
+
+    .dest .icon {
+      font-size: 17px;
+      line-height: 1;
+    }
+
+    .dest.active {
+      color: var(--accent);
+    }
+
+    /* The top bar keeps the title and the data status; only the tabs move. */
+    .tabs {
+      display: none;
+    }
+
+    /* The camera owns the screen. */
+    .scan-main {
+      padding: 0;
+      overflow: hidden;
+    }
   }
 
   .results {
