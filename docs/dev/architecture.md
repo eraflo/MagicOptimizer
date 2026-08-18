@@ -31,7 +31,9 @@ on the optimizer or the vision pipeline without touching it changes the pace of 
 │                                                          │
 │   mtg-vision  (depends on nothing — raw pixels in,       │
 │                a card name out)                          │
-│   mtg-journal, mtg-ml   not built yet                    │
+│   mtg-journal (depends on nothing — games in,             │
+│                honest win rates out)                     │
+│   mtg-ml   not built yet                                 │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -46,7 +48,7 @@ on the optimizer or the vision pipeline without touching it changes the pace of 
 | `mtg-optimizer` | Scoring, simulated annealing, Monte Carlo, hypergeometric math. | `mtg-deck`, `mtg-data`, `mtg-collection` |
 | `mtg-combo` | Combo detection, Commander bracket estimation. | `mtg-deck`, `mtg-data` |
 | `mtg-vision` | Card detection, homography, pHash, matching, temporal voting. | — |
-| `mtg-journal` *(not built)* | Recorded games, win rate aggregates, Bayesian priors. | `mtg-core`, `mtg-deck` |
+| `mtg-journal` | Recorded games, win rates with a Beta prior and Wilson intervals. | — |
 | `mtg-ml` *(not built)* | Card embeddings, personal re-ranker. | `mtg-core`, `mtg-journal` |
 
 ## Storage — why not SQLite

@@ -40,7 +40,7 @@ CI checks this rather than trusting it:
 ```bash
 cargo check --target aarch64-linux-android \
   -p mtg-core -p mtg-data -p mtg-collection -p mtg-deck \
-  -p mtg-optimizer -p mtg-combo -p mtg-vision
+  -p mtg-optimizer -p mtg-combo -p mtg-journal -p mtg-vision
 ```
 
 `cargo check` does not link, so this needs the Rust target but neither the SDK nor the NDK — and

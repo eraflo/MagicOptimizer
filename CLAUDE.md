@@ -78,7 +78,7 @@ which should hold only thin commands delegating to the crates.
 | `mtg-deck` | Deck model, format rules, legality checking, import/export. |
 | `mtg-optimizer` | Scoring, simulated annealing, Monte Carlo simulation, hypergeometric math. Pure Rust, own PRNG — the simulation must be reproducible or the search chases noise. |
 | `mtg-combo` | Combo detection, Commander bracket estimation. The combo artifact is **optional** — everything degrades to saying what it could not check. |
-| `mtg-journal` | Game log, win rate statistics. |
+| `mtg-journal` | Game log, win rate statistics. Nothing here may report a rate without the uncertainty beside it — three wins of three is not 100%. |
 | `mtg-vision` | Card detection, homography, pHash, matching. |
 | `mtg-ml` | Card embeddings and the personal re-ranker. |
 | `tools/build-artifacts` | Dev CLI: public sources → binary artifacts. **Never runs inside the app.** |

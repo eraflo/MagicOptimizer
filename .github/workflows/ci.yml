@@ -66,7 +66,7 @@ jobs:
         run: |
           cargo check --target aarch64-linux-android \
             -p mtg-core -p mtg-data -p mtg-collection -p mtg-deck \
-            -p mtg-optimizer -p mtg-combo -p mtg-vision
+            -p mtg-optimizer -p mtg-combo -p mtg-journal -p mtg-vision
 
   frontend:
     name: svelte-check, build

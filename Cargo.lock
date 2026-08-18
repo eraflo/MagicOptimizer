@@ -2091,6 +2091,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "mtg-journal"
+version = "0.0.0"
+dependencies = [
+ "mtg-core",
+ "redb",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror 2.0.20",
+]
+
+[[package]]
 name = "mtg-optimizer"
 version = "0.0.0"
 dependencies = [

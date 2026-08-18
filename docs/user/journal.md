@@ -1,6 +1,7 @@
 # Game log
 
-> **🚧 Not built yet.**
+> **The statistics are built; the screen to enter games in is not yet.** What follows describes
+> what the log computes, which is already there and tested.
 
 ## How it works
 
@@ -9,7 +10,10 @@ opponents you faced, the result, the turn it ended, and a note if you want one.
 
 ## What it tells you
 
-- Your **win rate per deck**.
+- Your **win rate per deck** — shown two ways, and both matter. The *observed* rate is what
+  happened. The *adjusted* one is pulled towards even to reflect how few games it rests on: three
+  wins out of three shows as 100% observed and about 64% adjusted, with a range that still spans
+  most of the scale. That is not the app being coy — it is what three games actually tell you.
 - Your win rate **per matchup**: which commanders or archetypes you struggle against.
 - The **effect of a change**: "since you swapped those five cards, seven wins out of ten". This is
   often the most telling piece of information, because people change decks all the time without
