@@ -129,6 +129,12 @@ fix it, do not silence it with `#[allow]` unless you write the justification in 
   because the alternative is a whole format vanishing from search with nothing to explain it. If
   that warning fires: add the variant to `mtg_core::Format`, update `LEGALITY_SLOTS`, bump
   `FORMAT_VERSION`, and fix the pinned list in `format_list_matches_scryfall_as_observed`.
+- **The decklist corpus the embeddings plan assumes does not exist.** Checked 2026-08-18:
+  MTGJSON's bulk deck files are 3,004 *products* (Secret Lairs, Jumpstart packs, redemption
+  lists) of which maybe 700 are real decks — three orders of magnitude short. EDHREC gives real
+  co-occurrence but only each card's top neighbours, Commander-only, at ~4.8 GB over 35,000
+  requests. Moxfield and MTGTop8 have the data and are not ours to scrape. Do not start phase 8
+  on the assumption that a corpus is a download away; see `docs/dev/ml.md`.
 - **Every criterion in the score is about mana, so the score is maximised by playing more
   lands.** Mana base, land drops and opening hands all improve monotonically with lands; the
   curve criterion is the only thing pushing back, and roles only fires once a group drops below

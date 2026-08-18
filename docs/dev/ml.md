@@ -25,10 +25,37 @@ space. The model learns synergy statistically, without a single rule being writt
 
 It is the same principle behind EDHREC's recommendations, except we own it and it runs offline.
 
-### Corpus
+### Corpus — this is the blocker, and it was an assumption rather than a fact
 
-Public decklists (Moxfield, Archidekt, EDHREC). A deck is an unordered set of cards, so there is
-no sequential context: the window spans the whole deck.
+The plan below said "public decklists (Moxfield, Archidekt, EDHREC)" as though such a corpus were
+available for the taking. It was checked on 2026-08-18 and **it is not**. Nothing here should be
+built until this section has a real answer.
+
+| Source | What it actually gives | Verdict |
+|---|---|---|
+| **MTGJSON** `AllDeckFiles` | Official, one bulk download, no scraping — but **3,004 decks that are products**: 714 Secret Lair drops, 570 Jumpstart packs, 197 MTGO redemption lists, 220 theme decks. Perhaps 700 are constructed decks in any meaningful sense. | Legitimate and bulk, **three orders of magnitude too small**. Item2vec over 35,306 cards needs on the order of 10⁵–10⁶ decks. |
+| **EDHREC** | Real co-occurrence with deck counts, and the only source here that is. But each card page lists only its **top** neighbours (5–24 per list), so the matrix is truncated and biased toward staples. 136 KB per card × 35,306 cards = **~4.8 GB over 35,000 requests**, Commander only. | Usable for a Commander-only synergy signal at real cost. Not a general corpus, and what it encodes is close to popularity — which `edhrec_rank` already gives for free. |
+| **Moxfield** | Real player decks across formats. The search endpoint answers, but caps at `totalResults: 10000`, and it is an unofficial API whose terms do not invite bulk collection. | Not something this project should scrape. |
+| **Archidekt** | The documented endpoint 404s. | Unverified. |
+| **MTGTop8** | Tournament lists, HTML only. | Scraping a community site for tens of thousands of decks: same objection as Moxfield. |
+
+So the honest position: **there is no legitimate, bulk, multi-format decklist corpus available**, and
+the roadmap assumed one existed. Embeddings are blocked on that, not on the modelling.
+
+What that leaves, in increasing order of cost:
+
+1. **`edhrec_rank` as a score term.** Already in the catalog, used today only as a filter gate.
+   Making it a criterion is the cheapest thing that addresses the actual measured failure —
+   nothing in the score values a spell as a spell — and it needs no new data at all.
+2. **EDHREC co-occurrence**, accepting Commander-only and truncation, at ~5 GB.
+3. **Ask people to contribute their own decks**, which fits the project's shape better than
+   scraping does, and starts empty.
+
+The rest of this section is the design that would apply *if* a corpus appeared. It has not been
+built and should not be until then.
+
+A deck is an unordered set of cards, so there is no sequential context: the window spans the whole
+deck.
 
 Precautions:
 - Deduplicate near-identical lists, or popular archetypes drown out everything else.

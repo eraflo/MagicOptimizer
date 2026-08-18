@@ -22,7 +22,7 @@ device only has to memory-map.
 | `arthashes.bin` ✅ | Scryfall `unique-artwork` + images | **6.2 MB measured** | **50,391 measured** × 256-bit pHash with the matching printing and oracle id |
 | `meta.rkyv` | `json.edhrec.com` | ~5 MB | Inclusion rates, synergy scores |
 | `combos.rkyv` ✅ | Commander Spellbook bulk dump | **53.8 MB measured** | Combos: required cards, produced result, colour identity, Commander legality |
-| `embeddings.bin` | Public decklist corpus | 5–9 MB | 35,000 × 64 dimensions in f16 |
+| `embeddings.bin` ⛔ | Public decklist corpus | 5–9 MB | 35,000 × 64 dimensions in f16. **Blocked**: no such corpus is actually available — see [ml.md](ml.md#corpus--this-is-the-blocker-and-it-was-an-assumption-rather-than-a-fact) |
 
 Published as **GitHub Releases**, never committed. The app checks a version and a checksum at
 startup.
