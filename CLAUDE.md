@@ -129,7 +129,21 @@ fix it, do not silence it with `#[allow]` unless you write the justification in 
   because the alternative is a whole format vanishing from search with nothing to explain it. If
   that warning fires: add the variant to `mtg_core::Format`, update `LEGALITY_SLOTS`, bump
   `FORMAT_VERSION`, and fix the pinned list in `format_list_matches_scryfall_as_observed`.
-- **The optimizer does not know what a card does.** It scores a mana base, a curve and an
+- **`land_drops_criterion` measures a fixed turn-four horizon**, whatever the deck costs. A
+  burn deck topping out at three mana does not need its turn-four land, but the criterion asks
+  for it anyway — which is why the search still offers to trade a spell for a land even after
+  the mana base is sound. Measured on a real Modern burn list: mana base 0.84, land drops 0.62,
+  and every suggestion still a land. The horizon should come from the deck's curve. Not yet
+  fixed; do not mistake it for the colour-identity bug, which is.
+- **The optimizer does not know what a card does — except through tags.** `mtg_core::Tag` gives
+  it 35 functional roles, and `roles_criterion` is the one criterion that can see effect at all.
+  It scores **shortfall only**: below the archetype's conventional minimum costs marks, above it
+  is neither rewarded nor punished, because there is no defensible number for "too much
+  removal". Shares are taken over cards whose role is *known* — the tagger covers 72% of the
+  catalog, and scoring an untagged card as roleless would invent a weakness the search would
+  then act on. Under eight identifiable spells the criterion reports weight zero rather than a
+  guess.
+- **The optimizer still does not know what a card does beyond its role.** It scores a mana base, a curve and an
   opening hand — nothing reads rules text, so it cannot tell Lightning Bolt from a Mountain and
   will happily suggest trading one for the other. Two separate guards exist and they do
   different jobs: **colour identity** keeps candidates castable, derived from the deck itself

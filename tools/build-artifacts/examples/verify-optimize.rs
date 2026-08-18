@@ -18,7 +18,12 @@ use mtg_data::Catalog;
 use mtg_deck::{Deck, DeckEntry};
 use mtg_optimizer::{search, CardIndex, CardPool, SearchSettings};
 
-/// A real, legal mono-red burn deck. Every card is one people actually play.
+/// A real Modern burn deck, with the mana base it actually plays.
+///
+/// The white sources are not decoration. An earlier version of this list ran twenty Mountains
+/// alongside four Boros Charm, and the optimizer spent every suggestion buying white lands —
+/// correctly, since `{W}` on turn two was met 0% of the time. That looked like the search
+/// misbehaving and was the fixture being a deck nobody would build.
 const BURN: &[(&str, u32)] = &[
     ("Lightning Bolt", 4),
     ("Monastery Swiftspear", 4),
@@ -29,7 +34,10 @@ const BURN: &[(&str, u32)] = &[
     ("Boros Charm", 4),
     ("Eidolon of the Great Revel", 4),
     ("Searing Blaze", 4),
-    ("Mountain", 20),
+    ("Inspiring Vantage", 4),
+    ("Sacred Foundry", 4),
+    ("Arid Mesa", 4),
+    ("Mountain", 8),
 ];
 
 fn main() -> Result<()> {
@@ -76,17 +84,26 @@ fn main() -> Result<()> {
     );
 
     for gated in [true, false] {
-        let settings = SearchSettings {
+        let mut settings = SearchSettings {
             pool: CardPool::Everything,
             only_played_cards: gated,
             ..SearchSettings::for_deck_size(60)
         };
+        // Burn is aggro. Scoring it as midrange — the default — asks it for ramp and card
+        // advantage it has no business carrying, and the search would then try to supply them.
+        settings.score.archetype = mtg_optimizer::Archetype::Aggro;
         let result = search(&deck, &index, &settings);
 
         println!(
             "── only_played_cards = {gated}   ({} candidates, score {:.3} -> {:.3})",
             result.candidates_considered, result.before.total, result.after.total
         );
+        for criterion in &result.before.criteria {
+            println!(
+                "     {:<14} {:.2} (weight {:.1})  {}",
+                criterion.name, criterion.score, criterion.weight, criterion.detail
+            );
+        }
         if result.suggestions.is_empty() {
             println!("   no swaps proposed");
         }

@@ -24,7 +24,7 @@ pub struct PipRequirement {
 }
 
 /// What a deck looks like once flattened.
-#[derive(Debug, Clone, Default, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct DeckProfile {
     /// One entry per physical card, for the simulator to shuffle.
     pub cards: Vec<Card>,
@@ -34,6 +34,19 @@ pub struct DeckProfile {
     pub mana_producers: u32,
     pub lands: u32,
     pub creatures: u32,
+    /// Copies carrying each functional role, indexed by [`mtg_core::Tag`] discriminant.
+    ///
+    /// Counted per copy, not per distinct card: four Lightning Bolts are four pieces of
+    /// removal, which is the number that matters to a deck.
+    pub roles: [u32; mtg_core::Tag::ALL.len()],
+    /// Non-land copies carrying at least one role.
+    ///
+    /// The denominator for anything reading `roles`. It is **not** the non-land count: the
+    /// tagger's coverage is 72% of the catalog, so a deck can hold cards whose role is simply
+    /// unknown. Scoring those as "no role" would invent a weakness the deck may not have.
+    pub with_roles: u32,
+    /// Non-land copies the catalog knows but the tagger does not.
+    pub without_roles: u32,
     pub pip_requirements: Vec<PipRequirement>,
     pub color_identity: ColorSet,
     /// Cards not found in the catalog. Reported so a score can be labelled unreliable rather
@@ -41,9 +54,43 @@ pub struct DeckProfile {
     pub unresolved: u32,
 }
 
+/// Written out rather than derived: `Default` stops at 32-element arrays, and the role counts
+/// are one per tag in the vocabulary.
+impl Default for DeckProfile {
+    fn default() -> DeckProfile {
+        DeckProfile {
+            cards: Vec::new(),
+            color_sources: [0; 5],
+            mana_producers: 0,
+            lands: 0,
+            creatures: 0,
+            roles: [0; mtg_core::Tag::ALL.len()],
+            with_roles: 0,
+            without_roles: 0,
+            pip_requirements: Vec::new(),
+            color_identity: ColorSet::COLORLESS,
+            unresolved: 0,
+        }
+    }
+}
+
 impl DeckProfile {
     pub fn deck_size(&self) -> u32 {
         self.cards.len() as u32
+    }
+
+    /// Copies carrying any of these roles, counting a card once however many it matches.
+    ///
+    /// Counting once matters: Lightning Bolt is both `removal` and `spot-removal`, and adding
+    /// those would make one card look like two pieces of interaction.
+    pub fn copies_with_any(&self, tags: &[mtg_core::Tag]) -> u32 {
+        // Without per-card sets this cannot be exact, so it takes the largest single role
+        // rather than the sum. For groups built from a parent tag and its children — which is
+        // how the vocabulary is shaped — the parent's count is the right answer.
+        tags.iter()
+            .map(|tag| self.roles[*tag as usize])
+            .max()
+            .unwrap_or(0)
     }
 
     pub fn sources_of(&self, color: Color) -> u32 {
@@ -137,6 +184,21 @@ pub fn profile_with_index(deck: &Deck, index: &CardIndex<'_>) -> DeckProfile {
         }
         if card.has_type("Creature") {
             built.creatures += entry.quantity;
+        }
+
+        // Lands are left out: they have roles of their own, but every criterion reading this
+        // is about what the deck's *spells* do, and a land ramp package would otherwise count
+        // twice — once here and once in the mana base.
+        if !is_land {
+            let roles = card.tags();
+            if roles.is_empty() {
+                built.without_roles += entry.quantity;
+            } else {
+                built.with_roles += entry.quantity;
+                for tag in roles.iter() {
+                    built.roles[tag as usize] += entry.quantity;
+                }
+            }
         }
 
         built.color_identity = built.color_identity.union(card.color_identity());

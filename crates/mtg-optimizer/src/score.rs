@@ -9,6 +9,7 @@
 //! archetype wants, and that opinion is written down in [`Archetype`] where it can be argued
 //! with rather than buried in a formula.
 
+use mtg_core::Tag;
 use serde::{Deserialize, Serialize};
 
 use crate::math::probability_castable_on_curve;
@@ -43,6 +44,37 @@ impl Archetype {
         }
     }
 
+    /// Conventional **minimum** share of the deck's identifiable spells for each role group.
+    ///
+    /// A minimum rather than a target, and that asymmetry is the honest part. Nobody agrees on
+    /// how much removal is too much — it depends on the format, the metagame and the deck —
+    /// but everyone agrees a sixty-card deck with no interaction at all has a problem. Scoring
+    /// only the shortfall says the defensible thing and stays quiet about the rest.
+    ///
+    /// **These numbers are conventional, not derived.** Like the curve targets above, nothing
+    /// computes them; they are written here to be inspected and argued with.
+    fn minimum_roles(self) -> [(RoleGroup, f64); 3] {
+        match self {
+            // Aggro interacts less and draws less, because its cards are its plan.
+            Archetype::Aggro => [
+                (RoleGroup::Interaction, 0.10),
+                (RoleGroup::CardAdvantage, 0.05),
+                (RoleGroup::Ramp, 0.00),
+            ],
+            Archetype::Midrange => [
+                (RoleGroup::Interaction, 0.18),
+                (RoleGroup::CardAdvantage, 0.12),
+                (RoleGroup::Ramp, 0.05),
+            ],
+            // Control lives on answers and refuelling.
+            Archetype::Control => [
+                (RoleGroup::Interaction, 0.25),
+                (RoleGroup::CardAdvantage, 0.20),
+                (RoleGroup::Ramp, 0.05),
+            ],
+        }
+    }
+
     /// Share of non-land cards wanted at each mana value, 0 through 7-or-more.
     fn target_curve(self) -> [f64; CURVE_BUCKETS] {
         match self {
@@ -53,6 +85,52 @@ impl Archetype {
     }
 }
 
+/// A family of roles a deck needs some of.
+///
+/// Grouped rather than scored tag by tag: a deck does not need `board-wipe` specifically, it
+/// needs *answers*, and which shape they take is the deckbuilder's business.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RoleGroup {
+    Interaction,
+    CardAdvantage,
+    Ramp,
+}
+
+impl RoleGroup {
+    pub const fn label(self) -> &'static str {
+        match self {
+            RoleGroup::Interaction => "interaction",
+            RoleGroup::CardAdvantage => "card advantage",
+            RoleGroup::Ramp => "ramp",
+        }
+    }
+
+    /// The tags that count towards this group.
+    ///
+    /// Each list starts with the broadest tag, because [`DeckProfile::copies_with_any`] takes
+    /// the largest single count rather than a sum — the vocabulary is hierarchical, so the
+    /// parent already contains its children.
+    pub const fn tags(self) -> &'static [Tag] {
+        match self {
+            RoleGroup::Interaction => &[
+                Tag::Removal,
+                Tag::SpotRemoval,
+                Tag::BoardWipe,
+                Tag::Counterspell,
+            ],
+            RoleGroup::CardAdvantage => &[Tag::CardAdvantage, Tag::Draw, Tag::Cantrip],
+            RoleGroup::Ramp => &[Tag::Ramp, Tag::ManaRock, Tag::ManaDork, Tag::LandRamp],
+        }
+    }
+}
+
+/// Fewer identifiable spells than this and the roles criterion says nothing.
+///
+/// The tagger covers 72% of the catalog, so a deck can hold cards whose role is simply unknown.
+/// Scoring a deck as having no removal when the truth is that nothing in it is tagged would
+/// invent a weakness, and the optimizer would then act on it.
+const MIN_IDENTIFIABLE_SPELLS: u32 = 8;
+
 /// How much each criterion counts.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct Weights {
@@ -60,6 +138,7 @@ pub struct Weights {
     pub land_drops: f64,
     pub opening_hands: f64,
     pub curve: f64,
+    pub roles: f64,
 }
 
 impl Default for Weights {
@@ -70,6 +149,10 @@ impl Default for Weights {
             land_drops: 1.0,
             opening_hands: 0.7,
             curve: 0.6,
+            // Between the calculated criteria and the curve. The thresholds are conventional,
+            // but the thing being measured is real and nothing else in the score can see it:
+            // without this, cutting the deck's removal costs nothing.
+            roles: 0.8,
         }
     }
 }
@@ -138,6 +221,7 @@ pub fn score_with_simulation(
         land_drops_criterion(&simulation, settings.weights.land_drops),
         opening_hands_criterion(&simulation, settings.weights.opening_hands),
         curve_criterion(profile, settings.archetype, settings.weights.curve),
+        roles_criterion(profile, settings.archetype, settings.weights.roles),
     ];
 
     let total_weight: f64 = criteria.iter().map(|c| c.weight).sum();
@@ -252,6 +336,79 @@ fn land_drops_criterion(simulation: &SimulationResult, weight: f64) -> Criterion
             score * 100.0
         ),
         derived: true,
+    }
+}
+
+/// Whether the deck carries the roles a deck of its kind needs.
+///
+/// This is the only criterion that can see what a card *does*. Everything else measures a mana
+/// base, a curve or an opening hand, all of which are blind to effect — which is how the search
+/// came to offer a burn deck a Mountain in exchange for Lightning Bolt. Nothing in the score
+/// could tell that anything had been lost.
+///
+/// Scored as shortfall only: a deck at or above the conventional minimum for a group scores
+/// full marks for it, and a deck at half the minimum scores half. Exceeding it is neither
+/// rewarded nor punished, because there is no defensible number for "too much removal".
+///
+/// The share is taken over the spells whose role is **known**, not over all spells. The tagger
+/// covers 72% of the catalog; treating an untagged card as roleless would manufacture a
+/// weakness, and this criterion exists precisely so the search acts on what it says.
+fn roles_criterion(profile: &DeckProfile, archetype: Archetype, weight: f64) -> Criterion {
+    let identifiable = profile.with_roles;
+
+    if identifiable < MIN_IDENTIFIABLE_SPELLS {
+        // Weight zero rather than a middling score: an unmeasurable criterion must not drag
+        // the total towards the middle, and must not give the search anything to chase.
+        return Criterion {
+            name: "Roles".to_owned(),
+            score: 0.0,
+            weight: 0.0,
+            detail: format!(
+                "only {identifiable} card(s) have a known role, too few to judge —                  the tag data covers about 72% of cards"
+            ),
+            derived: false,
+        };
+    }
+
+    let mut total = 0.0;
+    let mut parts = Vec::new();
+    let minimums = archetype.minimum_roles();
+
+    for (group, minimum) in minimums {
+        let copies = profile.copies_with_any(group.tags());
+        let share = f64::from(copies) / f64::from(identifiable);
+
+        let met = if minimum <= 0.0 {
+            1.0
+        } else {
+            (share / minimum).min(1.0)
+        };
+        total += met;
+
+        if minimum > 0.0 {
+            parts.push(format!(
+                "{copies} {} ({:.0}% of {:.0}% wanted)",
+                group.label(),
+                share * 100.0,
+                minimum * 100.0
+            ));
+        }
+    }
+
+    let score = total / minimums.len() as f64;
+    let unknown = profile.without_roles;
+    let caveat = if unknown > 0 {
+        format!("; {unknown} card(s) have no tag data")
+    } else {
+        String::new()
+    };
+
+    Criterion {
+        name: "Roles".to_owned(),
+        score,
+        weight,
+        detail: format!("{}{caveat}", parts.join(", ")),
+        derived: false,
     }
 }
 
@@ -371,7 +528,159 @@ mod tests {
             pip_requirements: requirements,
             color_identity: ColorSet::from_symbols("U"),
             unresolved: 0,
+            // No role data: these fixtures exercise the mana and curve criteria, and the roles
+            // criterion correctly reports itself unmeasurable on them.
+            ..DeckProfile::default()
         }
+    }
+
+    /// A profile carrying only role data, which is all the roles criterion reads.
+    fn with_roles(spells: u32, groups: &[(RoleGroup, u32)]) -> DeckProfile {
+        let mut profile = DeckProfile {
+            with_roles: spells,
+            ..DeckProfile::default()
+        };
+        for (group, copies) in groups {
+            // The first tag of a group is its broadest, and `copies_with_any` takes the largest
+            // single count — so setting that one is what a real catalog would produce.
+            profile.roles[group.tags()[0] as usize] = *copies;
+        }
+        profile
+    }
+
+    #[test]
+    fn a_deck_meeting_every_minimum_scores_full_marks() {
+        let profile = with_roles(
+            40,
+            &[
+                (RoleGroup::Interaction, 8),   // 20%, above the 18% midrange wants
+                (RoleGroup::CardAdvantage, 6), // 15%, above 12%
+                (RoleGroup::Ramp, 4),          // 10%, above 5%
+            ],
+        );
+        let criterion = roles_criterion(&profile, Archetype::Midrange, 1.0);
+        assert!((criterion.score - 1.0).abs() < 1e-9, "{criterion:?}");
+    }
+
+    #[test]
+    fn a_deck_with_no_interaction_at_all_is_marked_down() {
+        // The failure this criterion exists for. Nothing else in the score can see it.
+        let profile = with_roles(40, &[(RoleGroup::CardAdvantage, 6), (RoleGroup::Ramp, 4)]);
+        let criterion = roles_criterion(&profile, Archetype::Midrange, 1.0);
+        assert!(criterion.score < 0.7, "{}", criterion.score);
+        assert!(
+            criterion.detail.contains("0 interaction"),
+            "{}",
+            criterion.detail
+        );
+    }
+
+    #[test]
+    fn exceeding_a_minimum_is_not_rewarded() {
+        // There is no defensible number for "too much removal", so the criterion says nothing
+        // above the threshold rather than inventing one — and a search cannot farm it by
+        // stuffing a deck with removal.
+        let modest = with_roles(
+            40,
+            &[(RoleGroup::Interaction, 8), (RoleGroup::CardAdvantage, 5)],
+        );
+        let loaded = with_roles(
+            40,
+            &[(RoleGroup::Interaction, 30), (RoleGroup::CardAdvantage, 5)],
+        );
+        assert_eq!(
+            roles_criterion(&modest, Archetype::Midrange, 1.0).score,
+            roles_criterion(&loaded, Archetype::Midrange, 1.0).score
+        );
+    }
+
+    #[test]
+    fn an_archetype_that_wants_none_of_a_role_does_not_punish_its_absence() {
+        // Aggro asks for no ramp. A burn deck with zero mana rocks is not thereby worse.
+        let profile = with_roles(
+            40,
+            &[(RoleGroup::Interaction, 8), (RoleGroup::CardAdvantage, 4)],
+        );
+        let criterion = roles_criterion(&profile, Archetype::Aggro, 1.0);
+        assert!((criterion.score - 1.0).abs() < 1e-9, "{criterion:?}");
+    }
+
+    #[test]
+    fn a_deck_nothing_is_known_about_is_declared_unmeasurable() {
+        // The important half. The tagger covers 72% of cards, so "no removal found" and "no
+        // data" are different states, and scoring the second as the first would invent a
+        // weakness the optimizer would then act on.
+        let profile = with_roles(3, &[]);
+        let criterion = roles_criterion(&profile, Archetype::Midrange, 1.0);
+        assert_eq!(
+            criterion.weight, 0.0,
+            "an unmeasurable criterion must not count"
+        );
+        assert!(
+            criterion.detail.contains("too few to judge"),
+            "{}",
+            criterion.detail
+        );
+    }
+
+    #[test]
+    fn an_unmeasurable_roles_criterion_does_not_move_the_total() {
+        // Weight zero has to mean weight zero all the way through the weighted average.
+        let mut settings = ScoreSettings::for_deck_size(60);
+        settings.simulation.games = 300;
+        let profile = deck(24, &[(2, 20), (3, 16)], vec![blue(1, 2, 12)]);
+
+        let score = score(&profile, settings);
+        let roles = score
+            .criteria
+            .iter()
+            .find(|criterion| criterion.name == "Roles")
+            .expect("the roles criterion should still be reported");
+        assert_eq!(roles.weight, 0.0);
+        assert!(
+            score.total > 0.0,
+            "the rest of the score should be unaffected"
+        );
+    }
+
+    #[test]
+    fn the_share_is_taken_over_known_cards_not_the_whole_deck() {
+        // The numbers are chosen so the two denominators disagree. Ten cards are known, thirty
+        // are not. Over the known ten, every minimum is met; over all forty it would look like
+        // a deck with almost no interaction — a weakness that is not there, and one the search
+        // would then try to fix by cutting real cards.
+        let mostly_unknown = DeckProfile {
+            with_roles: 10,
+            without_roles: 30,
+            ..with_roles(
+                10,
+                &[
+                    (RoleGroup::Interaction, 2),   // 20% of 10, but only 5% of 40
+                    (RoleGroup::CardAdvantage, 2), // 20% of 10, but only 5% of 40
+                    (RoleGroup::Ramp, 1),          // 10% of 10, but only 2.5% of 40
+                ],
+            )
+        };
+        let criterion = roles_criterion(&mostly_unknown, Archetype::Midrange, 1.0);
+        assert!(
+            (criterion.score - 1.0).abs() < 1e-9,
+            "every minimum is met among the cards actually known: {criterion:?}"
+        );
+        assert!(
+            criterion.detail.contains("30 card(s) have no tag data"),
+            "the caveat has to be visible: {}",
+            criterion.detail
+        );
+    }
+
+    #[test]
+    fn one_card_with_two_roles_in_a_group_is_counted_once() {
+        // Lightning Bolt is both `removal` and `spot-removal`. Summing them would make four
+        // copies look like eight pieces of interaction.
+        let mut profile = with_roles(40, &[]);
+        profile.roles[Tag::Removal as usize] = 4;
+        profile.roles[Tag::SpotRemoval as usize] = 4;
+        assert_eq!(profile.copies_with_any(RoleGroup::Interaction.tags()), 4);
     }
 
     fn blue(pips: u32, turn: u32, copies: u32) -> PipRequirement {
