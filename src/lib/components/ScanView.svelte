@@ -23,6 +23,9 @@
   /** Between frames. Ten a second is well inside the budget and feels immediate. */
   const FRAME_INTERVAL = 100;
 
+  /** Consecutive failures before the camera is given up on. */
+  const MAX_FRAME_FAILURES = 15;
+
   type Destination = "physical" | "digital" | "deck" | "pool";
 
   type Pending = ScannedCard & { quantity: number };
@@ -36,6 +39,8 @@
   let committing = $state(false);
   /** Held until the next card replaces it, so the readout keeps naming what it just added. */
   let lastConfirmed = $state<string | null>(null);
+  /** The last frame failure, shown over the viewfinder while the session keeps trying. */
+  let frameError = $state<string | null>(null);
 
   let destination = $state<Destination>("physical");
   let deckId = $state<number | null>(null);
@@ -53,6 +58,15 @@
   let grabber: HTMLCanvasElement | null = null;
   let gray: Uint8Array | null = null;
   let inFlight = false;
+  /**
+   * Consecutive frame failures.
+   *
+   * One bad frame used to stop the camera outright, which on a phone looked like the camera
+   * closing itself a second after opening. A frame can fail for reasons that pass — a dropped
+   * capture, a size the canvas has not caught up with — so the session now survives a run of
+   * them and only gives up when it is clearly not transient.
+   */
+  let failures = 0;
 
   $effect(() => {
     void (async () => {
@@ -112,6 +126,7 @@
     running = false;
     result = null;
     lastConfirmed = null;
+    failures = 0;
     clearOverlay();
   }
 
@@ -150,11 +165,19 @@
     try {
       const outcome = await api.scanFrame(gray, width, height);
       result = outcome;
+      failures = 0;
+      frameError = null;
       drawOutline(outcome, width, height);
       if (outcome.state === "confirmed" && outcome.card) accept(outcome.card);
     } catch (e) {
-      error = String(e);
-      stop();
+      failures += 1;
+      // Shown over the viewfinder rather than only in the side panel, which on a phone sits
+      // below the fold: an error nobody can see is an error nobody can report.
+      frameError = `${e}`;
+      if (failures >= MAX_FRAME_FAILURES) {
+        error = `The camera stopped after ${failures} failed frames: ${e}`;
+        stop();
+      }
     } finally {
       inFlight = false;
     }
@@ -332,7 +355,9 @@ ${written} card${written === 1 ? "" : "s"} were added. ` +
       </div>
     {:else}
       <div class="readout" class:found={result?.state === "confirmed" || result?.state === "holding"}>
-        {#if result?.state === "confirmed" || result?.state === "holding"}
+        {#if frameError}
+          <span class="name muted">{frameError}</span>
+        {:else if result?.state === "confirmed" || result?.state === "holding"}
           <span class="name">{result.card?.name ?? lastConfirmed ?? "Added"}</span>
           <span class="tag">added</span>
         {:else if result?.state === "tracking"}

@@ -255,8 +255,14 @@
   <div class="setup">
     <h2>No card data yet</h2>
     <p>
-      MagicOptimizer ships without card data and downloads it separately. Until the in-app
-      downloader lands, build the catalog from a checkout:
+      MagicOptimizer ships without card data and downloads it separately. <strong>The in-app
+      downloader does not exist yet</strong>, which is the honest reason this screen is here and
+      not something you did wrong.
+    </p>
+    <p>
+      On a desktop you can build the catalog from a checkout. <strong>On a phone there is
+      currently no way to get it</strong> — everything except Browse still works, and the tabs
+      above will take you there.
     </p>
     <pre>cargo run --release -p build-artifacts</pre>
     <p class="dim">Expected at <code>{status.path}</code></p>
