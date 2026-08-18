@@ -4,6 +4,7 @@
   import CardList from "./lib/components/CardList.svelte";
   import CollectionView from "./lib/components/CollectionView.svelte";
   import DecksView from "./lib/components/DecksView.svelte";
+  import JournalView from "./lib/components/JournalView.svelte";
   import ScanView from "./lib/components/ScanView.svelte";
   import SearchPanel from "./lib/components/SearchPanel.svelte";
   import type {
@@ -15,7 +16,7 @@
     Zone,
   } from "./lib/types";
 
-  let tab = $state<"browse" | "decks" | "collection" | "scan">("browse");
+  let tab = $state<"browse" | "decks" | "collection" | "scan" | "journal">("browse");
   /** Only has an effect below 1180px, where the filter panel is a drawer. */
   let filtersOpen = $state(false);
   let status = $state<CatalogStatus | null>(null);
@@ -220,6 +221,14 @@
     <button type="button" class="tab" class:active={tab === "scan"} onclick={() => (tab = "scan")}>
       Scan
     </button>
+    <button
+      type="button"
+      class="tab"
+      class:active={tab === "journal"}
+      onclick={() => (tab = "journal")}
+    >
+      Journal
+    </button>
   </nav>
 
   <div class="status">
@@ -311,9 +320,13 @@
   <main>
     <CollectionView onchanged={refreshCollectionSideData} />
   </main>
-{:else}
+{:else if tab === "scan"}
   <main class="scan-main">
     <ScanView {decks} {containers} onCommitted={refreshCollectionSideData} />
+  </main>
+{:else}
+  <main class="scan-main">
+    <JournalView {decks} />
   </main>
 {/if}
 

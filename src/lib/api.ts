@@ -25,6 +25,9 @@ import type {
   Score,
   SearchRequest,
   SearchResponse,
+  DeckHistory,
+  Game,
+  GameInput,
   ScanResult,
   ScanStatus,
   SearchResult,
@@ -221,4 +224,28 @@ export function scanFrame(gray: Uint8Array, width: number, height: number): Prom
   return invoke("scan_frame", gray, {
     headers: { width: String(width), height: String(height) },
   });
+}
+
+// --- Game log --------------------------------------------------------------
+
+export function journalAdd(game: GameInput): Promise<number> {
+  return invoke("journal_add", { game });
+}
+
+export function journalRemove(id: number): Promise<boolean> {
+  return invoke("journal_remove", { id });
+}
+
+export function journalList(): Promise<Game[]> {
+  return invoke("journal_list");
+}
+
+/**
+ * One deck's games and everything derived from them, in a single call.
+ *
+ * One round trip rather than four, so the view cannot show a win rate and a matchup table that
+ * disagree with each other.
+ */
+export function journalDeckHistory(deckId: number, since?: string): Promise<DeckHistory> {
+  return invoke("journal_deck_history", { deckId, since: since ?? null });
 }

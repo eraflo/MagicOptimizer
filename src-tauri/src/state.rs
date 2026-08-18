@@ -7,6 +7,7 @@ use mtg_collection::CollectionStore;
 use mtg_combo::ComboDatabase;
 use mtg_data::Catalog;
 use mtg_deck::DeckStore;
+use mtg_journal::JournalStore;
 use mtg_vision::{ArtDatabase, Scanner};
 
 /// Everything the commands need.
@@ -33,6 +34,9 @@ pub struct AppState {
     artworks: RwLock<usize>,
     collection: CollectionStore,
     decks: DeckStore,
+    /// The game log. Its own database, because it is the one thing here that is pure history:
+    /// a deck can be deleted and rebuilt, but the evenings happened.
+    journal: JournalStore,
 }
 
 impl AppState {
@@ -67,6 +71,8 @@ impl AppState {
             .map_err(|e| format!("could not open the collection: {e}"))?;
         let decks = DeckStore::open(data_dir.join("decks.redb"))
             .map_err(|e| format!("could not open the deck database: {e}"))?;
+        let journal = JournalStore::open(data_dir.join("journal.redb"))
+            .map_err(|e| format!("could not open the game log: {e}"))?;
 
         let state = AppState {
             catalog: RwLock::new(None),
@@ -81,6 +87,7 @@ impl AppState {
             artworks: RwLock::new(0),
             collection,
             decks,
+            journal,
         };
         state.reload_catalog();
         state.reload_combos();
@@ -230,6 +237,10 @@ impl AppState {
     pub fn decks(&self) -> &DeckStore {
         &self.decks
     }
+
+    pub fn journal(&self) -> &JournalStore {
+        &self.journal
+    }
 }
 
 /// Finds an artifact by name, preferring the installed copy.
@@ -307,6 +318,7 @@ mod tests {
             artworks: RwLock::new(0),
             collection: mtg_collection::CollectionStore::open(dir.path().join("c.redb")).unwrap(),
             decks: DeckStore::open(dir.path().join("d.redb")).unwrap(),
+            journal: JournalStore::open(dir.path().join("j.redb")).unwrap(),
         };
 
         let error = state.with_catalog(|c| c.len()).unwrap_err();

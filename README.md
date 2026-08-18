@@ -54,7 +54,7 @@ The project ships in phases. It stays usable at the end of each one.
 | 4 | Optimizer, simulation, collection constraint | ✅ done |
 | 5 | Combo detection, Commander brackets | ✅ done |
 | 6 | Android and video scanning | 🟨 scanning done, Android untested on a device |
-| 7 | Game log | 🟨 statistics done, entry screen to come |
+| 7 | Game log | ✅ done |
 | 8 | Continuously trained personal model | ⬜ |
 | 9 | Sync, pricing, translations | ⬜ |
 

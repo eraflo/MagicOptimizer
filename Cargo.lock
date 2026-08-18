@@ -1949,6 +1949,7 @@ dependencies = [
  "mtg-core",
  "mtg-data",
  "mtg-deck",
+ "mtg-journal",
  "mtg-optimizer",
  "mtg-vision",
  "serde",

@@ -6,6 +6,7 @@ mod combo_commands;
 mod commands;
 mod deck_commands;
 mod dto;
+mod journal_commands;
 mod optimize_commands;
 mod scan_commands;
 mod state;
@@ -64,6 +65,10 @@ pub fn run() {
             scan_commands::scan_reload,
             scan_commands::scan_reset,
             scan_commands::scan_frame,
+            journal_commands::journal_add,
+            journal_commands::journal_remove,
+            journal_commands::journal_list,
+            journal_commands::journal_deck_history,
         ])
         .run(tauri::generate_context!())
         .expect("the application failed to start");

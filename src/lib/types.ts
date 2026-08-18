@@ -394,3 +394,74 @@ export type ScanResult = {
    */
   quad: [number, number][] | null;
 };
+
+// --- Game log --------------------------------------------------------------
+
+export type GameResult = "win" | "loss" | "draw";
+
+export type Opponent = { archetype: string; player: string };
+
+export type Game = {
+  id: number;
+  deck_id: number;
+  played_at: string;
+  format: string;
+  result: GameResult;
+  opponents: Opponent[];
+  on_the_play: boolean | null;
+  mulligans: number | null;
+  ended_on_turn: number | null;
+  notes: string;
+};
+
+/**
+ * A win rate with its uncertainty attached.
+ *
+ * Never show `observed` on its own. Three wins out of three is 100% observed and about 64%
+ * adjusted, with a range spanning most of the scale — and that range is the honest answer.
+ */
+export type WinRate = {
+  games: number;
+  wins: number;
+  losses: number;
+  draws: number;
+  /** What happened, over decided games. Draws are excluded from the denominator. */
+  observed: number;
+  /** Pulled towards even by a prior worth six even games. What it is reasonable to believe. */
+  adjusted: number;
+  /** 95% Wilson interval on the observed rate. */
+  low: number;
+  high: number;
+};
+
+export type Matchup = { archetype: string; rate: WinRate };
+
+export type BeforeAfter = {
+  since: string;
+  before: WinRate;
+  after: WinRate;
+  /** Difference in adjusted rates. Positive means the change looks like an improvement. */
+  shift: number;
+  /** Whether the intervals fail to overlap. Almost always false, and rightly so. */
+  conclusive: boolean;
+};
+
+export type DeckHistory = {
+  deckId: number;
+  games: Game[];
+  overall: WinRate;
+  matchups: Matchup[];
+  change: BeforeAfter | null;
+};
+
+export type GameInput = {
+  deckId: number;
+  playedAt: string;
+  format?: string;
+  result: GameResult;
+  opponents?: string[];
+  onThePlay?: boolean | null;
+  mulligans?: number | null;
+  endedOnTurn?: number | null;
+  notes?: string;
+};

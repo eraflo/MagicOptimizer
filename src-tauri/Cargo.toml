@@ -26,6 +26,7 @@ mtg-data = { path = "../crates/mtg-data" }
 mtg-collection = { path = "../crates/mtg-collection" }
 mtg-combo = { path = "../crates/mtg-combo" }
 mtg-deck = { path = "../crates/mtg-deck" }
+mtg-journal = { path = "../crates/mtg-journal" }
 mtg-optimizer = { path = "../crates/mtg-optimizer" }
 mtg-vision = { path = "../crates/mtg-vision" }
 tauri = { version = "2", features = [] }

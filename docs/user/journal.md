@@ -1,12 +1,13 @@
 # Game log
 
-> **The statistics are built; the screen to enter games in is not yet.** What follows describes
-> what the log computes, which is already there and tested.
+> **Available now.** The Journal tab records games and shows what they add up to.
 
 ## How it works
 
-After a game — never during — you record a few things in seconds: the deck you played, the
-opponents you faced, the result, the turn it ended, and a note if you want one.
+After a game — never during — you record a few things in seconds. Only three are required: the
+deck, the date and whether you won. The date stays put between entries, because an evening is
+usually typed in as several games at once, and the opponents, mulligans and a note are there if
+you want them.
 
 ## What it tells you
 
