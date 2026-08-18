@@ -3,7 +3,7 @@ resolver = "2"
 members = ["crates/mtg-core", "crates/mtg-data", "crates/mtg-collection", "crates/mtg-deck", "crates/mtg-optimizer", "crates/mtg-combo", "crates/mtg-journal", "crates/mtg-vision", "tools/build-artifacts", "src-tauri"]
 
 [workspace.package]
-version = "0.0.0"
+version = "0.0.1"
 edition = "2021"
 rust-version = "1.82"
 license = "MIT"

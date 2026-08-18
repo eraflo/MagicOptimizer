@@ -230,7 +230,7 @@ dependencies = [
 
 [[package]]
 name = "build-artifacts"
-version = "0.0.0"
+version = "0.0.1"
 dependencies = [
  "anyhow",
  "clap",
@@ -1942,7 +1942,7 @@ checksum = "0ceec5bc11778974d1bcb055b18002eba7f4b3518b6a0081b3af5f21666da9ad"
 
 [[package]]
 name = "magicoptimizer"
-version = "0.0.0"
+version = "0.0.1"
 dependencies = [
  "mtg-collection",
  "mtg-combo",
@@ -2034,7 +2034,7 @@ dependencies = [
 
 [[package]]
 name = "mtg-collection"
-version = "0.0.0"
+version = "0.0.1"
 dependencies = [
  "mtg-core",
  "redb",
@@ -2046,7 +2046,7 @@ dependencies = [
 
 [[package]]
 name = "mtg-combo"
-version = "0.0.0"
+version = "0.0.1"
 dependencies = [
  "memmap2",
  "mtg-core",
@@ -2059,7 +2059,7 @@ dependencies = [
 
 [[package]]
 name = "mtg-core"
-version = "0.0.0"
+version = "0.0.1"
 dependencies = [
  "serde",
  "serde_json",
@@ -2067,7 +2067,7 @@ dependencies = [
 
 [[package]]
 name = "mtg-data"
-version = "0.0.0"
+version = "0.0.1"
 dependencies = [
  "clap",
  "memmap2",
@@ -2079,7 +2079,7 @@ dependencies = [
 
 [[package]]
 name = "mtg-deck"
-version = "0.0.0"
+version = "0.0.1"
 dependencies = [
  "clap",
  "mtg-core",
@@ -2093,7 +2093,7 @@ dependencies = [
 
 [[package]]
 name = "mtg-journal"
-version = "0.0.0"
+version = "0.0.1"
 dependencies = [
  "mtg-core",
  "redb",
@@ -2105,7 +2105,7 @@ dependencies = [
 
 [[package]]
 name = "mtg-optimizer"
-version = "0.0.0"
+version = "0.0.1"
 dependencies = [
  "clap",
  "mtg-core",
@@ -2116,7 +2116,7 @@ dependencies = [
 
 [[package]]
 name = "mtg-vision"
-version = "0.0.0"
+version = "0.0.1"
 dependencies = [
  "serde",
  "thiserror 2.0.20",
