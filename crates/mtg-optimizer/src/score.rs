@@ -124,6 +124,13 @@ impl RoleGroup {
     }
 }
 
+/// Fewer ranked spells than this and the quality criterion says nothing.
+///
+/// Same reasoning as [`MIN_IDENTIFIABLE_SPELLS`]: a deck whose cards are simply absent from
+/// EDHREC is not thereby a bad deck, and scoring it as one would have the search cut real cards
+/// to fix a weakness that is an artefact of the data.
+const MIN_RANKED_SPELLS: u32 = 8;
+
 /// Fewer identifiable spells than this and the roles criterion says nothing.
 ///
 /// The tagger covers 72% of the catalog, so a deck can hold cards whose role is simply unknown.
@@ -139,6 +146,7 @@ pub struct Weights {
     pub opening_hands: f64,
     pub curve: f64,
     pub roles: f64,
+    pub quality: f64,
 }
 
 impl Default for Weights {
@@ -153,6 +161,10 @@ impl Default for Weights {
             // but the thing being measured is real and nothing else in the score can see it:
             // without this, cutting the deck's removal costs nothing.
             roles: 0.8,
+            // Lower than roles, because roles measure what a deck needs while this measures
+            // only what other people play. It is the term that stops a good spell being traded
+            // for a land nobody sleeves, and it should not do more than that.
+            quality: 0.5,
         }
     }
 }
@@ -222,6 +234,7 @@ pub fn score_with_simulation(
         opening_hands_criterion(&simulation, settings.weights.opening_hands),
         curve_criterion(profile, settings.archetype, settings.weights.curve),
         roles_criterion(profile, settings.archetype, settings.weights.roles),
+        quality_criterion(profile, settings.weights.quality),
     ];
 
     let total_weight: f64 = criteria.iter().map(|c| c.weight).sum();
@@ -411,6 +424,69 @@ fn land_drops_criterion(
     }
 }
 
+/// How well played the deck's cards are, as a stand-in for how good they are.
+///
+/// The gap this fills is structural: every other criterion measures whether the deck can *cast*
+/// its spells, so the score is maximised by playing more lands. Nothing valued a spell as a
+/// spell, and the search duly offered to trade Lightning Bolt for a land whose only merit was
+/// being a land. A rank-50 card leaving for a rank-15,000 one now costs something.
+///
+/// **This is popularity, not quality, and Commander popularity at that.** A Modern staple that
+/// nobody plays in Commander scores poorly here and is not thereby a bad card. Two things keep
+/// that from doing damage: the weight is the lowest of the five, and unranked cards are left
+/// out of the average rather than counted as bad — the same rule the roles criterion follows,
+/// for the same reason.
+fn quality_criterion(profile: &DeckProfile, weight: f64) -> Criterion {
+    // Measured, not assumed. Applied to a Modern burn list this criterion scored 0.18 — because
+    // Goblin Guide and Lava Spike are barely played in Commander — and the search answered by
+    // proposing Commander staples in their place. It made the advice worse, so outside a
+    // Commander-shaped format it does not get a vote.
+    if !profile.format.edhrec_rank_is_meaningful() {
+        return Criterion {
+            name: "Card quality".to_owned(),
+            score: 0.0,
+            weight: 0.0,
+            detail: format!(
+                "not judged: EDHREC rank counts Commander play, which says little about {}",
+                profile.format.display_name()
+            ),
+            derived: false,
+        };
+    }
+
+    if profile.with_quality < MIN_RANKED_SPELLS {
+        return Criterion {
+            name: "Card quality".to_owned(),
+            score: 0.0,
+            weight: 0.0,
+            detail: format!(
+                "only {} card(s) carry an EDHREC rank, too few to judge",
+                profile.with_quality
+            ),
+            derived: false,
+        };
+    }
+
+    let score = profile.quality_total / f64::from(profile.with_quality);
+    let unranked = profile.without_quality;
+    let caveat = if unranked > 0 {
+        format!("; {unranked} card(s) unranked, left out rather than counted as weak")
+    } else {
+        String::new()
+    };
+
+    Criterion {
+        name: "Card quality".to_owned(),
+        score,
+        weight,
+        detail: format!(
+            "average EDHREC standing of {} ranked card(s){caveat} — popularity in Commander,              a weak signal in other formats",
+            profile.with_quality
+        ),
+        derived: false,
+    }
+}
+
 /// Whether the deck carries the roles a deck of its kind needs.
 ///
 /// This is the only criterion that can see what a card *does*. Everything else measures a mana
@@ -565,6 +641,7 @@ mod tests {
     use super::*;
     use crate::profile::PipRequirement;
     use crate::simulate::Card;
+    use mtg_core::Format;
     use mtg_core::{Color, ColorSet};
 
     fn land() -> Card {
@@ -604,6 +681,104 @@ mod tests {
             // criterion correctly reports itself unmeasurable on them.
             ..DeckProfile::default()
         }
+    }
+
+    /// A profile carrying only quality data, which is all the quality criterion reads.
+    fn with_quality(ranks: &[u32], unranked: u32) -> DeckProfile {
+        let mut profile = DeckProfile {
+            without_quality: unranked,
+            format: Format::Commander,
+            ..DeckProfile::default()
+        };
+        for rank in ranks {
+            profile.quality_total += crate::profile::quality_of(*rank);
+            profile.with_quality += 1;
+        }
+        profile
+    }
+
+    #[test]
+    fn a_modern_deck_is_not_judged_on_commander_popularity() {
+        // Measured before it was gated: a real burn list scored 0.18 here, and the search
+        // started offering it Commander staples. A signal that makes the advice worse must not
+        // get a vote just because it is available.
+        let modern = DeckProfile {
+            format: Format::Modern,
+            ..with_quality(&[20_000; 20], 0)
+        };
+        let criterion = quality_criterion(&modern, 1.0);
+        assert_eq!(criterion.weight, 0.0);
+        assert!(
+            criterion.detail.contains("Commander play"),
+            "{}",
+            criterion.detail
+        );
+    }
+
+    #[test]
+    fn a_deck_of_staples_outscores_a_deck_of_cards_nobody_plays() {
+        // The whole point. Without this, every criterion is about mana and a spell is worth
+        // exactly as much as a land.
+        let staples = with_quality(&[10; 12], 0);
+        let obscure = with_quality(&[25_000; 12], 0);
+        assert!(
+            quality_criterion(&staples, 1.0).score > quality_criterion(&obscure, 1.0).score + 0.4,
+            "staples should be clearly ahead"
+        );
+    }
+
+    #[test]
+    fn the_scale_is_logarithmic_where_it_matters() {
+        // Rank 10 against 100 is a real difference; 20,000 against 20,100 is not. A linear
+        // scale would treat the second as mattering as much as the first.
+        let near = crate::profile::quality_of(10) - crate::profile::quality_of(100);
+        let far = crate::profile::quality_of(20_000) - crate::profile::quality_of(20_100);
+        assert!(near > far * 10.0, "{near} against {far}");
+    }
+
+    #[test]
+    fn unranked_cards_are_left_out_rather_than_counted_as_bad() {
+        // A Modern staple can be absent from EDHREC entirely. Scoring it as a weak card would
+        // have the search cut real cards to fix an artefact of the data.
+        let ranked_only = with_quality(&[50; 10], 0);
+        let plus_unranked = with_quality(&[50; 10], 20);
+        assert_eq!(
+            quality_criterion(&ranked_only, 1.0).score,
+            quality_criterion(&plus_unranked, 1.0).score
+        );
+        assert!(
+            quality_criterion(&plus_unranked, 1.0)
+                .detail
+                .contains("20 card(s) unranked"),
+            "the caveat has to be visible"
+        );
+    }
+
+    #[test]
+    fn a_deck_nothing_is_ranked_in_is_declared_unmeasurable() {
+        let criterion = quality_criterion(&with_quality(&[50; 3], 40), 1.0);
+        assert_eq!(criterion.weight, 0.0);
+        assert!(
+            criterion.detail.contains("too few to judge"),
+            "{}",
+            criterion.detail
+        );
+    }
+
+    #[test]
+    fn the_detail_says_the_signal_is_commander_popularity() {
+        // Anyone reading a score has to be told what this number actually is, or they will
+        // read it as a judgement of card quality in their format.
+        let criterion = quality_criterion(&with_quality(&[50; 12], 0), 1.0);
+        assert!(
+            criterion.detail.contains("popularity in Commander"),
+            "{}",
+            criterion.detail
+        );
+        assert!(
+            !criterion.derived,
+            "it encodes a judgement, not a calculation"
+        );
     }
 
     #[test]

@@ -4,7 +4,7 @@
 //! the catalog for every card on every pass would dominate the run time — this walks the deck
 //! once and hands back flat arrays.
 
-use mtg_core::{Color, ColorSet};
+use mtg_core::{Color, ColorSet, Format};
 use mtg_data::{ArchivedCard, Catalog};
 use mtg_deck::{Deck, Zone};
 use serde::{Deserialize, Serialize};
@@ -47,6 +47,15 @@ pub struct DeckProfile {
     pub with_roles: u32,
     /// Non-land copies the catalog knows but the tagger does not.
     pub without_roles: u32,
+    /// Sum of per-copy quality for non-land cards that carry an EDHREC rank, in `0..=1`.
+    pub quality_total: f64,
+    /// Non-land copies that quality could be measured for.
+    pub with_quality: u32,
+    /// Non-land copies with no rank at all — never played in Commander, which for a Modern
+    /// card says very little.
+    pub without_quality: u32,
+    /// The deck's format, so a criterion can refuse to use a signal that does not apply to it.
+    pub format: Format,
     pub pip_requirements: Vec<PipRequirement>,
     pub color_identity: ColorSet,
     /// Cards not found in the catalog. Reported so a score can be labelled unreliable rather
@@ -67,6 +76,10 @@ impl Default for DeckProfile {
             roles: [0; mtg_core::Tag::ALL.len()],
             with_roles: 0,
             without_roles: 0,
+            quality_total: 0.0,
+            with_quality: 0,
+            without_quality: 0,
+            format: Format::Commander,
             pip_requirements: Vec::new(),
             color_identity: ColorSet::COLORLESS,
             unresolved: 0,
@@ -159,9 +172,28 @@ pub fn profile(deck: &Deck, catalog: &Catalog) -> DeckProfile {
     profile_with_index(deck, &CardIndex::build(catalog))
 }
 
+/// Turns an EDHREC popularity rank into a quality in `0..=1`.
+///
+/// Logarithmic, because the gap between the 10th and the 100th most played card means far more
+/// than the gap between the 10,000th and the 10,100th — both of the latter are cards nobody
+/// sleeves.
+///
+/// This is a **popularity** measure standing in for quality, and a Commander one at that. It
+/// says something real in Commander and much less in Modern, where a card can be a four-of in
+/// every list and barely register here. Anything using it has to say so.
+pub fn quality_of(rank: u32) -> f64 {
+    // Roughly the size of the ranked catalog. Beyond it the score is already at zero.
+    const CEILING: f64 = 30_000.0;
+    let rank = (rank.max(1) as f64).min(CEILING);
+    1.0 - rank.ln() / CEILING.ln()
+}
+
 /// Flattens a deck against a prebuilt index.
 pub fn profile_with_index(deck: &Deck, index: &CardIndex<'_>) -> DeckProfile {
-    let mut built = DeckProfile::default();
+    let mut built = DeckProfile {
+        format: deck.format,
+        ..DeckProfile::default()
+    };
 
     for entry in deck.entries.iter().filter(|e| e.zone != Zone::Sideboard) {
         let Some(card) = index.get(&entry.oracle_id) else {
@@ -190,6 +222,14 @@ pub fn profile_with_index(deck: &Deck, index: &CardIndex<'_>) -> DeckProfile {
         // is about what the deck's *spells* do, and a land ramp package would otherwise count
         // twice — once here and once in the mana base.
         if !is_land {
+            match card.edhrec_rank() {
+                Some(rank) => {
+                    built.quality_total += quality_of(rank) * f64::from(entry.quantity);
+                    built.with_quality += entry.quantity;
+                }
+                None => built.without_quality += entry.quantity,
+            }
+
             let roles = card.tags();
             if roles.is_empty() {
                 built.without_roles += entry.quantity;

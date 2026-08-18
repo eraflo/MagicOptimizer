@@ -135,6 +135,12 @@ fix it, do not silence it with `#[allow]` unless you write the justification in 
   co-occurrence but only each card's top neighbours, Commander-only, at ~4.8 GB over 35,000
   requests. Moxfield and MTGTop8 have the data and are not ours to scrape. Do not start phase 8
   on the assumption that a corpus is a download away; see `docs/dev/ml.md`.
+- **`edhrec_rank` as a quality signal is gated to Commander-shaped formats, and that gate is
+  measured.** Ungated, a real Modern burn list scored 0.18 on card quality — Goblin Guide and
+  Lava Spike are barely played in Commander — and the search answered by offering Commander
+  staples like Shatterskull Smashing in their place. The signal made the advice actively worse.
+  `Format::edhrec_rank_is_meaningful` is the check; do not remove it because the data happens to
+  be available.
 - **Every criterion in the score is about mana, so the score is maximised by playing more
   lands.** Mana base, land drops and opening hands all improve monotonically with lands; the
   curve criterion is the only thing pushing back, and roles only fires once a group drops below

@@ -42,6 +42,28 @@ pub enum Format {
 }
 
 impl Format {
+    /// Whether EDHREC's popularity rank means anything here.
+    ///
+    /// The rank counts appearances in Commander decks. In a Commander-shaped format that is a
+    /// usable, if blunt, stand-in for how good a card is. In Modern it is close to noise:
+    /// measured on a real burn list, the deck scored 0.18 because Goblin Guide and Lava Spike
+    /// are barely played in Commander, and the optimizer answered by proposing Commander
+    /// staples in their place. Anything reading `edhrec_rank` as quality must check this first.
+    pub const fn edhrec_rank_is_meaningful(self) -> bool {
+        matches!(
+            self,
+            Format::Commander
+                | Format::Oathbreaker
+                | Format::Brawl
+                | Format::StandardBrawl
+                | Format::CompetitiveBrawl
+                | Format::PauperCommander
+                | Format::Duel
+                | Format::Predh
+                | Format::Tlr
+        )
+    }
+
     /// Every format. Position matches [`Format::index`].
     pub const ALL: [Format; 23] = [
         Format::Standard,
