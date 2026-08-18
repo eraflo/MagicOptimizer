@@ -162,6 +162,7 @@ cargo run --release -p build-artifacts --example verify-bracket  # needs artifac
 
 ```bash
 cargo run --release -p build-artifacts --example verify-optimize  # needs artifacts/cards.rkyv
+cargo run --release -p build-artifacts --example verify-tags      # needs artifacts/cards.rkyv
 ```
 
 Each of the three has already earned its place:
@@ -170,6 +171,9 @@ Each of the three has already earned its place:
   finding in [`vision.md`](vision.md).
 * `verify-bracket` confirms the estimate over all 105,328 combo variants — including that a deck
   reads as *less* certain, not clean, when the combo artifact is missing.
+* `verify-tags` reports how much of the catalog carries a functional role, and checks ten cards
+  whose role is not a matter of opinion — plus Grizzly Bears, which must come back with *no*
+  role, so that an empty tag set keeps meaning "nothing known" rather than "does nothing".
 * `verify-optimize` found the search offering a mono-red deck Horizon Canopy, Yavimaya Coast and
   Nomad Outpost: eight of twelve suggestions outside the deck's colours. The colour-identity
   filter existed but only applied in Commander, where it is a rule; nothing constrained the other

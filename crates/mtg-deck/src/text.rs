@@ -355,6 +355,7 @@ mod tests {
             rarity: rarity_to_u8(mtg_core::Rarity::Common),
             edhrec_rank: None,
             game_changer: false,
+            tags: 0,
             reserved: false,
             layout: if faces.len() > 1 {
                 Layout::Split

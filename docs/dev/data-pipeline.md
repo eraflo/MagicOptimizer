@@ -17,7 +17,7 @@ device only has to memory-map.
 
 | File | Source | Size | Contents |
 |---|---|---|---|
-| `cards.rkyv` ✅ | Scryfall bulk `oracle-cards` | **25.9 MB measured** | One entry per oracle card: name, cost, cmc, colors, identity, types, text, P/T, keywords, legalities, EDHREC rank, Game Changer flag |
+| `cards.rkyv` ✅ | Scryfall bulk `oracle-cards` + tagger | **26.4 MB measured** | One entry per oracle card: name, cost, cmc, colors, identity, types, text, P/T, keywords, legalities, EDHREC rank, Game Changer flag, **functional tags** |
 | `printings.rkyv` | Scryfall bulk `default-cards` | ~10 MB | Printings: set, collector number, language, artwork, prices |
 | `arthashes.bin` ✅ | Scryfall `unique-artwork` + images | **6.2 MB measured** | **50,391 measured** × 256-bit pHash with the matching printing and oracle id |
 | `meta.rkyv` | `json.edhrec.com` | ~5 MB | Inclusion rates, synergy scores |
@@ -81,6 +81,41 @@ everything before it. The bulk file is also the more considerate way to use dona
 One subtlety: the file is named `.gz` *and* served with `Content-Encoding: gzip`, so an HTTP
 client that handles content encoding — `ureq` does, by default — hands over plain JSON. The build
 sniffs the gzip magic number instead of assuming either way.
+
+### Functional tags
+
+The card catalog carries a `tags` field: a 64-bit set of *functional roles* — removal, ramp,
+card advantage, counterspell, and thirty-one more. It exists because the optimizer measures a
+mana base, a curve and an opening hand, and none of those can tell Lightning Bolt from a
+Mountain. Tags are the smallest thing that fixes that: not an understanding of a card, but a
+claim about what it is for.
+
+They come from **Scryfall's tagger**, a community-maintained taxonomy queryable as `otag:x`. The
+vocabulary lives in `mtg_core::Tag` and every name in it was checked against the tagger before
+being added — `wincon`, `stax`, `token`, `pump` and `reanimation` all sound right and do not
+exist, so they are absent.
+
+There is **no bulk export**: tags are not in the bulk files and the API offers no way to ask a
+card what it carries. It offers the reverse, so the build walks the vocabulary instead of the
+catalog — one paginated search per tag. Measured on 2026-08-18: **327 requests, 17.5 minutes**.
+That is far slower than the request count suggests, because each page carries 175 complete card
+objects of which one field is kept.
+
+Three things about this source are worth stating plainly.
+
+* **It is unofficial and crowdsourced.** Coverage is uneven, but better than the vocabulary
+  size suggests: measured, **25,391 of 35,306 cards carry at least one role (72%)**, and 73% of
+  non-land cards. No tag in the vocabulary came back empty, so no name has drifted yet.
+* **An empty tag set is ambiguous** between "this card has no role" and "nobody has tagged it".
+  Grizzly Bears genuinely belongs to the first group. Nothing downstream may read an empty set
+  as "does nothing" — it means *nothing is known*.
+* **Tag names drift**, exactly like the legality keys. A tag matching no cards is reported
+  loudly at the end of the build, because the alternative is a whole role disappearing from
+  every deck's analysis with nothing anywhere saying why.
+
+A failure to fetch tags does not fail the build. The catalog without them is the catalog this
+project shipped for its first five phases; losing an entire rebuild to a community endpoint
+being down would be the wrong trade. `--no-tags` skips them deliberately.
 
 ### Artwork hashes
 

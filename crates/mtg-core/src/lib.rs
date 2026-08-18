@@ -6,10 +6,12 @@
 mod color;
 mod format;
 mod mana;
+mod tag;
 
 pub use color::{Color, ColorSet};
 pub use format::{Format, Legality, Rarity};
 pub use mana::{ManaCost, ManaCostError, ManaSymbol};
+pub use tag::{Tag, TagSet};
 
 /// Stable identifier for an oracle card: a card as a set of rules, independent of printing.
 ///

@@ -14,9 +14,12 @@ use crate::error::{CatalogError, Result};
 
 /// Bumped whenever the archived layout changes in a way older readers cannot handle.
 ///
+/// 3 — added `tags`, the functional roles a card has. Without them the optimizer cannot tell
+///     Lightning Bolt from a Mountain, which it demonstrated by offering to trade one for the
+///     other.
 /// 2 — added `produced_mana`, without which counting a deck's colour sources would have to
 /// guess from rules text.
-pub const FORMAT_VERSION: u32 = 2;
+pub const FORMAT_VERSION: u32 = 3;
 
 /// The root of the catalog artifact.
 #[derive(Archive, Serialize, Deserialize, Debug)]
@@ -408,6 +411,7 @@ mod tests {
             rarity: rarity_to_u8(Rarity::Common),
             edhrec_rank: None,
             game_changer: false,
+            tags: 0,
             reserved: false,
             layout: Layout::Normal,
             faces: vec![face(name, mana_cost, type_line)],

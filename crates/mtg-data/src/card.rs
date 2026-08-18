@@ -129,6 +129,12 @@ pub struct Card {
     /// Scryfall's own flag for the official Commander Game Changers list. Having this in the
     /// card data is why no separate list has to be maintained.
     pub game_changer: bool,
+    /// What the card *does*, as [`mtg_core::TagSet`] bits.
+    ///
+    /// Zero means either "no functional role" or "not tagged", and the two are genuinely hard
+    /// to tell apart — a vanilla 2/2 legitimately has none. Anything reading this should treat
+    /// an empty set as "nothing known", never as "does nothing".
+    pub tags: u64,
     pub reserved: bool,
     pub layout: Layout,
     /// Always at least one entry.
@@ -208,6 +214,11 @@ impl ArchivedCard {
 
     pub fn is_game_changer(&self) -> bool {
         self.game_changer
+    }
+
+    /// What the card does. Empty means nothing is known, not that it does nothing.
+    pub fn tags(&self) -> mtg_core::TagSet {
+        mtg_core::TagSet::from_bits(self.tags.to_native())
     }
 
     /// The raw cost string as Scryfall wrote it, for display.

@@ -261,6 +261,7 @@ mod tests {
             colors: 0,
             color_identity: 0,
             produced_mana: 0,
+            tags: 0,
             type_line: "Instant".to_owned(),
             oracle_text: text.to_owned(),
             power: None,

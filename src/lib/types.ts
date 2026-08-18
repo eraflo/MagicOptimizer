@@ -37,6 +37,11 @@ export type CardDetails = CardSummary & {
   toughness: string | null;
   loyalty: string | null;
   keywords: string[];
+  /**
+   * What the card does, as readable labels ("Removal", "Ramp", ...).
+   * Empty means nothing is known — the tagger is crowdsourced — not that the card does nothing.
+   */
+  tags: string[];
   rarity: string;
   reserved: boolean;
   layout: string;

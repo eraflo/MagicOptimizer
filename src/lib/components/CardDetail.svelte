@@ -123,6 +123,17 @@
       {#if card.loyalty}<p class="pt">Loyalty {card.loyalty}</p>{/if}
     {/if}
 
+    {#if card.tags.length > 0}
+      <!-- Absent rather than empty when nothing is known: an empty row would read as "this
+           card does nothing", and the tagger's coverage is uneven enough that it usually
+           means the opposite. -->
+      <ul class="roles">
+        {#each card.tags as role (role)}
+          <li>{role}</li>
+        {/each}
+      </ul>
+    {/if}
+
     <details class="legality">
       <summary>
         Legal in {card.legal_formats.length}
@@ -346,6 +357,23 @@
     margin: 2px 0 6px;
     font-size: 12px;
     color: var(--text-muted);
+  }
+
+  .roles {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin: 10px 0 0;
+    padding: 0;
+  }
+
+  .roles li {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--accent-soft);
+    color: var(--accent);
   }
 
   .legality {

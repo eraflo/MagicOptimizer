@@ -9,6 +9,7 @@ mod artwork;
 mod oracle;
 mod scryfall;
 mod spellbook;
+mod tags;
 
 use std::io::BufRead;
 use std::path::PathBuf;
@@ -68,6 +69,13 @@ struct Args {
     /// Stop after this many artwork downloads. For checking the plumbing, not for publishing.
     #[arg(long)]
     art_limit: Option<usize>,
+
+    /// Skip the functional tags, leaving every card's roles empty.
+    ///
+    /// They are part of the catalog rather than a separate artifact, so they are fetched by
+    /// default; this is the escape hatch for a quick rebuild or an offline one.
+    #[arg(long)]
+    no_tags: bool,
 
     /// Build everything: the card catalog, the combos and the artwork hashes.
     ///
@@ -152,6 +160,11 @@ fn main() -> Result<()> {
 
     report(&conversion, failed_lines);
 
+    if !args.no_tags && args.from_file.is_none() {
+        println!("\nFetching functional tags from Scryfall's tagger...");
+        apply_tags(&mut cards)?;
+    }
+
     let data = CatalogData {
         format_version: FORMAT_VERSION,
         source_updated_at,
@@ -177,6 +190,49 @@ fn main() -> Result<()> {
     if args.art || args.all {
         println!();
         artwork::build(&args.out, &args.cache, args.art_limit, Instant::now())?;
+    }
+    Ok(())
+}
+
+/// Fetches the functional tags and writes them onto the cards.
+///
+/// A failure here is reported and swallowed: tags make the optimizer better, and a card catalog
+/// without them is the catalog this project shipped for its first five phases. Losing a whole
+/// build to a community endpoint being down would be the wrong trade.
+fn apply_tags(cards: &mut [mtg_data::Card]) -> Result<()> {
+    let (tags, report) = match tags::fetch_tags() {
+        Ok(fetched) => fetched,
+        Err(error) => {
+            eprintln!("  WARNING: could not fetch tags: {error}");
+            eprintln!("  The catalog is still valid; cards will simply carry no roles.");
+            return Ok(());
+        }
+    };
+
+    let mut applied = 0usize;
+    for card in cards.iter_mut() {
+        if let Some(bits) = tags.get(&card.oracle_id) {
+            card.tags = *bits;
+            applied += 1;
+        }
+    }
+
+    println!(
+        "\n  {} requests, {} cards tagged, {applied} of them in this catalog ({:.0}%)",
+        report.requests,
+        report.cards_tagged,
+        applied as f64 / cards.len().max(1) as f64 * 100.0
+    );
+
+    // Loud, like the legality-key warning. A drifted tag name is a whole role disappearing from
+    // every deck's analysis, and nothing downstream would ever notice on its own.
+    if !report.empty_tags.is_empty() {
+        let list: Vec<&str> = report.empty_tags.iter().copied().collect();
+        eprintln!();
+        eprintln!("  WARNING: these tags matched no cards at all:");
+        eprintln!("    {}", list.join(", "));
+        eprintln!("  Their names have probably changed. Check them against");
+        eprintln!("  https://tagger.scryfall.com and update `mtg_core::Tag`.");
     }
     Ok(())
 }

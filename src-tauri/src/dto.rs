@@ -85,6 +85,9 @@ pub struct CardDetails {
     pub toughness: Option<String>,
     pub loyalty: Option<String>,
     pub keywords: Vec<String>,
+    /// What the card does, as readable labels. Empty means **nothing is known**, not that the
+    /// card does nothing — the tagger is crowdsourced and its coverage is uneven.
+    pub tags: Vec<String>,
     pub rarity: String,
     pub reserved: bool,
     pub layout: String,
@@ -122,6 +125,11 @@ impl CardDetails {
             toughness: card.toughness.as_ref().map(ToString::to_string),
             loyalty: card.loyalty.as_ref().map(ToString::to_string),
             keywords: card.keywords.iter().map(ToString::to_string).collect(),
+            tags: card
+                .tags()
+                .iter()
+                .map(|tag| tag.label().to_owned())
+                .collect(),
             rarity: format!("{:?}", card.rarity()),
             reserved: card.reserved,
             layout: format!("{:?}", card.layout),

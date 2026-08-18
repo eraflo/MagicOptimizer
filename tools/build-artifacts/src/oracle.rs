@@ -185,6 +185,9 @@ impl Conversion {
             ),
             edhrec_rank: raw.edhrec_rank,
             game_changer: raw.game_changer,
+            // Filled in by a second pass — see `tags.rs`. The oracle bulk carries no functional
+            // tags; they come from Scryfall's tagger, which is a separate source.
+            tags: 0,
             reserved: raw.reserved,
             layout,
             faces,

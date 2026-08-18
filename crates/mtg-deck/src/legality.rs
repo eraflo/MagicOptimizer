@@ -409,6 +409,7 @@ mod tests {
                 rarity: rarity_to_u8(Rarity::Common),
                 edhrec_rank: None,
                 game_changer: false,
+                tags: 0,
                 reserved: false,
                 layout: Layout::Normal,
                 faces: Vec::new(),
