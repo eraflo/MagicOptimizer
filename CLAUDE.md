@@ -129,12 +129,18 @@ fix it, do not silence it with `#[allow]` unless you write the justification in 
   because the alternative is a whole format vanishing from search with nothing to explain it. If
   that warning fires: add the variant to `mtg_core::Format`, update `LEGALITY_SLOTS`, bump
   `FORMAT_VERSION`, and fix the pinned list in `format_list_matches_scryfall_as_observed`.
-- **`land_drops_criterion` measures a fixed turn-four horizon**, whatever the deck costs. A
-  burn deck topping out at three mana does not need its turn-four land, but the criterion asks
-  for it anyway — which is why the search still offers to trade a spell for a land even after
-  the mana base is sound. Measured on a real Modern burn list: mana base 0.84, land drops 0.62,
-  and every suggestion still a land. The horizon should come from the deck's curve. Not yet
-  fixed; do not mistake it for the colour-identity bug, which is.
+- **Every criterion in the score is about mana, so the score is maximised by playing more
+  lands.** Mana base, land drops and opening hands all improve monotonically with lands; the
+  curve criterion is the only thing pushing back, and roles only fires once a group drops below
+  its minimum. Measured: removing the curve weight made the search *more* land-hungry, not less
+  — it was restraining it. This is why the optimizer still offers to trade a burn spell for a
+  land on a deck whose mana is already fine. **Nothing yet values a spell as a spell**, and no
+  amount of tuning the existing criteria fixes that; it needs a term the score does not have.
+- **`land_drops_criterion`'s horizon comes from the deck's curve**, not a flat turn four. It is
+  the earliest turn at which 90% of the deck's spells are castable, clamped to the turns
+  actually simulated. The flat version marked a burn deck down for missing a turn-four land it
+  has no use for: 0.62 against 0.84 at its real horizon of turn three. Do not put the constant
+  back.
 - **The optimizer does not know what a card does — except through tags.** `mtg_core::Tag` gives
   it 35 functional roles, and `roles_criterion` is the one criterion that can see effect at all.
   It scores **shortfall only**: below the archetype's conventional minimum costs marks, above it

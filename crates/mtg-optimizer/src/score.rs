@@ -218,7 +218,7 @@ pub fn score_with_simulation(
 ) -> Score {
     let criteria = vec![
         mana_base_criterion(profile, settings.weights.mana_base),
-        land_drops_criterion(&simulation, settings.weights.land_drops),
+        land_drops_criterion(profile, &simulation, settings.weights.land_drops),
         opening_hands_criterion(&simulation, settings.weights.opening_hands),
         curve_criterion(profile, settings.archetype, settings.weights.curve),
         roles_criterion(profile, settings.archetype, settings.weights.roles),
@@ -314,16 +314,87 @@ fn mana_base_criterion(profile: &DeckProfile, weight: f64) -> Criterion {
     }
 }
 
-/// Whether the deck reliably makes its land drops.
+/// Share of a deck's spells that should be castable by the horizon.
+///
+/// Not all of them: a control deck's single seven-drop should not drag the whole criterion out
+/// to turn seven, and a deck's top end is usually a card it is happy to draw late.
+const CASTABLE_BY_HORIZON: f64 = 0.90;
+
+/// The earliest horizon considered, whatever the curve says.
+///
+/// Even a deck of nothing but one-drops wants a second land — to double-spell, and because a
+/// one-land hand is a mulligan waiting to happen. Below this the criterion would measure
+/// almost nothing.
+const MIN_HORIZON: usize = 2;
+
+/// The turn by which the deck actually needs its lands.
+///
+/// The smallest turn at which [`CASTABLE_BY_HORIZON`] of the deck's spells are affordable.
+///
+/// This used to be a flat turn four for every deck, and that was wrong in a way that showed up
+/// in real advice: a Modern burn list topping out at three mana scored 0.62 here — punished for
+/// missing a land drop it has no use for — and the search answered by trading burn spells for
+/// lands. The horizon belongs to the deck, not to the criterion.
+fn land_drop_horizon(profile: &DeckProfile) -> usize {
+    let spells: Vec<u32> = profile
+        .cards
+        .iter()
+        .filter(|card| !card.is_land)
+        .map(|card| card.mana_value)
+        .collect();
+
+    if spells.is_empty() {
+        return MIN_HORIZON;
+    }
+
+    let wanted = (spells.len() as f64 * CASTABLE_BY_HORIZON).ceil() as usize;
+    let mut turn = MIN_HORIZON;
+    loop {
+        let affordable = spells
+            .iter()
+            .filter(|value| **value as usize <= turn)
+            .count();
+        if affordable >= wanted {
+            return turn;
+        }
+        // The caller clamps to the turns actually simulated, so this cannot run away: a deck of
+        // nothing but Emrakuls stops here and the clamp does the rest.
+        if turn >= 20 {
+            return turn;
+        }
+        turn += 1;
+    }
+}
+
+/// Whether the deck reliably makes the land drops it needs.
 ///
 /// Missing a land drop is what actually loses goldfish games, so this is scored on the run of
-/// drops through turn four rather than on a land count. A deck can have the conventional
-/// twenty-four lands and still stumble.
-fn land_drops_criterion(simulation: &SimulationResult, weight: f64) -> Criterion {
-    let through_turn = simulation.land_drops_made.len().min(4);
+/// drops rather than on a land count — a deck can have the conventional twenty-four lands and
+/// still stumble.
+///
+/// How far that run has to go comes from [`land_drop_horizon`], and therefore from the deck's
+/// own curve. Asking every deck for a turn-four land was the same mistake as scoring a burn
+/// deck against a control deck's curve.
+fn land_drops_criterion(
+    profile: &DeckProfile,
+    simulation: &SimulationResult,
+    weight: f64,
+) -> Criterion {
+    let simulated = simulation.land_drops_made.len();
+    if simulated == 0 {
+        return Criterion {
+            name: "Land drops".to_owned(),
+            score: 0.0,
+            weight: 0.0,
+            detail: "no turns were simulated".to_owned(),
+            derived: true,
+        };
+    }
+
+    let horizon = land_drop_horizon(profile).min(simulated);
     let score = simulation
         .land_drops_made
-        .get(through_turn.saturating_sub(1))
+        .get(horizon - 1)
         .copied()
         .unwrap_or(0.0);
 
@@ -332,8 +403,9 @@ fn land_drops_criterion(simulation: &SimulationResult, weight: f64) -> Criterion
         score,
         weight,
         detail: format!(
-            "every land drop through turn {through_turn} in {:.0}% of games",
-            score * 100.0
+            "every land drop through turn {horizon} in {:.0}% of games              (turn {horizon} is where {:.0}% of this deck is castable)",
+            score * 100.0,
+            CASTABLE_BY_HORIZON * 100.0
         ),
         derived: true,
     }
@@ -532,6 +604,75 @@ mod tests {
             // criterion correctly reports itself unmeasurable on them.
             ..DeckProfile::default()
         }
+    }
+
+    #[test]
+    fn an_aggressive_curve_asks_for_fewer_lands_than_a_slow_one() {
+        // The whole point of the change. A burn deck topping out at three mana has no use for
+        // its turn-four land, and used to be marked down for missing it.
+        let burn = deck(20, &[(1, 16), (2, 12), (3, 12)], Vec::new());
+        let control = deck(26, &[(2, 8), (3, 8), (4, 8), (5, 6), (6, 4)], Vec::new());
+
+        assert_eq!(land_drop_horizon(&burn), 3);
+        assert!(
+            land_drop_horizon(&control) > land_drop_horizon(&burn),
+            "control wants its lands for longer"
+        );
+    }
+
+    #[test]
+    fn one_expensive_card_does_not_drag_the_horizon_out() {
+        // A single seven-drop is a card you are happy to draw late, not a reason to demand a
+        // seventh land drop from a deck that otherwise curves out at two.
+        let mostly_cheap = deck(24, &[(1, 18), (2, 17), (7, 1)], Vec::new());
+        assert_eq!(land_drop_horizon(&mostly_cheap), MIN_HORIZON);
+    }
+
+    #[test]
+    fn a_deck_of_nothing_but_lands_does_not_panic() {
+        // There are no spells to derive a horizon from, and dividing by that would be the kind
+        // of thing that only shows up on someone else's deck.
+        let all_lands = deck(60, &[], Vec::new());
+        assert_eq!(land_drop_horizon(&all_lands), MIN_HORIZON);
+    }
+
+    #[test]
+    fn the_horizon_never_exceeds_the_turns_actually_simulated() {
+        // Asking for turn seven when five were played would read a missing entry as zero, and
+        // the deck would score nothing for a land drop nobody measured.
+        let expensive = deck(30, &[(7, 15), (8, 15)], Vec::new());
+        let mut settings = ScoreSettings::for_deck_size(60);
+        settings.simulation.games = 300;
+        settings.simulation.turns = 5;
+
+        let criterion = score(&expensive, settings)
+            .criteria
+            .into_iter()
+            .find(|criterion| criterion.name == "Land drops")
+            .expect("land drops");
+        assert!(criterion.score > 0.0, "{criterion:?}");
+        assert!(
+            criterion.detail.contains("through turn 5"),
+            "{}",
+            criterion.detail
+        );
+    }
+
+    #[test]
+    fn an_aggressive_deck_scores_better_than_it_did_under_a_flat_turn_four() {
+        // The regression this change exists for, stated as a comparison rather than a constant:
+        // the same deck, judged at the turn it cares about instead of turn four.
+        let burn = deck(20, &[(1, 16), (2, 12), (3, 12)], Vec::new());
+        let mut settings = ScoreSettings::for_deck_size(60);
+        settings.simulation.games = 2_000;
+        let simulation = crate::simulate::simulate(&burn, settings.simulation);
+
+        let at_its_own_horizon = land_drops_criterion(&burn, &simulation, 1.0).score;
+        let at_turn_four = simulation.land_drops_made[3];
+        assert!(
+            at_its_own_horizon > at_turn_four,
+            "{at_its_own_horizon} should beat the old {at_turn_four}"
+        );
     }
 
     /// A profile carrying only role data, which is all the roles criterion reads.
