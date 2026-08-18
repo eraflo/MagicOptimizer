@@ -200,8 +200,18 @@ fix it, do not silence it with `#[allow]` unless you write the justification in 
 - **Do not add a search index without a measurement first.** The linear scan is ~5 ms over the
   whole catalog. An inverted index would be cost with no benefit today; see
   `docs/dev/architecture.md` for the numbers to beat.
-- **`getUserMedia` in the Android WebView** can misbehave depending on the version, and none of
-  the Android path has been run on a device — no SDK or NDK was available. The planned fallback
+- **The Android build has host requirements that cost an hour each to rediscover**, and none of
+  them is about this project's code: Tauri needs the SDK **Command-line Tools** as well as the
+  NDK; Android refuses a version of `0.0.0`; Windows refuses the symlink Tauri makes into
+  `jniLibs` without Developer Mode; and Android Studio's bundled JBR is Java 25 while the
+  generated Android Gradle Plugin 8.11 stops at 21. All four are in `docs/dev/android.md` with
+  their exact error text.
+- **The `CAMERA` permission is hand-added to the generated manifest**, and re-running
+  `cargo tauri android init` regenerates that file and drops it. If scanning stops being able to
+  open the camera, look there before anywhere else.
+- **`getUserMedia` in the Android WebView** can misbehave depending on the version, and nothing
+  has yet run on a device — the Rust library builds for `aarch64-linux-android`, but no APK has
+  been produced. The planned fallback
   is a Kotlin CameraX plugin; that boundary does **not** exist yet, the frame source is `grab()`
   in `ScanView.svelte`. Do not describe it as prepared.
 - **Camera frames go over raw IPC, never as a command argument.** A 640×480 greyscale frame is

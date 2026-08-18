@@ -1,23 +1,50 @@
 # Android build
 
-> **Status** — the code is in place and the domain crates are **verified** to cross-compile to
-> `aarch64-linux-android`, which CI now enforces. The steps below that need an actual SDK, NDK
-> or device — `android init`, the manifest edit, and whether `getUserMedia` behaves in the
-> WebView — have **not** been run. They are marked where they appear. Treat them as the plan,
-> not as a report.
+> **Status, 2026-08-18** — the Android project now exists and is committed, and the **whole Rust
+> workspace compiles to a real `aarch64-linux-android` shared library** (147 MB debug, 3 min 22).
+> That is the invariant that mattered: no C toolchain problem anywhere, on a real NDK rather than
+> a `cargo check`.
+>
+> The APK itself has **not** been produced yet, and nothing has run on a device. Two host
+> problems stand in the way, both recorded below under *Building on Windows*.
 
 ## Prerequisites
 
-- Android SDK and **NDK**
-- `ANDROID_HOME` and `NDK_HOME` set
-- Rust targets: `aarch64-linux-android`, `armv7-linux-androideabi`, `i686-linux-android`,
-  `x86_64-linux-android`
+- Android SDK, **NDK**, and **SDK Command-line Tools** — the last is easy to miss, and Tauri
+  refuses without it with a message that only says it "skipped" installing them.
+- A **JDK 17 or 21**. Not 25: the generated project uses Android Gradle Plugin 8.11, which does
+  not support it, and Android Studio's bundled JBR *is* 25. Not 11 or 8 either.
+- `ANDROID_HOME`, `NDK_HOME` and `JAVA_HOME` set.
+- All four Rust targets.
 
 ```bash
 rustup target add aarch64-linux-android armv7-linux-androideabi
-cargo tauri android init
-cargo tauri android dev
+rustup target add i686-linux-android x86_64-linux-android
+npm run tauri -- android init     # already done; the project is committed
+npm run tauri -- android build --debug --target aarch64
 ```
+
+`npm run tauri` rather than `cargo tauri`: the CLI is an npm devDependency here, so there is
+nothing extra to install.
+
+## Building on Windows
+
+Two failures met on a real machine, neither about this project's code, both worth an hour if
+rediscovered.
+
+**Symlinks.** Tauri links the built `.so` into `app/src/main/jniLibs/<abi>/`, and Windows refuses
+without Developer Mode or an elevated shell: *Creation symbolic link is not allowed for this
+system*. Enable Developer Mode, or copy the library across and drive Gradle directly.
+
+**The JDK.** Android Studio ships JBR 25 and Gradle answers `Unsupported class file major version
+69`. Install a JDK 21 and point `JAVA_HOME` at it — Android Studio can fetch one from
+*Settings -> Build Tools -> Gradle -> Gradle JDK -> Download JDK*, or `winget install
+Microsoft.OpenJDK.21`.
+
+## The version cannot be 0.0.0
+
+Android refuses it outright. That is why the workspace moved to `0.0.1`; `Cargo.toml`,
+`package.json` and `tauri.conf.json` have to agree.
 
 ## The main pitfall: native dependencies
 
@@ -57,16 +84,9 @@ would be three hundred thousand JSON numbers, ten times a second.
 
 **Not yet verified on a device.** Two things need checking the first time this runs on hardware:
 
-1. **The `CAMERA` permission**, which `cargo tauri android init` does not add. After running it
-   once, add to `src-tauri/gen/android/app/src/main/AndroidManifest.xml`:
-
-   ```xml
-   <uses-permission android:name="android.permission.CAMERA" />
-   <uses-feature android:name="android.hardware.camera" android:required="false" />
-   ```
-
-   `required="false"` so the app still installs on a device without a rear camera; scanning is
-   one feature, not the application.
+1. **The `CAMERA` permission.** `android init` does not add it, so it was added by hand and is
+   committed. **Re-running `android init` regenerates the manifest and drops it again** — if
+   scanning suddenly cannot open the camera, look there first.
 
 2. **Whether the WebView grants the request.** `getUserMedia` needs both the Android permission
    and the WebView's own `onPermissionRequest` to be granted. The app is served from
