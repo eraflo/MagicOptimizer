@@ -37,6 +37,29 @@ pub struct AppState {
 
 impl AppState {
     pub fn new(data_dir: &Path) -> Result<AppState, String> {
+        AppState::with_artifacts_at(data_dir, |name| locate_artifact(data_dir, name))
+    }
+
+    /// A state that will not find any artifact, whatever is lying around.
+    ///
+    /// [`AppState::new`] falls back to `artifacts/` in the checkout so `tauri dev` works right
+    /// after a build — which means a test asserting fresh-install behaviour through it passes
+    /// or fails depending on whether the developer has run `build-artifacts`. That is exactly
+    /// what happened: the combo test passed until `artifacts/combos.rkyv` was first generated.
+    ///
+    /// This resolves every artifact inside the (empty) data directory instead, so nothing is
+    /// found — and, unlike going through `new` and overriding the paths afterwards, it never
+    /// loads the real 25 MB catalog and 51 MB combo snapshot just to throw them away.
+    #[cfg(test)]
+    pub(crate) fn without_artifacts(data_dir: &Path) -> Result<AppState, String> {
+        AppState::with_artifacts_at(data_dir, |name| data_dir.join(name))
+    }
+
+    /// The shared body of the two constructors: only where artifacts are looked for differs.
+    fn with_artifacts_at(
+        data_dir: &Path,
+        locate: impl Fn(&str) -> PathBuf,
+    ) -> Result<AppState, String> {
         std::fs::create_dir_all(data_dir)
             .map_err(|e| format!("could not create {}: {e}", data_dir.display()))?;
 
@@ -48,13 +71,13 @@ impl AppState {
         let state = AppState {
             catalog: RwLock::new(None),
             catalog_error: RwLock::new(None),
-            catalog_path: locate_catalog(data_dir),
+            catalog_path: locate("cards.rkyv"),
             combos: RwLock::new(None),
             combo_error: RwLock::new(None),
-            combo_path: locate_artifact(data_dir, "combos.rkyv"),
+            combo_path: locate("combos.rkyv"),
             scanner: Mutex::new(None),
             art_error: RwLock::new(None),
-            art_path: locate_artifact(data_dir, "arthashes.bin"),
+            art_path: locate("arthashes.bin"),
             artworks: RwLock::new(0),
             collection,
             decks,
@@ -63,28 +86,6 @@ impl AppState {
         state.reload_combos();
         state.reload_artwork();
         Ok(state)
-    }
-
-    /// A state that will not find any artifact, whatever is lying around.
-    ///
-    /// [`AppState::new`] falls back to `artifacts/` in the checkout so `tauri dev` works right
-    /// after a build — which means a test asserting fresh-install behaviour through it passes
-    /// or fails depending on whether the developer has run `build-artifacts`. That is exactly
-    /// what happened: the combo test passed until `artifacts/combos.rkyv` was first generated.
-    #[cfg(test)]
-    pub(crate) fn without_artifacts(data_dir: &Path) -> Result<AppState, String> {
-        let state = AppState::new(data_dir)?;
-        Ok(AppState {
-            catalog_path: data_dir.join("cards.rkyv"),
-            combo_path: data_dir.join("combos.rkyv"),
-            art_path: data_dir.join("arthashes.bin"),
-            ..state
-        })
-        .inspect(|state: &AppState| {
-            state.reload_catalog();
-            state.reload_combos();
-            state.reload_artwork();
-        })
     }
 
     pub fn catalog_path(&self) -> &Path {
@@ -231,16 +232,11 @@ impl AppState {
     }
 }
 
-/// Decides where the catalog artifact should be read from.
-///
-/// The app data directory is the real answer once there is a downloader. Until then, a
-/// checkout with `artifacts/cards.rkyv` already built is picked up automatically, so
-/// `cargo tauri dev` works straight after `cargo run -p build-artifacts`.
-fn locate_catalog(data_dir: &Path) -> PathBuf {
-    locate_artifact(data_dir, "cards.rkyv")
-}
-
 /// Finds an artifact by name, preferring the installed copy.
+///
+/// The app data directory is the real answer once there is a downloader. Until then, a checkout
+/// with the artifacts already built is picked up automatically, so `cargo tauri dev` works
+/// straight after `cargo run -p build-artifacts`.
 fn locate_artifact(data_dir: &Path, name: &str) -> PathBuf {
     let installed = data_dir.join(name);
     if installed.exists() {

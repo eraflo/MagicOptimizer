@@ -6,7 +6,9 @@ through **camera recognition**.
 A desktop and mobile app (Windows + Android), written in **Rust** with **Tauri 2**, that runs
 **fully offline** and **without any server**. Your data never leaves your device.
 
-> **⚠️ Work in progress.** Nothing is usable yet. See [Status](#status) for actual progress.
+> **⚠️ Work in progress.** The desktop app runs from a checkout — browsing, collection, decks,
+> the optimizer, combos and camera scanning all work. Android has not been run on a device yet.
+> See [Status](#status) for what is done and what is not.
 
 ---
 
@@ -51,7 +53,7 @@ The project ships in phases. It stays usable at the end of each one.
 | 3 | Decks, format rules, legality, import/export | ✅ done |
 | 4 | Optimizer, simulation, collection constraint | ✅ done |
 | 5 | Combo detection, Commander brackets | ✅ done |
-| 6 | Android and video scanning | ⬜ |
+| 6 | Android and video scanning | 🟨 scanning done, Android untested on a device |
 | 7 | Game log | ⬜ |
 | 8 | Continuously trained personal model | ⬜ |
 | 9 | Sync, pricing, translations | ⬜ |

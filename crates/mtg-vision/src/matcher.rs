@@ -80,40 +80,46 @@ impl ArtDatabase {
     }
 
     /// As [`ArtDatabase::best_match`], with the thresholds spelled out.
+    ///
+    /// Two passes rather than one. Tracking the runner-up while hunting for the best in a
+    /// single loop needs care — the runner-up has to be recomputed whenever the best changes
+    /// oracle id — and an earlier version of that was correct but nearly impossible to check by
+    /// reading. This decides whether a wrong card can be named, so it is written to be obvious.
+    /// The second pass costs another 50,000 popcounts, and only runs when there is a candidate
+    /// worth confirming at all.
     pub fn best_match_with(&self, hash: &ArtHash, max_distance: u32, margin: u32) -> Option<Match> {
-        let mut best: Option<(&ArtEntry, u32)> = None;
-        let mut runner_up = HASH_BITS as u32 + 1;
+        let (entry, distance) = self
+            .entries
+            .iter()
+            .map(|entry| (entry, hash.distance(&entry.hash)))
+            .min_by_key(|(_, distance)| *distance)?;
 
-        for entry in &self.entries {
-            let distance = hash.distance(&entry.hash);
-            match best {
-                Some((current, best_distance)) if distance >= best_distance => {
-                    // Only a *different card* counts as a rival. Two printings of the same
-                    // artwork sit at the same distance by definition, and letting them
-                    // compete would make every reprinted card unrecognisable.
-                    if entry.oracle_id != current.oracle_id {
-                        runner_up = runner_up.min(distance);
-                    }
-                }
-                Some((current, _)) => {
-                    if current.oracle_id != entry.oracle_id {
-                        runner_up = runner_up.min(best.map_or(u32::MAX, |(_, d)| d));
-                    }
-                    best = Some((entry, distance));
-                }
-                None => best = Some((entry, distance)),
-            }
-        }
-
-        let (entry, distance) = best?;
         if distance > max_distance {
             return None;
         }
 
-        let gap = runner_up.saturating_sub(distance);
-        if runner_up <= HASH_BITS as u32 && gap < margin {
-            return None;
-        }
+        // Only a *different card* counts as a rival. Two printings of the same artwork sit at
+        // the same distance by definition, and letting them compete would make every reprinted
+        // card unrecognisable.
+        let runner_up = self
+            .entries
+            .iter()
+            .filter(|other| other.oracle_id != entry.oracle_id)
+            .map(|other| hash.distance(&other.hash))
+            .min();
+
+        // No rival at all — a one-card database, or every entry a printing of the same card.
+        // There is nothing to be ambiguous with, so the margin check does not apply.
+        let gap = match runner_up {
+            Some(rival) => {
+                let gap = rival.saturating_sub(distance);
+                if gap < margin {
+                    return None;
+                }
+                gap
+            }
+            None => HASH_BITS as u32,
+        };
 
         Some(Match {
             printing_id: entry.printing_id.clone(),
@@ -257,6 +263,51 @@ mod tests {
         let printings = db.printings_of("o-sol");
         assert_eq!(printings.len(), 2);
         assert!(db.printings_of("o-nothing").is_empty());
+    }
+
+    #[test]
+    fn the_verdict_does_not_depend_on_the_order_of_the_database() {
+        // The check that matters most here. Deciding "is the runner-up too close?" while still
+        // hunting for the best is where an ordering bug would hide, and the symptom would be a
+        // wrong card named for one database ordering and declined for another.
+        let sol_a = entry("Sol Ring", "o-sol", "p-sol-a", &[0, 1, 2, 3]);
+        let sol_b = entry("Sol Ring", "o-sol", "p-sol-b", &[0, 1, 2, 3, 4, 5]);
+        // Ten bits away: comfortably outside DEFAULT_MARGIN, so the answer is a match rather
+        // than a refusal, and the reported margin is a number worth asserting on.
+        let mut rival_bits: Vec<usize> = vec![0, 1, 2, 3];
+        rival_bits.extend(100..110);
+        let rival = entry("Mox", "o-mox", "p-mox", &rival_bits);
+        let query = hash_of(&[0, 1, 2, 3]);
+
+        let orderings = [
+            vec![sol_a.clone(), sol_b.clone(), rival.clone()],
+            vec![rival.clone(), sol_a.clone(), sol_b.clone()],
+            vec![sol_b.clone(), rival.clone(), sol_a.clone()],
+            vec![rival.clone(), sol_b.clone(), sol_a.clone()],
+        ];
+
+        for entries in orderings {
+            let found = ArtDatabase::new(entries).best_match(&query).expect("match");
+            assert_eq!(found.oracle_id, "o-sol");
+            assert_eq!(found.distance, 0);
+            // The Mox is ten bits away, and it is the nearest *different* card.
+            assert_eq!(
+                found.margin, 10,
+                "the runner-up should be the Mox, whatever the order"
+            );
+        }
+    }
+
+    #[test]
+    fn a_lone_card_is_named_without_a_rival_to_compare_against() {
+        // A database of one, or of several printings of one card: there is nothing to be
+        // ambiguous with, so the margin rule must not reject the only answer there is.
+        let db = ArtDatabase::new(vec![
+            entry("Sol Ring", "o-sol", "p-sol-a", &[0, 1, 2, 3]),
+            entry("Sol Ring", "o-sol", "p-sol-b", &[0, 1, 2, 3]),
+        ]);
+        let found = db.best_match(&hash_of(&[0, 1, 2, 3])).expect("match");
+        assert_eq!(found.oracle_id, "o-sol");
     }
 
     #[test]

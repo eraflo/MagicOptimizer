@@ -63,9 +63,12 @@ pub struct ScanResult {
     /// Frames that agree so far, and how many are needed. For a progress ring.
     pub votes: usize,
     pub needed: usize,
-    /// The card's outline in frame coordinates, for drawing over the viewfinder. Present
-    /// whenever a card was *seen*, even when it could not be named — which is what tells the
-    /// user the problem is the database rather than their framing.
+    /// The card's outline in frame coordinates, for drawing over the viewfinder.
+    ///
+    /// Present whenever an edge was found, even when nothing could be named. That case usually
+    /// means the background is too dark and the outline has snapped to the card's interior
+    /// rather than its black border — see the measurements in `docs/dev/vision.md` — so the UI
+    /// points at the background rather than blaming the artwork data.
     pub quad: Option<[[f32; 2]; 4]>,
 }
 
@@ -139,8 +142,10 @@ pub fn scan_reload(state: State<'_, AppState>) -> ScanStatus {
 
 /// Forgets the vote history.
 ///
-/// Called when the camera view opens or the destination changes, so a card confirmed in a
-/// previous session does not count towards the next one.
+/// Called when the camera view opens, so a card confirmed in a previous session does not count
+/// towards the next one. Changing where the scanned cards go does *not* reset it: the votes are
+/// about what is in front of the lens, and the destination is decided when the batch is
+/// confirmed anyway.
 #[tauri::command]
 pub fn scan_reset(state: State<'_, AppState>) -> CommandResult<()> {
     state.with_scanner(|scanner| scanner.reset())
@@ -228,8 +233,8 @@ mod tests {
 
     #[test]
     fn the_outline_survives_even_when_no_card_is_named() {
-        // A card was seen but not recognised — the overlay must still show, because that is
-        // what tells the user their framing is fine and the database is the problem.
+        // A card was seen but not recognised. The overlay must still show: it is the
+        // difference between "point the camera at a card" and "that card did not match".
         let result = ScanResult::from(Outcome::Searching, Some(quad()));
         assert_eq!(result.state, "searching");
         assert!(result.card.is_none());

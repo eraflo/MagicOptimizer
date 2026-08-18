@@ -64,7 +64,12 @@ struct ImageUris {
     normal: Option<String>,
 }
 
-/// Layouts with no card to photograph.
+/// Layouts the scanner has no business trying to recognise.
+///
+/// Tokens and emblems are not cards anyone owns a printing of. Vanguard, scheme and planar
+/// cards *are* physical cards, but oversized ones with their own proportions — a deck never
+/// contains them, and hashing them would only add near-neighbours for the real cards to be
+/// confused with.
 fn is_not_a_card(layout: &str) -> bool {
     matches!(
         layout,
@@ -106,7 +111,9 @@ fn targets_of(card: ArtworkCard) -> Vec<Target> {
         .filter_map(|(index, face)| {
             let url = face.image_uris?.normal?;
             Some(Target {
-                // Suffixed so the two faces of one printing do not collide in the resume file.
+                // Suffixed so the two faces of one printing do not collide in the resume file,
+                // which is keyed on this. `bare_printing_id` strips it again before the id
+                // reaches the archive — see there for why that matters.
                 printing_id: format!("{}#{index}", card.id),
                 oracle_id: oracle_id.clone(),
                 name: face.name.unwrap_or_else(|| card.name.clone()),
@@ -242,7 +249,7 @@ pub fn build(out: &Path, cache: &Path, limit: Option<usize>, started: Instant) -
         .filter_map(|record| {
             Some(ArtEntry {
                 hash: ArtHash::from_hex(&record.hash)?,
-                printing_id: record.printing_id.clone(),
+                printing_id: bare_printing_id(&record.printing_id).to_owned(),
                 oracle_id: record.oracle_id.clone(),
                 name: record.name.clone(),
             })
@@ -266,6 +273,19 @@ pub fn build(out: &Path, cache: &Path, limit: Option<usize>, started: Instant) -
     );
 
     Ok(())
+}
+
+/// Strips the face suffix a double-faced card's resume key carries.
+///
+/// The `#0`/`#1` suffix exists only to keep the two faces of one printing apart while
+/// downloading. It is not a Scryfall id, and the app builds card image URLs straight out of
+/// this field — a suffixed id would produce a 404 rather than a picture. Both faces keeping the
+/// same bare id is right: they are one printing, and their two hashes both lead to it.
+fn bare_printing_id(id: &str) -> &str {
+    match id.split_once('#') {
+        Some((bare, _)) => bare,
+        None => id,
+    }
 }
 
 /// Reads the resume file, ignoring lines a previous run left half-written.
@@ -398,6 +418,14 @@ mod tests {
         // Some placeholder printings genuinely have none.
         let targets = parse(r#"{"id":"p5","oracle_id":"o5","name":"No Art","layout":"normal"}"#);
         assert!(targets.is_empty());
+    }
+
+    #[test]
+    fn the_face_suffix_never_reaches_the_archive() {
+        // The app builds Scryfall CDN image URLs straight from `printing_id`. A suffixed id
+        // would be a 404 rather than a picture, and nothing downstream would explain why.
+        assert_eq!(bare_printing_id("abc-123#1"), "abc-123");
+        assert_eq!(bare_printing_id("abc-123"), "abc-123");
     }
 
     #[test]

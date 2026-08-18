@@ -1,7 +1,7 @@
 # Building and optimizing decks
 
-> **Partly available.** Decks, formats and legality checking work now. The optimizer arrives in
-> phase 4 and personalised recommendations in phase 8; those sections are marked below.
+> **Available now**: decks, formats, legality checking and the optimizer. Personalised
+> recommendations are still to come; that section is marked below.
 
 ## Formats
 
@@ -46,7 +46,7 @@ One setting decides what the optimizer is allowed to suggest:
 | **Owned only** | No suggestion outside your collection |
 | **Owned + wishlist** | Also allows cards you are considering buying |
 | **All cards** | No constraint — to see what the ideal deck would look like |
-| **Pool only** | In draft and sealed: restricted to the pool you scanned |
+| **Pool only** | In draft and sealed: restricted to the pool you entered, by hand or by [scanning it](scanning.md) |
 
 ## What the app tells you about a deck
 
@@ -98,7 +98,7 @@ lands, or that your curve is nothing like what you said you were playing.
 that a counterspell is better than a vanilla 2/2 — it only sees mana values, colours and card
 types. There is a filter that keeps it to cards people actually play, but treat its output as a
 mana and curve check rather than as card advice. Recommendations that understand what a card is
-*for* arrive in phase 8.
+*for* are not built yet.
 
 ## Simulation
 
@@ -109,6 +109,6 @@ That is what lets you objectively compare two versions of the same deck.
 
 ## Personalized recommendations
 
-From phase 8, a personal model learns from your choices — the suggestions you accept, the ones you
+Later, a personal model will learn from your choices — the suggestions you accept, the ones you
 reject — and tunes its proposals to your playstyle. It runs entirely on your device, and you can
 reset it at any time.

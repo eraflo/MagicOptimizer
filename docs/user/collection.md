@@ -1,7 +1,7 @@
 # Managing your collection
 
-> **Available now** for manual entry, storage locations, conditions and finishes. Scanning
-> arrives in phase 6 and valuation in phase 9; those sections are marked below.
+> **Available now** for manual entry, camera scanning, storage locations, conditions and
+> finishes. Valuation is still to come; that section is marked below.
 
 ## Physical and digital, kept separate
 
@@ -17,8 +17,9 @@ Each copy can carry a **storage location**: a container, optionally a section an
 example "Binder 3, page 12".
 
 The location you type is **kept between cards**, so entering a binder means setting it once and
-then adding card after card. Containers you have already used are offered as suggestions. Once
-scanning arrives in phase 6 the position will also increment on its own as you turn pages.
+then adding card after card. Containers you have already used are offered as suggestions, both
+here and when scanning — see [Scanning your cards](scanning.md), which can drop a whole batch
+straight into a named box.
 
 After that, "where is my Rhystic Study?" becomes a simple search.
 
@@ -41,4 +42,4 @@ natural candidates for trading or selling.
 ## Valuation
 
 An estimate of your collection's value based on Scryfall prices, tracked over time. This part
-arrives in phase 9.
+is **not built yet**.

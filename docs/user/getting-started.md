@@ -35,8 +35,13 @@ If you skip the first step the app opens on a screen telling you so, rather than
   where the card is stored.
 - **Keep physical and digital collections apart**, and see how many copies you own of anything
   while browsing.
+- **Build and import decks**, check their legality in any format, and see the mana curve.
+- **Optimise a deck**, restricted to the cards you own or drawing on everything.
+- **Scan physical cards with a camera** into your collection, a deck or a draft pool — see
+  [Scanning your cards](scanning.md).
+- **Spot combos and estimate a Commander bracket** for a deck.
 
-Scanning with the camera, decks and the optimizer come in later phases — see
+The game journal and price tracking are still to come — see
 [the project status](../../README.md#status).
 
 ## Still to come on this page

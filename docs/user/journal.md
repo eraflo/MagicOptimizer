@@ -1,6 +1,6 @@
 # Game log
 
-> **🚧 Not available yet.** Shipped in phase 7.
+> **🚧 Not built yet.**
 
 ## How it works
 
@@ -17,7 +17,7 @@ opponents you faced, the result, the turn it ended, and a note if you want one.
 
 ## What it contributes to recommendations
 
-From phase 8, the log feeds the personal model. This is what sets the app apart from existing
+Later, the log will feed the personal model. This is what sets the app apart from existing
 tools: they know the general metagame, but not what wins **at your table**, with your playstyle
 and your group.
 

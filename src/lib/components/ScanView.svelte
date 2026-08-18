@@ -34,7 +34,8 @@
   let result = $state<ScanResult | null>(null);
   let pending = $state<Pending[]>([]);
   let committing = $state(false);
-  let justAdded = $state<string | null>(null);
+  /** Held until the next card replaces it, so the readout keeps naming what it just added. */
+  let lastConfirmed = $state<string | null>(null);
 
   let destination = $state<Destination>("physical");
   let deckId = $state<number | null>(null);
@@ -110,6 +111,7 @@
     if (video) video.srcObject = null;
     running = false;
     result = null;
+    lastConfirmed = null;
     clearOverlay();
   }
 
@@ -165,10 +167,7 @@
           entry.oracleId === card.oracleId ? { ...entry, quantity: entry.quantity + 1 } : entry,
         )
       : [...pending, { ...card, quantity: 1 }];
-    justAdded = card.name;
-    setTimeout(() => {
-      if (justAdded === card.name) justAdded = null;
-    }, 1200);
+    lastConfirmed = card.name;
   }
 
   function clearOverlay() {
@@ -227,39 +226,63 @@
     destination === "deck" ? deckId !== null : destination === "pool" ? poolName.trim() !== "" : true,
   );
 
+  /** Writes one entry to wherever the user chose. */
+  async function write(entry: Pending) {
+    if (destination === "deck" && deckId !== null) {
+      // This can genuinely fail per card: the deck command looks the name up in the catalog
+      // and refuses an oracle id it does not know, which happens when the artwork data is
+      // newer than the card data.
+      await api.deckAddCard(deckId, entry.oracleId, entry.quantity, zone);
+      return;
+    }
+    // A draft pool is a physical holding in a container named after the pool. There is no
+    // separate concept to invent: that is exactly what a pool is once the draft is over.
+    const box = destination === "pool" ? poolName.trim() : container.trim();
+    await api.collectionAdd({
+      pool: destination === "digital" ? "digital" : "physical",
+      oracle_id: entry.oracleId,
+      name: entry.name,
+      // The printing is left blank on purpose. Scanning identifies the *artwork*, and several
+      // printings share one; resolving which set a card came from needs the printings artifact,
+      // which does not exist yet. Guessing a set here would be worse than leaving it open.
+      set_code: "",
+      collector_number: "",
+      language: "en",
+      finish: "nonfoil",
+      condition: "near_mint",
+      quantity: entry.quantity,
+      location: box ? { container: box } : null,
+      notes: "",
+    });
+  }
+
   async function commit() {
     if (!pending.length || !destinationReady) return;
     committing = true;
     error = null;
+
+    // Each entry leaves the list the moment its write lands, rather than clearing the whole
+    // list at the end. If the tenth card fails — and it can, a deck refuses an oracle id its
+    // catalog does not know — the first nine are already written, and a list that still held
+    // them would add them a second time the moment the user pressed the button again.
+    const queue = [...pending];
+    let written = 0;
+
     try {
-      for (const entry of pending) {
-        if (destination === "deck" && deckId !== null) {
-          await api.deckAddCard(deckId, entry.oracleId, entry.quantity, zone);
-        } else {
-          // A draft pool is a physical holding in a container named after the pool. There is no
-          // separate concept to invent: that is exactly what a pool is once the draft is over.
-          const box = destination === "pool" ? poolName.trim() : container.trim();
-          await api.collectionAdd({
-            pool: destination === "digital" ? "digital" : "physical",
-            oracle_id: entry.oracleId,
-            name: entry.name,
-            set_code: "",
-            collector_number: "",
-            language: "en",
-            finish: "nonfoil",
-            condition: "near_mint",
-            quantity: entry.quantity,
-            location: box ? { container: box } : null,
-            notes: "",
-          });
-        }
+      for (const entry of queue) {
+        await write(entry);
+        pending = pending.filter((row) => row.oracleId !== entry.oracleId);
+        written += 1;
       }
-      pending = [];
-      onCommitted();
     } catch (e) {
-      error = String(e);
+      error =
+        `${e}
+
+${written} card${written === 1 ? "" : "s"} were added. ` +
+        `The ones still listed were not, and are safe to retry.`;
     } finally {
       committing = false;
+      if (written > 0) onCommitted();
     }
   }
 
@@ -305,7 +328,7 @@
     {:else}
       <div class="readout" class:found={result?.state === "confirmed" || result?.state === "holding"}>
         {#if result?.state === "confirmed" || result?.state === "holding"}
-          <span class="name">{justAdded ?? result.card?.name ?? "Added"}</span>
+          <span class="name">{result.card?.name ?? lastConfirmed ?? "Added"}</span>
           <span class="tag">added</span>
         {:else if result?.state === "tracking"}
           <span class="name">{result.card?.name}</span>
@@ -394,12 +417,25 @@
         {#each pending as entry (entry.oracleId)}
           <li>
             <span class="card-name">{entry.name}</span>
+            <!-- Locked while the batch is being written: the commit loop walks a snapshot of
+                 this list and removes each row as its write lands, so editing underneath it
+                 would be editing rows that are already on their way to the database. -->
             <div class="quantity">
-              <button onclick={() => adjust(entry.oracleId, -1)} aria-label="One fewer">−</button>
+              <button
+                disabled={committing}
+                onclick={() => adjust(entry.oracleId, -1)}
+                aria-label="One fewer">−</button>
               <span>{entry.quantity}</span>
-              <button onclick={() => adjust(entry.oracleId, 1)} aria-label="One more">+</button>
+              <button
+                disabled={committing}
+                onclick={() => adjust(entry.oracleId, 1)}
+                aria-label="One more">+</button>
             </div>
-            <button class="remove" onclick={() => remove(entry.oracleId)} aria-label="Remove">
+            <button
+              class="remove"
+              disabled={committing}
+              onclick={() => remove(entry.oracleId)}
+              aria-label="Remove">
               ×
             </button>
           </li>
@@ -633,6 +669,8 @@
     color: var(--danger);
     font-size: 12px;
     margin-top: 10px;
+    /* The commit failure message is two paragraphs: what went wrong, then what was written. */
+    white-space: pre-line;
   }
 
   .pending {
