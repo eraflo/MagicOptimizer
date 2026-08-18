@@ -27,10 +27,11 @@ on the optimizer or the vision pipeline without touching it changes the pace of 
 │   mtg-core ──┬── mtg-data ──┬── mtg-optimizer            │
 │              │              ├── mtg-combo                │
 │              ├── mtg-deck ──┘                            │
-│              ├── mtg-collection                          │
-│              ├── mtg-journal                             │
-│              ├── mtg-vision                              │
-│              └── mtg-ml                                  │
+│              └── mtg-collection                          │
+│                                                          │
+│   mtg-vision  (depends on nothing — raw pixels in,       │
+│                a card name out)                          │
+│   mtg-journal, mtg-ml   not built yet                    │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -44,9 +45,9 @@ on the optimizer or the vision pipeline without touching it changes the pace of 
 | `mtg-deck` | Deck model, `FormatRules`, legality checking, `.txt` and `.dec` import/export. | `mtg-core`, `mtg-data` |
 | `mtg-optimizer` | Scoring, simulated annealing, Monte Carlo, hypergeometric math. | `mtg-deck`, `mtg-data`, `mtg-collection` |
 | `mtg-combo` | Combo detection, Commander bracket estimation. | `mtg-deck`, `mtg-data` |
-| `mtg-journal` | Recorded games, win rate aggregates, Bayesian priors. | `mtg-core`, `mtg-deck` |
-| `mtg-vision` | Card detection, homography, pHash, matching. | `mtg-core` |
-| `mtg-ml` | Card embeddings, personal re-ranker. | `mtg-core`, `mtg-journal` |
+| `mtg-vision` | Card detection, homography, pHash, matching, temporal voting. | — |
+| `mtg-journal` *(not built)* | Recorded games, win rate aggregates, Bayesian priors. | `mtg-core`, `mtg-deck` |
+| `mtg-ml` *(not built)* | Card embeddings, personal re-ranker. | `mtg-core`, `mtg-journal` |
 
 ## Storage — why not SQLite
 
@@ -54,12 +55,13 @@ on the optimizer or the vision pipeline without touching it changes the pace of 
 NDK not found, unresolved symbols at link time, runtime crashes on the emulator. The debugging
 cost is out of proportion to the actual need.
 
-The catalog is ~35,000 cards. Rust iteration over precomputed bitsets answers in a few
-milliseconds, which is plenty for a UI. So:
+The catalog is ~35,000 cards. A plain Rust scan over it answers in a few milliseconds, which is
+plenty for a UI. So:
 
-- **Read-only** → an `rkyv` artifact, mmap'd, zero-copy deserialization, indexes rebuilt at
-  startup (`HashMap<name, CardId>`, inverted index over oracle text, `fixedbitset` per color,
-  type and format legality).
+- **Read-only** → an `rkyv` artifact, mmap'd, zero-copy deserialization, with a
+  `HashMap<name, CardId>` rebuilt at startup. That name index is the *only* one: an earlier
+  version of this document also promised an inverted index over oracle text and a `fixedbitset`
+  per colour, type and legality. The measurements below are why none of them was built.
 - **Mutable** → [`redb`](https://docs.rs/redb): pure Rust, ACID, embedded. Collections, decks,
   storage locations, game log, ranker weights, price cache.
 - **Images** → files on disk, fetched on demand from Scryfall's CDN, LRU eviction.
@@ -116,8 +118,8 @@ unthinkable to ingest on a phone. Details in [data-pipeline.md](data-pipeline.md
 ## Frontend choice
 
 Svelte 5 + TypeScript. On Android the WebView is the bottleneck: a light bundle and little runtime
-work matter more than a rich component ecosystem. The production bundle is currently **65 kB of
-JavaScript, 24 kB gzipped**, which is the number to watch as features land.
+work matter more than a rich component ecosystem. The production bundle is currently **106 kB of
+JavaScript, 38 kB gzipped**, which is the number to watch as features land.
 
 The frontend holds **no domain logic**. It renders, and it sends commands.
 
@@ -146,3 +148,18 @@ condition and location. Adding a card that matches an existing holding raises it
 than creating a near-duplicate row, which is what stops a scanned binder from becoming thousands
 of rows of one. One index exists, mapping that merge key to a holding id, because scanning calls
 it once per card and a linear search there would be quadratic. Everything else scans.
+
+## Development checks that need real artifacts
+
+Two examples under `tools/build-artifacts` run the shipped code against the real data rather than
+against fixtures. Neither is a `cargo test`: both need artifacts that are never committed, and one
+needs the network. They exist because fixtures proved twice to be the thing that was wrong.
+
+```bash
+cargo run --release -p build-artifacts --example verify-scan     # needs .cache/arthashes.jsonl
+cargo run --release -p build-artifacts --example verify-bracket  # needs artifacts/cards.rkyv + combos.rkyv
+```
+
+`verify-scan` found the pipeline naming 4 photographs in 50 and led to the black-border finding in
+[`vision.md`](vision.md). `verify-bracket` confirms the estimate over all 105,328 combo variants —
+including that a deck reads as *less* certain, not clean, when the combo artifact is missing.

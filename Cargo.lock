@@ -239,6 +239,7 @@ dependencies = [
  "mtg-combo",
  "mtg-core",
  "mtg-data",
+ "mtg-deck",
  "mtg-vision",
  "serde",
  "serde_json",

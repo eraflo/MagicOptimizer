@@ -29,9 +29,11 @@ cargo tauri android dev
 toolchain far exceeds the benefit, for a need that 35,000 in-memory entries cover comfortably.
 
 **Rule: before adding a dependency, check it pulls in neither C nor C++**, or that it
-cross-compiles cleanly to `aarch64-linux-android`. The current stack — `rkyv`, `redb`,
-`fixedbitset` — is pure Rust, and `mtg-vision` deliberately has no image codec at all: frames
-arrive from the WebView canvas already decoded, so there was never a reason to carry one.
+cross-compiles cleanly to `aarch64-linux-android`. The domain crates currently pull in `rkyv`,
+`redb`, `memmap2`, `unicode-normalization`, `serde` and `thiserror` — all pure Rust —
+and nothing else. `mtg-vision`
+deliberately has no image codec at all: frames arrive from the WebView canvas already decoded,
+so there was never a reason to carry one.
 
 CI checks this rather than trusting it:
 
@@ -101,7 +103,7 @@ Two details worth keeping:
 ## Performance
 
 The WebView is the bottleneck, which is why the frontend is Svelte with a light bundle
-(68 kB of JavaScript, 25 kB gzipped).
+(106 kB of JavaScript, 38 kB gzipped).
 
 For the vision pipeline, the dominant cost is transferring the frame from the WebView into Rust,
 not computing the hash. Measure before optimizing, but hold the 5–10 fps processing target on a
@@ -115,8 +117,10 @@ mid-range phone. Three things are already in place for it:
 * The greyscale buffer is **reused across frames**, so a video stream does not allocate three
   hundred kilobytes ten times a second.
 
-The optimizer's Monte Carlo runs **single-threaded and bounded** on Android, against `rayon` on
-desktop: do not saturate a phone's cores or drain its battery.
+The optimizer's Monte Carlo is **single-threaded everywhere**, with its own PRNG so a search is
+reproducible. An earlier version of this document claimed it used `rayon` on desktop; it never
+has, and the workspace carries no thread pool at all. If parallelism is ever added, it must stay
+bounded on Android — do not saturate a phone's cores or drain its battery.
 
 ## Storage
 
