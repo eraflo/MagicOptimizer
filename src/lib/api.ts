@@ -281,3 +281,33 @@ export function syncExport(): Promise<string> {
 export function syncImport(contents: string, force: boolean): Promise<ImportSummary> {
   return invoke("sync_import", { contents, force });
 }
+
+// --- Data artifacts --------------------------------------------------------
+
+export type ArtifactStatus = {
+  name: string;
+  label: string;
+  about: string;
+  megabytes: number;
+  required: boolean;
+  installed: boolean;
+  bytes: number;
+};
+
+export function artifactsStatus(): Promise<ArtifactStatus[]> {
+  return invoke("artifacts_status");
+}
+
+/**
+ * Downloads one artifact from the GitHub release.
+ *
+ * Progress arrives as `artifact-progress` events rather than in the reply: a 54 MB download
+ * that says nothing for a minute is indistinguishable from a hang.
+ */
+export function artifactsDownload(name: string): Promise<number> {
+  return invoke("artifacts_download", { name });
+}
+
+export function artifactsDirectory(): Promise<string> {
+  return invoke("artifacts_directory");
+}

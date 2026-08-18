@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { listen } from "@tauri-apps/api/event";
+
   import * as api from "./lib/api";
   import CardDetail from "./lib/components/CardDetail.svelte";
   import CardList from "./lib/components/CardList.svelte";
@@ -188,6 +190,51 @@
     }
   }
 
+  // --- data artifacts -----------------------------------------------------
+  let artifacts = $state<api.ArtifactStatus[]>([]);
+  let downloading = $state<string | null>(null);
+  let downloaded = $state(0);
+  let expected = $state(0);
+
+  $effect(() => {
+    void (async () => {
+      try {
+        artifacts = await api.artifactsStatus();
+      } catch (e) {
+        error = String(e);
+      }
+    })();
+
+    // Progress arrives as events, not in the reply, so a long download is visibly alive.
+    const stop = listen<{ name: string; received: number; total: number }>(
+      "artifact-progress",
+      (event) => {
+        downloaded = event.payload.received;
+        expected = event.payload.total;
+      },
+    );
+    return () => void stop.then((off) => off());
+  });
+
+  async function fetchArtifact(name: string) {
+    downloading = name;
+    downloaded = 0;
+    expected = 0;
+    error = null;
+    try {
+      await api.artifactsDownload(name);
+      artifacts = await api.artifactsStatus();
+      status = await api.catalogStatus();
+      await refreshCollectionSideData();
+    } catch (e) {
+      error = String(e);
+    } finally {
+      downloading = null;
+    }
+  }
+
+  const megabytes = (bytes: number) => (bytes / 1024 / 1024).toFixed(1);
+
   async function reload() {
     status = await api.reloadCatalog();
   }
@@ -264,8 +311,38 @@
       currently no way to get it</strong> — everything except Browse still works, and the tabs
       above will take you there.
     </p>
+    <div class="downloads">
+      {#each artifacts as artifact (artifact.name)}
+        <div class="artifact">
+          <div class="what">
+            <strong>{artifact.label}</strong>
+            <span class="dim">{artifact.about}</span>
+          </div>
+          {#if artifact.installed}
+            <span class="done">Installed · {megabytes(artifact.bytes)} MB</span>
+          {:else if downloading === artifact.name}
+            <span class="progress">
+              {megabytes(downloaded)}{#if expected > 0} / {megabytes(expected)}{/if} MB
+            </span>
+          {:else}
+            <button
+              type="button"
+              class:primary={artifact.required}
+              disabled={downloading !== null}
+              onclick={() => void fetchArtifact(artifact.name)}
+            >
+              Download {artifact.megabytes} MB
+            </button>
+          {/if}
+        </div>
+      {/each}
+    </div>
+    <p class="dim">
+      Fetched from the project's GitHub releases — static files, no account and no server. You
+      can also build them yourself from a checkout:
+    </p>
     <pre>cargo run --release -p build-artifacts</pre>
-    <p class="dim">Expected at <code>{status.path}</code></p>
+    <p class="dim">Stored at <code>{status.path}</code></p>
     {#if status.error}
       <p class="dim">{status.error}</p>
     {/if}
@@ -566,6 +643,54 @@
     border-bottom: 1px solid rgba(228, 87, 61, 0.4);
     color: var(--danger);
     font-size: 13px;
+  }
+
+  .downloads {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 4px 0 12px;
+    text-align: left;
+  }
+
+  .artifact {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    background: var(--panel-raised);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+  }
+
+  .artifact .what {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .artifact .what .dim {
+    font-size: 12px;
+  }
+
+  .artifact button {
+    min-height: 40px;
+    white-space: nowrap;
+  }
+
+  .done {
+    color: var(--success);
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  .progress {
+    color: var(--accent);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
   }
 
   .setup {

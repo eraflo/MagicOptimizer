@@ -5,6 +5,7 @@
 mod combo_commands;
 mod commands;
 mod deck_commands;
+mod download_commands;
 mod dto;
 mod journal_commands;
 mod optimize_commands;
@@ -73,6 +74,10 @@ pub fn run() {
             sync_commands::sync_status,
             sync_commands::sync_export,
             sync_commands::sync_import,
+            download_commands::artifacts_status,
+            download_commands::artifacts_download,
+            download_commands::artifacts_remove,
+            download_commands::artifacts_directory,
         ])
         .run(tauri::generate_context!())
         .expect("the application failed to start");

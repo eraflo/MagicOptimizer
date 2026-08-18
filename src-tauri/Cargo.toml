@@ -30,6 +30,12 @@ mtg-journal = { path = "../crates/mtg-journal" }
 mtg-optimizer = { path = "../crates/mtg-optimizer" }
 mtg-vision = { path = "../crates/mtg-vision" }
 tauri = { version = "2", features = [] }
+# Already in the tree: Tauri depends on it and has already chosen a TLS backend. No provider is
+# named here on purpose — selecting one pulls `aws-lc-rs`, which is C, and Cargo's feature
+# unification means the app links whatever Tauri already enabled either way. The app fetches
+# static release assets over HTTPS; there is no server anywhere in this.
+reqwest = { version = "0.13", default-features = false, features = ["stream", "charset"] }
+tokio = { version = "1", features = ["fs", "io-util"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 thiserror = "2"
