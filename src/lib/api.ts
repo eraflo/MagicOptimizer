@@ -308,6 +308,11 @@ export function artifactsDownload(name: string): Promise<number> {
   return invoke("artifacts_download", { name });
 }
 
+/** Deletes one artifact, for someone who wants the space back. */
+export function artifactsRemove(name: string): Promise<void> {
+  return invoke("artifacts_remove", { name });
+}
+
 export function artifactsDirectory(): Promise<string> {
   return invoke("artifacts_directory");
 }

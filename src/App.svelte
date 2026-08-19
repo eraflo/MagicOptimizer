@@ -18,7 +18,9 @@
     Zone,
   } from "./lib/types";
 
-  let tab = $state<"browse" | "decks" | "collection" | "scan" | "journal">("browse");
+  let tab = $state<"browse" | "decks" | "collection" | "scan" | "journal" | "data">(
+    "browse",
+  );
   /** Only has an effect below 1180px, where the filter panel is a drawer. */
   let filtersOpen = $state(false);
   let status = $state<CatalogStatus | null>(null);
@@ -233,7 +235,24 @@
     }
   }
 
+  async function removeArtifact(name: string) {
+    error = null;
+    try {
+      await api.artifactsRemove(name);
+      artifacts = await api.artifactsStatus();
+      status = await api.catalogStatus();
+    } catch (e) {
+      error = String(e);
+    }
+  }
+
   const megabytes = (bytes: number) => (bytes / 1024 / 1024).toFixed(1);
+
+  // Quoted on the empty state so the size is known before tapping through. Read from the backend
+  // list rather than written twice, because the two drifting apart is how a UI starts lying.
+  const ARTIFACT_CATALOG_MB = $derived(
+    artifacts.find((artifact) => artifact.required)?.megabytes ?? 26,
+  );
 
   async function reload() {
     status = await api.reloadCatalog();
@@ -278,16 +297,27 @@
     </button>
   </nav>
 
-  <div class="status">
+  <!-- The one permanent way into the data screen, and it is deliberately the thing that already
+       reports the data's state. An earlier version showed the downloader only while the catalog
+       was missing, so downloading it made the panel vanish and took the two optional artifacts
+       with it — they became unreachable for good. -->
+  <button
+    type="button"
+    class="status"
+    class:missing={!status?.loaded}
+    aria-current={tab === "data" ? "page" : undefined}
+    onclick={() => (tab = "data")}
+    title={status?.loaded ? status.path : "No card data yet"}
+  >
     {#if status?.loaded}
-      <span class="ok" title={status.path}>
+      <span class="ok">
         {status.cards.toLocaleString()} cards · Scryfall {status.sourceUpdatedAt.slice(0, 10)}
       </span>
+      <span class="short">Data</span>
     {:else}
       <span class="warn">No card data</span>
-      <button type="button" class="ghost" onclick={reload}>Reload</button>
     {/if}
-  </div>
+  </button>
 </header>
 
 {#if error}
@@ -296,57 +326,73 @@
 
 <!-- Only Browse actually needs the catalog. Decks, the collection, the journal and the backup
      panel all work without it, and gating every tab on it left the whole app frozen on this
-     screen — clicking a tab changed `tab` while this branch kept winning. That is exactly what a
-     fresh Android install looks like, since the in-app downloader does not exist yet. -->
-{#if tab === "browse" && status && !status.loaded}
+     screen — clicking a tab changed `tab` while this branch kept winning. -->
+{#if tab === "data"}
+  <main class="data-main">
+    <div class="setup">
+      <h2>Data</h2>
+      <p>
+        MagicOptimizer ships without card data and fetches it from the project's GitHub releases
+        — static files, no account and no server. Only the first one is needed; the other two each
+        unlock one feature and can wait.
+      </p>
+      <div class="downloads">
+        {#each artifacts as artifact (artifact.name)}
+          <div class="artifact">
+            <div class="what">
+              <strong>{artifact.label}</strong>
+              <span class="dim">{artifact.about}</span>
+            </div>
+            {#if downloading === artifact.name}
+              <span class="progress">
+                {megabytes(downloaded)}{#if expected > 0} / {megabytes(expected)}{/if} MB
+              </span>
+            {:else if artifact.installed}
+              <div class="have">
+                <span class="done">Installed · {megabytes(artifact.bytes)} MB</span>
+                <button
+                  type="button"
+                  class="ghost"
+                  disabled={downloading !== null}
+                  onclick={() => void removeArtifact(artifact.name)}
+                >
+                  Remove
+                </button>
+              </div>
+            {:else}
+              <button
+                type="button"
+                class:primary={artifact.required}
+                disabled={downloading !== null}
+                onclick={() => void fetchArtifact(artifact.name)}
+              >
+                Download {artifact.megabytes} MB
+              </button>
+            {/if}
+          </div>
+        {/each}
+      </div>
+      <p class="dim">You can also build them yourself from a checkout:</p>
+      <pre>cargo run --release -p build-artifacts</pre>
+      {#if status}
+        <p class="dim">Stored at <code>{status.path}</code></p>
+        {#if status.error}
+          <p class="dim">{status.error}</p>
+        {/if}
+      {/if}
+      <button type="button" onclick={reload}>Check again</button>
+    </div>
+  </main>
+{:else if tab === "browse" && status && !status.loaded}
   <div class="setup">
     <h2>No card data yet</h2>
     <p>
-      MagicOptimizer ships without card data and downloads it separately. <strong>The in-app
-      downloader does not exist yet</strong>, which is the honest reason this screen is here and
-      not something you did wrong.
+      Browse is the one view that needs the card catalog. Everything else — decks, the collection,
+      the journal and the backup panel — works without it.
     </p>
-    <p>
-      On a desktop you can build the catalog from a checkout. <strong>On a phone there is
-      currently no way to get it</strong> — everything except Browse still works, and the tabs
-      above will take you there.
-    </p>
-    <div class="downloads">
-      {#each artifacts as artifact (artifact.name)}
-        <div class="artifact">
-          <div class="what">
-            <strong>{artifact.label}</strong>
-            <span class="dim">{artifact.about}</span>
-          </div>
-          {#if artifact.installed}
-            <span class="done">Installed · {megabytes(artifact.bytes)} MB</span>
-          {:else if downloading === artifact.name}
-            <span class="progress">
-              {megabytes(downloaded)}{#if expected > 0} / {megabytes(expected)}{/if} MB
-            </span>
-          {:else}
-            <button
-              type="button"
-              class:primary={artifact.required}
-              disabled={downloading !== null}
-              onclick={() => void fetchArtifact(artifact.name)}
-            >
-              Download {artifact.megabytes} MB
-            </button>
-          {/if}
-        </div>
-      {/each}
-    </div>
-    <p class="dim">
-      Fetched from the project's GitHub releases — static files, no account and no server. You
-      can also build them yourself from a checkout:
-    </p>
-    <pre>cargo run --release -p build-artifacts</pre>
-    <p class="dim">Stored at <code>{status.path}</code></p>
-    {#if status.error}
-      <p class="dim">{status.error}</p>
-    {/if}
-    <button type="button" class="primary" onclick={reload}>Check again</button>
+    <button type="button" class="primary" onclick={() => (tab = "data")}>
+      Get card data · {ARTIFACT_CATALOG_MB} MB
+    </button>
   </div>
 {:else if tab === "browse"}
   <main>
@@ -493,12 +539,38 @@
     color: var(--text);
   }
 
+  /* A button, because it navigates. Styled as the quiet chip it used to be so the header does
+     not gain a second loud control beside the tabs. */
   .status {
     margin-left: auto;
     display: flex;
     align-items: center;
     gap: 8px;
+    padding: 6px 10px;
+    font: inherit;
     font-size: 12px;
+    color: inherit;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+
+  .status:hover,
+  .status[aria-current="page"] {
+    background: var(--panel-raised);
+    border-color: var(--border);
+  }
+
+  /* Missing data is the one state worth a colour: it is the difference between the app working
+     and the app looking broken. */
+  .status.missing {
+    border-color: var(--danger);
+  }
+
+  /* The long form on a desktop, the word on a phone. Swapped at 640px below. */
+  .short {
+    display: none;
   }
 
   .ok {
@@ -515,6 +587,14 @@
     min-height: 0;
     overflow: hidden;
     position: relative;
+  }
+
+  /* The data screen scrolls at every width. It deliberately does not reuse `.scan-main`, which
+     gives up its padding and its scrolling below 860px so the camera can own the screen. */
+  .data-main {
+    display: block;
+    overflow-y: auto;
+    padding: 16px;
   }
 
   /* The scan view lays itself out as a grid and needs to scroll on a phone, where the panel
@@ -631,6 +711,11 @@
       display: none;
     }
 
+    .status .short {
+      display: inline;
+      color: var(--text-muted);
+    }
+
     .brand strong {
       display: none;
     }
@@ -673,6 +758,12 @@
 
   .artifact .what .dim {
     font-size: 12px;
+  }
+
+  .have {
+    display: flex;
+    align-items: center;
+    gap: 10px;
   }
 
   .artifact button {

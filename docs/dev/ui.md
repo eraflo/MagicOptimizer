@@ -65,7 +65,10 @@ Two deliberate differences beyond position:
   concern; Browse leads on desktop and lives behind *More* on a phone. Ordering navigation by
   what the device is for is the whole point.
 * **Five items is the ceiling.** With Journal that is already five, so anything added later goes
-  behind *More* rather than shrinking the bar.
+  behind *More* rather than shrinking the bar. The **Data** screen is the first thing to hit this
+  and it does not go in the bar: it is reached from the status chip in the header, which is
+  already the thing that reports whether there is any data. A destination you visit twice does
+  not deserve a permanent slot, but it does deserve to exist.
 
 ## Per-view treatment
 
@@ -104,9 +107,12 @@ These are not preferences; each has a reason.
 
 Worth stating, because both are already reported and neither is a styling problem:
 
-* **There is no artifact downloader**, so a phone has no card data and no way to get any. Browse
-  is empty and Scan can find a card but never name it. No amount of layout work changes that,
-  and it is the larger problem.
+* **The artifact downloader now exists**, and building it exposed a navigation problem the
+  desktop never showed. It was written as a first-run interstitial, gated on the catalog being
+  missing — so downloading the catalog satisfied the gate, the panel disappeared, and the two
+  optional artifacts became permanently unreachable. Anything that manages state cannot live in
+  a screen whose condition its own success destroys. It is a destination now, reached from the
+  status chip in the header at every width.
 * **The app is 142 MB** because it is a debug build. A release build with a signing key is what
   makes it installable in a way anyone would accept.
 
@@ -114,10 +120,8 @@ Worth stating, because both are already reported and neither is a styling proble
 
 Judged by how much each fixes relative to what it costs:
 
-1. **Bottom navigation on mobile**, with the task-order change. Biggest single improvement, and
-   it is contained: one component and a media query.
-2. **Full-bleed scan** with a bottom sheet. The phone's headline feature currently gets the worst
-   layout.
+1. ~~**Bottom navigation on mobile**~~ — done.
+2. ~~**Full-bleed scan** with a bottom sheet~~ — done.
 3. **Touch target and type audit** against the rules above. Mechanical, and it is the difference
    between "cramped" and "fine".
 4. **Collection as cards on mobile** instead of a stacked table.
