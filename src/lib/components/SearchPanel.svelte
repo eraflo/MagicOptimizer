@@ -179,9 +179,9 @@
     flex: none;
     padding: 22px 20px 28px;
     overflow-y: auto;
-    border: 1px solid rgba(244, 240, 234, 0.07);
+    border: 1px solid rgba(247, 239, 230, 0.07);
     border-radius: 18px;
-    background: rgba(32, 29, 36, 0.55);
+    background: rgba(44, 35, 29, 0.58);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     display: flex;
@@ -238,7 +238,7 @@
   .color-toggle.active {
     opacity: 1;
     filter: none;
-    box-shadow: 0 0 0 2px rgba(244, 240, 234, 0.75);
+    box-shadow: 0 0 0 2px rgba(247, 239, 230, 0.75);
   }
 
   .chips {
@@ -253,13 +253,13 @@
     font-size: var(--t-meta);
     font-weight: 600;
     border-radius: 999px;
-    background: rgba(244, 240, 234, 0.06);
-    border: 1px solid rgba(244, 240, 234, 0.14);
+    background: rgba(247, 239, 230, 0.06);
+    border: 1px solid rgba(247, 239, 230, 0.14);
     color: var(--ink-2);
   }
 
   .chip:hover:not(.active) {
-    background: rgba(244, 240, 234, 0.13);
+    background: rgba(247, 239, 230, 0.13);
     color: var(--ink);
   }
 
@@ -285,7 +285,7 @@
   .footer {
     margin-top: auto;
     padding-top: 18px;
-    border-top: 1px solid rgba(244, 240, 234, 0.08);
+    border-top: 1px solid rgba(247, 239, 230, 0.08);
     display: flex;
     align-items: center;
     justify-content: space-between;

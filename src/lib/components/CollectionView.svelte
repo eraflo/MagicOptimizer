@@ -326,8 +326,8 @@
   /* Foil is a property of the physical card, not a state of the interface, so it reads as a
      sheen rather than as a colour. */
   .tag.foil {
-    background: linear-gradient(120deg, rgba(240, 236, 230, 0.18), rgba(216, 169, 81, 0.16));
-    border-color: rgba(240, 236, 230, 0.32);
+    background: linear-gradient(120deg, rgba(247, 239, 230, 0.18), rgba(216, 169, 81, 0.16));
+    border-color: rgba(247, 239, 230, 0.32);
     color: var(--ink);
   }
 

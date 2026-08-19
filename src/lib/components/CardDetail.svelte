@@ -268,9 +268,9 @@
     flex: none;
     padding: 20px;
     overflow-y: auto;
-    border: 1px solid rgba(244, 240, 234, 0.07);
+    border: 1px solid rgba(247, 239, 230, 0.07);
     border-radius: 18px;
-    background: rgba(32, 29, 36, 0.55);
+    background: rgba(44, 35, 29, 0.58);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
   }

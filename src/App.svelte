@@ -533,8 +533,8 @@
     padding: 12px 20px;
     /* The inset lives here, on the element that actually touches the notch. */
     padding-top: calc(12px + env(safe-area-inset-top, 0px));
-    border-bottom: 1px solid rgba(244, 240, 234, 0.07);
-    background: rgba(23, 21, 26, 0.82);
+    border-bottom: 1px solid rgba(247, 239, 230, 0.07);
+    background: rgba(33, 26, 22, 0.82);
     backdrop-filter: blur(20px) saturate(1.2);
     -webkit-backdrop-filter: blur(20px) saturate(1.2);
     flex: none;
@@ -727,9 +727,9 @@
     display: flex;
     flex-direction: column;
     min-width: 0;
-    border: 1px solid rgba(244, 240, 234, 0.07);
+    border: 1px solid rgba(247, 239, 230, 0.07);
     border-radius: 18px;
-    background: rgba(32, 29, 36, 0.5);
+    background: rgba(44, 35, 29, 0.5);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     overflow: hidden;
@@ -756,7 +756,7 @@
     position: fixed;
     inset: 0;
     z-index: 29;
-    background: rgba(12, 10, 14, 0.62);
+    background: rgba(18, 12, 9, 0.66);
     border: none;
     border-radius: 0;
     padding: 0;

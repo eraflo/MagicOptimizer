@@ -47,8 +47,11 @@ tokens, not the layout.
 3. **Type is large and confident.** A subject's name is 34–40px. Nothing in the interface is
    below 13px, and list rows are 15px. Proposal 2 ran at 12px and that is precisely what
    "unpleasant to read" meant.
-4. **The ground is a warm near-black.** `#17151a`, not the old `#0d0f16`. A blue-black is a
-   developer-tool ground and it cools every illustration laid on it; a warm one lets them radiate.
+4. **The ground is a warm brown, and every neutral sits on the same axis as the ember.** An
+   earlier pass moved from a blue-black to a near-black `#17151a` and floated an amber glow over
+   it — so the glow read as a filter laid on someone else's palette. Neutrals that share the
+   light's hue are what make the two belong together, and it is the difference between "amber
+   over black" and a lit room.
 5. **Actions are pills, and the honest one is as visible as the confident one.** Where the app
    proposes something it inferred — a recognised card, a suggested swap — the way to reject it
    sits beside the way to accept it, at the same size. An algorithm offering a name must not
@@ -103,13 +106,13 @@ fits; that drift is what makes a direction dissolve.
 
 | Token | Value | Role |
 |---|---|---|
-| `--ground` | `#17151a` | The app's ground. Warm near-black. |
-| `--ground-2` | `#201d24` | Panels, sheets, raised surfaces. |
-| `--ground-3` | `#2a262f` | Controls, chips, hover. |
-| `--line` | `#34303a` | Hairline borders. |
-| `--ink` | `#f0ece6` | Primary text. Warm off-white, not pure. |
-| `--ink-2` | `#b8b1ac` | Secondary text, still fully readable. |
-| `--ink-3` | `#837c79` | Metadata and disabled. Never body text. |
+| `--ground` | `#211a16` | The app's ground. A warm brown, **not** a near-black. |
+| `--ground-2` | `#2c231d` | Panels, sheets, raised surfaces. |
+| `--ground-3` | `#3a2e26` | Controls, chips, hover. |
+| `--line` | `#473a30` | Hairline borders. |
+| `--ink` | `#f7efe6` | Primary text. Warm off-white, not pure. |
+| `--ink-2` | `#c9b8a9` | Secondary text, still fully readable. |
+| `--ink-3` | `#94816f` | Metadata and disabled. Never body text. |
 | `--gold` | `#d8a951` | Owned quantity. Nothing else. |
 | `--accent` | `#f4f0ea` | Emphasis, and it is light rather than coloured. Primary fills take `--ground` as their text. |
 | `--scrim` | gradient | Bottom-anchored, ends opaque at `--ground`. |
