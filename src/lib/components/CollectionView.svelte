@@ -179,13 +179,19 @@
 </section>
 
 <style>
+  /* The view scrolls as one column rather than each card scrolling inside itself.
+     With an internal scroller the header, the table and the backup card had to share a fixed
+     height, and the last one simply fell off the bottom of the screen — measured at 553px of
+     children in a 467px box. One scroll works at any height and with any number of holdings. */
   .collection {
     flex: 1;
     display: flex;
     flex-direction: column;
     gap: 14px;
     min-width: 0;
-    overflow: hidden;
+    overflow-y: auto;
+    /* So the last card is not flush against the window edge. */
+    padding-bottom: 4px;
   }
 
   header {
@@ -248,9 +254,7 @@
   }
 
   .table {
-    flex: 1;
-    overflow-y: auto;
-    min-height: 0;
+    flex: none;
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 18px;
     background: rgba(20, 20, 24, 0.8);

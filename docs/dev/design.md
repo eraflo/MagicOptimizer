@@ -176,6 +176,17 @@ One rule the placeholders enforce: a list row must look deliberate **with no net
 Artwork comes from Scryfall's CDN, so an offline install gets the card's own colours as a swatch
 rather than an empty grey rectangle — which would be worse than the text list it replaced.
 
+## One scroller per view, not one per card
+
+A view that stacks cards vertically scrolls **as a column**; the cards do not each scroll inside
+themselves. The Collection tried the other arrangement and its backup card fell off the bottom of
+the window — measured at 553px of children in a 467px box, with nothing to scroll because each
+card owned its own overflow and the container was `hidden`.
+
+The rule that follows: `overflow: hidden` on a column of cards is a promise that the content
+fits, and content never fits at every window height. Side-by-side panels (Browse, Decks, Journal)
+are the opposite case and do scroll individually, because each is a full-height column of its own.
+
 ## Guardrails
 
 - **No second accent.** If something needs to stand out and gold is taken, use weight, size or
@@ -185,3 +196,5 @@ rather than an empty grey rectangle — which would be worse than the text list 
 - **Never show a bare percentage for a match confidence without the way to refuse it.**
 - **No text below 13px.** None. Including captions.
 - **Do not put `image_normal` in a background.** See law 1.
+- **Never `overflow: hidden` on a vertical stack of cards.** Something always falls off the
+  bottom at some window height, and there is nothing to scroll to reach it.
