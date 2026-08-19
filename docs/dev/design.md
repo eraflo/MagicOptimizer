@@ -1,8 +1,12 @@
 # Design: cinema
 
 > **Status** — the direction was chosen on 2026-08-19 after three rejected proposals. The tokens
-> below are in `src/app.css`; the scan result is the first screen built from them. Everything
-> else still looks like the old interface, and that is expected — screens move one at a time.
+> below are in `src/app.css`. Built so far: the scan result, the card list and the card detail.
+> The rest still looks like the old interface, and that is expected — screens move one at a time.
+>
+> The first attempt moved only the scan result, which on a desktop is the one screen nobody can
+> reach without a camera and a successful match. The report back was "nothing changed", and it
+> was accurate. **Move a screen the user actually looks at, or the work is invisible.**
 
 ## How this was arrived at, so it is not undone by accident
 
@@ -80,12 +84,17 @@ Spacing is a multiple of 4. Radii: `6px` on small controls, `10px` on panels, `9
 | Screen | Treatment | Why |
 |---|---|---|
 | **Scan result** | Cinema, full-bleed | One card, just photographed. The screen the phone exists for. Built. |
-| **Card detail** | Cinema on a phone, a panel over the artwork on a desktop | Same subject, different room. |
-| **Catalogue** | Contact sheet — a dense grid of art crops | Density *through* images. A player recognises artwork before a name. |
+| **Card detail** | A cinema hero over the art crop, rules below. Built. | Same subject, different room. |
+| **Catalogue** | Rows now carry the art crop; the contact-sheet grid is designed, not built | Density *through* images. A player recognises artwork before a name. |
 | **Deck editor** | Columns by mana value, cards at 63:88 | The curve is the arrangement, not a chart beside it. |
 | **Collection** | Binder pages, 3×3 | `mtg-collection` already models storage locations and nothing shows them. |
 
-The last three are designed but **not built**. Do not describe them as done.
+The deck editor and the collection are designed but **not built**, and the catalogue has the
+tokens without the contact-sheet layout. Do not describe any of the three as done.
+
+One rule the placeholders enforce: a list row must look deliberate **with no network at all**.
+Artwork comes from Scryfall's CDN, so an offline install gets the card's own colours as a swatch
+rather than an empty grey rectangle — which would be worse than the text list it replaced.
 
 ## Guardrails
 

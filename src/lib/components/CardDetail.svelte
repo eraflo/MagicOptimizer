@@ -86,16 +86,22 @@
       <button type="button" class="ghost" onclick={onclose}>&#8592; Back to results</button>
     </div>
 
-    {#if card.image_normal}
-      <img class="art" src={card.image_normal} alt={card.name} loading="lazy" />
-    {/if}
-
-    <header>
-      <h2>{card.name}</h2>
-      <ManaCost cost={card.mana_cost} />
-    </header>
-
-    <p class="type">{card.type_line}</p>
+    <!-- One subject, over its own artwork. The name sits on the scrim rather than above the
+         image, which is the whole difference between a header with a picture under it and a
+         card that fills the frame. See docs/dev/design.md. -->
+    <div class="hero">
+      {#if card.image_art}
+        <img src={card.image_art} alt="" loading="lazy" decoding="async" />
+      {/if}
+      <div class="scrim"></div>
+      <div class="over">
+        <h2>{card.name}</h2>
+        <div class="line">
+          <ManaCost cost={card.mana_cost} />
+          <span class="type">{card.type_line}</span>
+        </div>
+      </div>
+    </div>
 
     <div class="badges">
       <span class="badge">{card.rarity}</span>
@@ -272,19 +278,61 @@
     margin-top: 48px;
   }
 
-  .art {
+  .hero {
+    position: relative;
     width: 100%;
-    border-radius: 12px;
-    display: block;
-    margin-bottom: 14px;
-    background: var(--panel-raised);
+    aspect-ratio: 16 / 9;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 16px;
+    background: var(--ground-3);
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
   }
 
-  header {
+  .hero img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .hero .scrim {
+    position: absolute;
+    inset: 0;
+    background: var(--scrim);
+  }
+
+  .hero .over {
+    position: relative;
+    padding: 14px 16px 15px;
     display: flex;
-    align-items: baseline;
-    justify-content: space-between;
+    flex-direction: column;
+    gap: 7px;
+  }
+
+  .hero h2 {
+    margin: 0;
+    font-size: var(--t-head);
+    font-weight: 700;
+    line-height: 1.08;
+    letter-spacing: -0.022em;
+    color: var(--ink);
+    text-wrap: balance;
+  }
+
+  .hero .line {
+    display: flex;
+    align-items: center;
     gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .hero .type {
+    font-size: var(--t-meta);
+    color: var(--ink-2);
   }
 
   h2 {
@@ -503,9 +551,10 @@
       z-index: 1;
     }
 
-    .art {
-      max-width: 320px;
-      margin-inline: auto;
+    /* The hero shortens on a phone: a 16:9 band would eat the top half of a full-screen
+       sheet before a single line of rules text. */
+    .hero {
+      aspect-ratio: 2 / 1;
     }
   }
 

@@ -19,6 +19,8 @@ export type CardSummary = {
   edhrec_rank: number | null;
   faces: number;
   image_small: string | null;
+  /** The artwork alone — what a list row shows. */
+  image_art: string | null;
 };
 
 export type FaceView = {

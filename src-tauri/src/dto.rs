@@ -43,6 +43,9 @@ pub struct CardSummary {
     pub faces: usize,
     /// Small image, for list thumbnails.
     pub image_small: Option<String>,
+    /// The artwork alone. What a list row actually shows — a whole card shrunk to thumbnail size
+    /// is illegible, while the painting at the same size is recognisable at a glance.
+    pub image_art: Option<String>,
 }
 
 impl CardSummary {
@@ -62,6 +65,7 @@ impl CardSummary {
             edhrec_rank: card.edhrec_rank(),
             faces: card.faces().len(),
             image_small: image_url(&card.image_id, "small"),
+            image_art: image_url(&card.image_id, "art_crop"),
         }
     }
 }
