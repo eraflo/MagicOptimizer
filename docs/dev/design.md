@@ -109,9 +109,13 @@ to depth, air and light, all three of which are tokens now:
 * **`--sheen`** — `inset 0 1px 0` along the top edge, which is how glass catches light. One line,
   and it does more than any amount of colour work.
 * **Air.** Panel padding 26px, gaps 28px, list rows 10/16. The old panel was correct and cramped.
-* **Scrollbars absent at rest.** A permanent bar down the side of a floating card is furniture.
-  The thumb fades in on hover of the thing that scrolls, drawn inside its own padding so it never
-  touches the rounded edge, and is removed entirely on touch where the platform draws its own.
+* **Scrollbars absent at rest, and inset at both ends.** A permanent bar down the side of a
+  floating card is furniture. The thumb fades in on hover of the thing that scrolls and is
+  removed entirely on touch, where the platform draws its own. Two insets matter and only one is
+  obvious: the thumb sits inside a 4px transparent border so it floats clear of the side, and
+  `::-webkit-scrollbar-track` takes `margin-block: 18px` so the **lane** stops short of both
+  ends. Without the second, the bar runs into the card's 18px corner and reads as stuck to the
+  edge however thin it is.
 * **No full-bleed banners.** The error was a red strip painted across the window under the app
   bar — the single least premium thing an interface can do. It is a floating card like everything
   else.

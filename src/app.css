@@ -401,20 +401,29 @@ label {
 }
 
 ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 12px;
+  height: 12px;
 }
 
+/* The lane stops short of both ends. It runs the full height of the scroll box by default, so
+   on an 18px-radius card it ran straight into the rounded corner — which is what made it look
+   stuck to the edge however thin the thumb was. 18px clears the corner exactly. */
 ::-webkit-scrollbar-track {
   background: transparent;
+  margin-block: 18px;
+}
+
+::-webkit-scrollbar-track:horizontal {
+  margin-block: 0;
+  margin-inline: 18px;
 }
 
 ::-webkit-scrollbar-thumb {
   background: transparent;
   border-radius: 999px;
-  /* Drawn inside its own padding so the thumb is 6px of colour in a 10px lane — it never
-     touches the card's rounded edge. */
-  border: 2px solid transparent;
+  /* Drawn inside its own padding: 4px of colour in a 12px lane, so it floats clear of the side
+     rather than resting against it. */
+  border: 4px solid transparent;
   background-clip: padding-box;
   transition: background-color 180ms ease;
 }
