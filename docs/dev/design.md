@@ -171,6 +171,14 @@ artwork and is faster to scan, because a card is recognised by its painting befo
 list wins when the type line, the cost and the owned count have to be read together. The choice
 persists in `localStorage`, because a density preference is a standing one.
 
+**Both side panels collapse, and that is what makes the sheet worth having.** Three columns share
+the width and you rarely need more than one of the sides at once — filtering and reading a card
+are separate moments. Measured on a 1250px window: results 528px and four columns with both
+panels open, 834px and seven with the filters away, **1220px and ten with neither**. The state
+persists; opening a card reopens its panel, because otherwise the click looks like it did
+nothing. The toggles exist only above each panel's own breakpoint — below them the filters are
+already a drawer and the card is already a full-screen sheet.
+
 Cell width is measured, not picked: the results column sits between a 292px filter panel and a
 372px detail panel, so at a 1250px window it is about 528px wide. `minmax(118px, 1fr)` gave three
 columns there — a list with bigger pictures. At 104px it gives four, and ten on a full-width

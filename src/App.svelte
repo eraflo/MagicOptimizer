@@ -36,6 +36,22 @@
   );
 
   $effect(() => localStorage.setItem("catalogue-layout", layout));
+
+  /**
+   * Which side panels are showing.
+   *
+   * Three columns share the width and you rarely need more than one of the sides: filtering and
+   * reading a card are separate moments. Collapsing either hands the whole difference to the
+   * results, which matters most for the contact sheet — the filter panel alone is four more
+   * columns of artwork.
+   *
+   * Both persist, because this is a working preference rather than a per-visit one.
+   */
+  let filtersShown = $state(localStorage.getItem("panel-filters") !== "off");
+  let detailShown = $state(localStorage.getItem("panel-detail") !== "off");
+
+  $effect(() => localStorage.setItem("panel-filters", filtersShown ? "on" : "off"));
+  $effect(() => localStorage.setItem("panel-detail", detailShown ? "on" : "off"));
   /** Only has an effect below 1180px, where the filter panel is a drawer. */
   let filtersOpen = $state(false);
   let status = $state<CatalogStatus | null>(null);
@@ -145,7 +161,9 @@
   async function select(oracleId: string) {
     selectedId = oracleId;
     try {
-      selected = await api.cardDetails(oracleId);
+      // Opening a card with its panel collapsed would look like the click did nothing.
+    detailShown = true;
+    selected = await api.cardDetails(oracleId);
     } catch (e) {
       error = String(e);
       selected = null;
@@ -455,6 +473,7 @@
       {total}
       {searching}
       open={filtersOpen}
+      shown={filtersShown}
       onclose={() => (filtersOpen = false)}
     />
 
@@ -469,7 +488,17 @@
 
     <div class="results">
       <div class="compact-bar">
-        <button type="button" onclick={() => (filtersOpen = true)}>
+        <button
+          type="button"
+          class="side-toggle left"
+          aria-pressed={filtersShown}
+          onclick={() => (filtersShown = !filtersShown)}
+          title={filtersShown ? "Hide the filters" : "Show the filters"}
+        >
+          <span aria-hidden="true">{filtersShown ? "◧" : "▢"}</span> Filters
+        </button>
+
+        <button type="button" class="drawer" onclick={() => (filtersOpen = true)}>
           Filters{activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}
         </button>
         <span class="compact-count">
@@ -504,6 +533,16 @@
             <span aria-hidden="true">▤</span> List
           </button>
         </div>
+
+        <button
+          type="button"
+          class="side-toggle right"
+          aria-pressed={detailShown}
+          onclick={() => (detailShown = !detailShown)}
+          title={detailShown ? "Hide the card panel" : "Show the card panel"}
+        >
+          <span aria-hidden="true">{detailShown ? "◨" : "▢"}</span> Card
+        </button>
       </div>
       {#if layout === "sheet"}
         <CardSheet cards={results} {owned} selected={selectedId} onselect={select} />
@@ -519,6 +558,7 @@
       {decks}
       onadd={addSelected}
       onaddtodeck={addSelectedToDeck}
+      shown={detailShown}
       onclose={closeDetail}
     />
   </main>
@@ -791,8 +831,25 @@
     flex: none;
   }
 
-  .compact-bar > button:first-child {
+  /* The drawer button only exists where the filter panel is a drawer. */
+  .compact-bar > button.drawer {
     display: none;
+  }
+
+  /* The collapse toggles only exist where there is a panel to collapse — below their
+     breakpoints the panels are already a drawer and a full-screen sheet. */
+  .side-toggle {
+    display: none;
+    min-height: 30px;
+    padding: 0 13px;
+    font-size: var(--t-meta);
+    color: var(--ink-2);
+  }
+
+  .side-toggle[aria-pressed="false"] {
+    color: var(--ink-3);
+    background: transparent;
+    border-color: transparent;
   }
 
   .compact-count {
@@ -845,9 +902,21 @@
     cursor: default;
   }
 
+  @media (min-width: 1181px) {
+    .side-toggle.left {
+      display: inline-flex;
+    }
+  }
+
+  @media (min-width: 861px) {
+    .side-toggle.right {
+      display: inline-flex;
+    }
+  }
+
   /* Below 1180px the filter panel becomes a drawer, so the way back into it appears here. */
   @media (max-width: 1180px) {
-    .compact-bar > button:first-child {
+    .compact-bar > button.drawer {
       display: inline-flex;
     }
   }

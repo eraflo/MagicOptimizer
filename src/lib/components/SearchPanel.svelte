@@ -8,6 +8,7 @@
     total,
     searching,
     open = false,
+    shown = true,
     onclose,
   }: {
     request: SearchRequest;
@@ -17,6 +18,8 @@
     searching: boolean;
     /** Only meaningful below 1180px, where the panel is a drawer. */
     open?: boolean;
+    /** False when the user has collapsed the panel to give the results the width. */
+    shown?: boolean;
     onclose: () => void;
   } = $props();
 
@@ -65,7 +68,7 @@
   }
 </script>
 
-<aside class="panel" class:open>
+<aside class="panel" class:hidden={!shown} class:open>
   <div class="drawer-head">
     <strong>Filters</strong>
     <button type="button" class="ghost" onclick={onclose} aria-label="Close filters">Done</button>
@@ -192,6 +195,14 @@
 
   /* Uppercase and spaced. A filter panel is a stack of captions; setting them as prose is what
      made the old sidebar read like a settings dialog. */
+  /* Collapsed only where it is a permanent column. Below 1180px it is a drawer, and a drawer is
+     already hidden until asked for. */
+  @media (min-width: 1181px) {
+    .panel.hidden {
+      display: none;
+    }
+  }
+
   .field-label {
     display: block;
     font-size: var(--t-meta);

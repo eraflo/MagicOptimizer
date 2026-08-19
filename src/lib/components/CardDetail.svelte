@@ -11,6 +11,7 @@
     onadd,
     onaddtodeck,
     onclose,
+    shown = true,
   }: {
     card: CardDetails | null;
     ownedCount: number;
@@ -19,6 +20,8 @@
     onaddtodeck: (deckId: number, quantity: number, zone: Zone) => Promise<void>;
     /** Closes the sheet on phones, where the panel covers the list. */
     onclose: () => void;
+    /** False when the user has collapsed the panel to give the results the width. */
+    shown?: boolean;
     onadd: (options: {
       pool: Pool;
       quantity: number;
@@ -78,7 +81,7 @@
   }
 </script>
 
-<aside class="panel" class:has-card={card !== null}>
+<aside class="panel" class:hidden={!shown} class:has-card={card !== null}>
   {#if !card}
     <p class="placeholder">Select a card to see its details.</p>
   {:else}
@@ -274,6 +277,14 @@
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     box-shadow: var(--sheen), var(--lift);
+  }
+
+  /* Collapsed only where it is a permanent column. Below 860px it is a full-screen sheet, which
+     already only appears once a card is opened. */
+  @media (min-width: 861px) {
+    .panel.hidden {
+      display: none;
+    }
   }
 
   .placeholder {
