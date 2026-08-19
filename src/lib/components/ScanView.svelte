@@ -1062,17 +1062,20 @@ ${written} card${written === 1 ? "" : "s"} were added. ` +
       border-radius: 0;
     }
 
+    /* The sheet sits on the app's gutter like every other card, not on a number of its own.
+       It floats over the viewfinder, so it also keeps the safe-area inset the full-bleed
+       viewfinder underneath has no use for. */
     .panel {
       position: absolute;
-      left: 8px;
-      right: 8px;
-      bottom: 8px;
+      left: var(--gutter);
+      right: var(--gutter);
+      bottom: calc(var(--gutter) + env(safe-area-inset-bottom, 0px));
       /* Collapsed to the handle: enough to say where cards are going and how many, no more. */
       max-height: 52px;
       padding: 0 12px 10px;
       background: rgba(20, 20, 24, 0.96);
       backdrop-filter: blur(8px);
-      border-color: var(--border-strong);
+      border-color: rgba(255, 255, 255, 0.12);
       overflow: hidden;
       transition: max-height 0.18s ease;
     }

@@ -550,14 +550,27 @@
       display: none;
     }
 
+    /* A full-screen sheet has no outside, so it carries neither the card's radius nor its
+       border — rounded corners against the screen edges read as a rendering fault, and the
+       hairline draws a box around the whole display. It keeps the safe-area insets instead,
+       being the one thing here that touches the notch and the gesture bar. */
     .panel.has-card {
       display: block;
       position: fixed;
       inset: 0;
       z-index: 40;
       width: 100%;
-      border-left: none;
-      padding-bottom: 32px;
+      border: none;
+      border-radius: 0;
+      box-shadow: none;
+      padding-top: calc(16px + env(safe-area-inset-top, 0px));
+      padding-bottom: calc(32px + env(safe-area-inset-bottom, 0px));
+    }
+
+    /* The hero loses its radius too: it now runs to the top edge of the screen. */
+    .hero {
+      border-radius: 0;
+      margin: calc(-16px - env(safe-area-inset-top, 0px)) -24px 16px;
     }
 
     .sheet-head {
