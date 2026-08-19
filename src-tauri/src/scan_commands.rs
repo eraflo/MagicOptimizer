@@ -47,6 +47,8 @@ pub struct ScannedCard {
     pub distance: u32,
     /// How much worse the nearest *different* card was. Larger means more certain.
     pub margin: u32,
+    /// The card's artwork, for the full-frame result. `None` if the printing id is malformed.
+    pub image_art: Option<String>,
 }
 
 /// The result of one frame.
@@ -120,6 +122,9 @@ fn scanned(card: &mtg_vision::Match) -> ScannedCard {
         name: card.name.clone(),
         distance: card.distance,
         margin: card.margin,
+        // The scanner matched a *printing*, so this is the artwork it actually recognised —
+        // not whichever printing the catalog happens to list first.
+        image_art: crate::dto::image_url(&card.printing_id, "art_crop"),
     }
 }
 

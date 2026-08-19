@@ -14,7 +14,10 @@ use serde::{Deserialize, Serialize};
 /// host. See the legal note in `CLAUDE.md`.
 ///
 /// The CDN lays images out by the first two characters of the id.
-fn image_url(image_id: &str, size: &str) -> Option<String> {
+///
+/// `pub(crate)` because the scanner needs it too: a recognised card is presented full-frame over
+/// its own artwork, which is the one thing that makes that screen worth looking at.
+pub(crate) fn image_url(image_id: &str, size: &str) -> Option<String> {
     let mut chars = image_id.chars();
     let a = chars.next()?;
     let b = chars.next()?;
@@ -100,6 +103,13 @@ pub struct CardDetails {
     pub face_views: Vec<FaceView>,
     /// Larger image, for the detail panel.
     pub image_normal: Option<String>,
+    /// The artwork alone, without the frame or the rules box.
+    ///
+    /// A whole card makes a poor background — it carries its own border, title and text, and
+    /// anything laid over it collides with them. `art_crop` is the painting on its own, which is
+    /// what a full-frame view needs. This is display only; `arthashes.bin` still fingerprints the
+    /// `normal` image, and the two must not be confused.
+    pub image_art: Option<String>,
 }
 
 impl CardDetails {
@@ -151,6 +161,7 @@ impl CardDetails {
                 })
                 .collect(),
             image_normal: image_url(&card.image_id, "normal"),
+            image_art: image_url(&card.image_id, "art_crop"),
         }
     }
 }
@@ -205,6 +216,18 @@ mod tests {
             image_url("e0deb2a2-3f5e-4b8d-b3d7-6b4d2c8a1f00", "normal").as_deref(),
             Some("https://cards.scryfall.io/normal/front/e/0/e0deb2a2-3f5e-4b8d-b3d7-6b4d2c8a1f00.jpg")
         );
+    }
+
+    #[test]
+    fn the_art_crop_is_a_different_url_from_the_whole_card() {
+        // Full-frame views use `art_crop`; a whole card carries its own border, title and text
+        // box, and a name laid over one collides with them. Confusing the two is the single
+        // easiest way to undo the direction — see docs/dev/design.md.
+        let id = "e0deb2a2-3f5e-4b8d-b3d7-6b4d2c8a1f00";
+        let art = image_url(id, "art_crop").expect("a well-formed id has a url");
+        let whole = image_url(id, "normal").expect("a well-formed id has a url");
+        assert!(art.contains("/art_crop/"));
+        assert_ne!(art, whole);
     }
 
     #[test]

@@ -353,6 +353,47 @@ ${written} card${written === 1 ? "" : "s"} were added. ` +
   const progress = $derived(
     result?.state === "tracking" && result.needed > 0 ? result.votes / result.needed : 0,
   );
+
+  /** The card to present full-frame: the one just recognised, while it is still in view. */
+  const showing = $derived(
+    result?.state === "confirmed" || result?.state === "holding" ? result.card : null,
+  );
+
+  /**
+   * How sure the match is, in words as well as bits.
+   *
+   * `margin` is how much worse the nearest *different* card was, so it measures whether anything
+   * else was close — which is the question that matters. The bits stay visible beside the word
+   * because a single adjective from an algorithm is not something to take on trust.
+   */
+  const certainty = $derived.by(() => {
+    const margin = showing?.margin ?? 0;
+    if (margin >= 24) return { word: "Certain", margin };
+    if (margin >= 12) return { word: "Probable", margin };
+    return { word: "Uncertain", margin };
+  });
+
+  /**
+   * Undo the last automatic add.
+   *
+   * Recognition is confident enough to add without asking, which keeps both hands free for the
+   * cards. That is only defensible if undoing is one tap and sits beside the result rather than
+   * three screens away.
+   */
+  function reject(card: ScannedCard) {
+    pending = pending
+      .map((entry) =>
+        entry.oracleId === card.oracleId ? { ...entry, quantity: entry.quantity - 1 } : entry,
+      )
+      .filter((entry) => entry.quantity > 0);
+    lastConfirmed = null;
+    rejected = card.name;
+  }
+
+  let rejected = $state<string | null>(null);
+  $effect(() => {
+    if (showing) rejected = null;
+  });
 </script>
 
 <section class="scan">
@@ -360,6 +401,38 @@ ${written} card${written === 1 ? "" : "s"} were added. ` +
     <!-- svelte-ignore a11y_media_has_caption -->
     <video bind:this={video} playsinline muted></video>
     <canvas bind:this={overlay} class="overlay"></canvas>
+
+    <!-- One subject, the whole frame, over its own artwork. See docs/dev/design.md: this is the
+         screen the direction was chosen for. It disappears by itself when the card leaves the
+         frame, which is why it needs no dismiss button. -->
+    {#if running && showing}
+      <div class="cinema">
+        {#if showing.imageArt}
+          <img class="hero" src={showing.imageArt} alt="" />
+        {/if}
+        <div class="scrim"></div>
+        <div class="fg">
+          <p class="certainty" class:weak={certainty.margin < 12}>
+            {certainty.word} · {certainty.margin} bits clear
+          </p>
+          <h3 class="cname">{showing.name}</h3>
+          <p class="dest">
+            {#if rejected === showing.name}
+              Removed. Move the card out of frame and back to try again.
+            {:else}
+              Added to {destinationLabel}
+            {/if}
+          </p>
+          {#if rejected !== showing.name}
+            <div class="acts">
+              <button type="button" class="act" onclick={() => reject(showing)}>
+                Not this card
+              </button>
+            </div>
+          {/if}
+        </div>
+      </div>
+    {/if}
 
     {#if !running}
       <div class="curtain">
@@ -563,6 +636,110 @@ ${written} card${written === 1 ? "" : "s"} were added. ` +
   }
 
   video,
+  /* ---- the full-frame result ------------------------------------------------
+     Every value here comes from docs/dev/design.md. The artwork is `art_crop`, never a whole
+     card: a card image carries its own border, title and text box, and a name laid over one
+     collides with them. */
+  .cinema {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    background: var(--ground);
+    overflow: hidden;
+    animation: rise 200ms ease-out;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cinema { animation: none; }
+  }
+
+  @keyframes rise {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  .cinema .hero {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* Bottom-anchored and ending opaque, so the name lands on solid ground rather than on
+     whatever the painting happens to have put there. */
+  .cinema .scrim {
+    position: absolute;
+    inset: 0;
+    background: var(--scrim);
+  }
+
+  .cinema .fg {
+    position: relative;
+    padding: 24px 22px 26px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .cinema .certainty {
+    margin: 0;
+    font-size: var(--t-meta);
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--gold);
+  }
+
+  /* An uncertain match says so in the danger colour rather than in smaller type. The one thing
+     this screen must never do is present a guess with the confidence of a fact. */
+  .cinema .certainty.weak {
+    color: var(--danger);
+  }
+
+  .cinema .cname {
+    margin: 0;
+    font-size: var(--t-hero);
+    font-weight: 700;
+    line-height: 1.04;
+    letter-spacing: -0.03em;
+    color: var(--ink);
+    text-wrap: balance;
+  }
+
+  .cinema .dest {
+    margin: 0;
+    font-size: var(--t-body);
+    color: var(--ink-2);
+  }
+
+  .cinema .acts {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 4px;
+  }
+
+  /* A pill, and a real one: 44px tall, because this is the control someone reaches for while
+     holding a card in the other hand. */
+  .cinema .act {
+    min-height: 44px;
+    padding: 0 22px;
+    border-radius: 999px;
+    border: 1px solid rgba(240, 236, 230, 0.28);
+    background: rgba(240, 236, 230, 0.12);
+    color: var(--ink);
+    font-size: var(--t-body);
+    font-weight: 600;
+  }
+
+  .cinema .act:hover:not(:disabled) {
+    background: rgba(240, 236, 230, 0.2);
+    border-color: rgba(240, 236, 230, 0.42);
+  }
+
   .overlay {
     position: absolute;
     inset: 0;

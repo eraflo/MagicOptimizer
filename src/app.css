@@ -1,13 +1,54 @@
-/* Palette taken from the app icon, so the window and the launcher belong together. */
+/* See docs/dev/design.md. The direction is "cinema": one subject, given the whole frame, over
+   its own artwork. Everything here follows from that. */
 :root {
-  --bg: #0d0f16;
-  --panel: #161a24;
-  --panel-raised: #1c2130;
-  --border: #262c3b;
-  --border-strong: #333b4f;
-  --text: #e8ecf5;
-  --text-muted: #8f99ae;
-  --text-dim: #6b7488;
+  /* A *warm* near-black. The previous ground was #0d0f16 — a blue-black, the colour every
+     developer tool uses, and it cooled every illustration laid on it. Magic's art is warm; the
+     ground has to let it radiate rather than fight it. */
+  --ground: #17151a;
+  --ground-2: #201d24;
+  --ground-3: #2a262f;
+  --line: #34303a;
+  --line-strong: #443f4c;
+  --ink: #f0ece6;
+  --ink-2: #b8b1ac;
+  --ink-3: #837c79;
+
+  /* The interface's own accent, and it marks exactly one thing: what you own. That is the
+     question the app answers in a shop, and giving the gold a second job would cost it this
+     one. Everything else stands out by weight, size or position. */
+  --gold: #d8a951;
+
+  /* Text over artwork needs solid ground under it, not a guess about the image. Anchored at the
+     bottom and ending opaque, so a name never lands on a bright patch of sky. */
+  --scrim: linear-gradient(
+    180deg,
+    rgba(23, 21, 26, 0.55) 0%,
+    rgba(23, 21, 26, 0) 32%,
+    rgba(23, 21, 26, 0.78) 70%,
+    #17151a 100%
+  );
+
+  /* Type scale: 13 / 15 / 17 / 21 / 26 / 34 / 40, and nothing between. Nothing is below 13px.
+     The rejected proposal ran at 12px, and "unpleasant to read" is exactly what that means. */
+  --t-meta: 13px;
+  --t-body: 15px;
+  --t-lede: 17px;
+  --t-title: 21px;
+  --t-head: 26px;
+  --t-hero: 34px;
+  --t-hero-lg: 40px;
+
+  /* The old names, kept so the screens not yet moved keep working. They now resolve to the new
+     ground rather than the blue one, which is why the whole app warms up at once instead of
+     looking like two apps stitched together. Remove each as its screen is rebuilt. */
+  --bg: var(--ground);
+  --panel: var(--ground-2);
+  --panel-raised: var(--ground-3);
+  --border: var(--line);
+  --border-strong: var(--line-strong);
+  --text: var(--ink);
+  --text-muted: var(--ink-2);
+  --text-dim: var(--ink-3);
   --accent: #3e8fe8;
   --accent-soft: rgba(62, 143, 232, 0.14);
   --danger: #e4573d;
@@ -52,8 +93,8 @@ body {
   background: var(--bg);
   color: var(--text);
   font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
-  font-size: 14px;
-  line-height: 1.5;
+  font-size: var(--t-body);
+  line-height: 1.55;
   -webkit-font-smoothing: antialiased;
 }
 

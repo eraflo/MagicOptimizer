@@ -259,6 +259,15 @@ fix it, do not silence it with `#[allow]` unless you write the justification in 
   heuristics alone.
 - **Android performance budget.** The vision pipeline must hold 5–10 fps on a mid-range phone.
   Measure before optimizing, but do not let a regression through.
+- **The interface has a written direction now, and it was expensive to arrive at.** Three
+  proposals were rejected before one landed; the reasons are in `docs/dev/design.md` and they are
+  not matters of taste. The one that matters most: **the artwork is the interface.** Magic has
+  thirty years of illustration and the app displayed none of it, which is why it read as ugly —
+  not the palette. Full-frame views use `image_art` (Scryfall's `art_crop`), **never**
+  `image_normal`: a whole card carries its own border, title and text box, and anything laid over
+  one collides with them. A test in `dto.rs` pins the two apart. Nothing in the interface goes
+  below 13px, and the ground is a *warm* near-black — the old `#0d0f16` is a developer-tool blue
+  that cooled every illustration on it.
 - **The UI is already responsive; keep it that way.** Three CSS breakpoints — 1180px collapses
   the filter panel into a drawer, 860px turns the card detail into a full-screen sheet and
   stacks the collection table. Any new view needs the same treatment, and touch sizing keys on
@@ -288,3 +297,4 @@ Concrete consequences for the code:
 - Embeddings, ranker features, retraining → [`docs/dev/ml.md`](docs/dev/ml.md)
 - Recognition pipeline and golden test set → [`docs/dev/vision.md`](docs/dev/vision.md)
 - Android build, NDK, permissions → [`docs/dev/android.md`](docs/dev/android.md)
+- Visual direction, tokens, per-screen treatment → [`docs/dev/design.md`](docs/dev/design.md)

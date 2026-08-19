@@ -51,6 +51,8 @@ export type CardDetails = CardSummary & {
   restricted_formats: string[];
   face_views: FaceView[];
   image_normal: string | null;
+  /** The artwork without the frame or the rules box, for full-frame views. */
+  image_art: string | null;
 };
 
 // camelCase: matches `#[serde(rename_all = "camelCase")]` on SearchRequest.
@@ -375,6 +377,8 @@ export type ScannedCard = {
   distance: number;
   /** How much worse the nearest different card was. Larger is more certain. */
   margin: number;
+  /** The artwork alone, for the full-frame result. */
+  imageArt: string | null;
 };
 
 export type ScanResult = {
