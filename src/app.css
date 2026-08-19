@@ -28,9 +28,17 @@
   /* Depth. The mockup read as premium largely because things floated: a wide, soft, mostly
      transparent shadow plus a one-pixel highlight along the top edge, which is how glass
      catches light. Flat cards with a hairline read as diagrams. */
-  --lift: 0 1px 2px rgba(0, 0, 0, 0.5), 0 12px 32px rgba(0, 0, 0, 0.55);
-  --lift-lg: 0 2px 4px rgba(0, 0, 0, 0.5), 0 26px 60px rgba(0, 0, 0, 0.68);
-  --sheen: inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  /* One broad, soft shadow. The earlier pair carried a tight `0 1px 2px` alongside the wide
+     one, and every panel here is translucent — so that tight shadow showed *through* the glass
+     and pooled where it is densest, which is just inside each corner. That was the smudge in
+     the corners across the whole app.
+
+     The sheen is a full inset ring rather than `inset 0 1px 0`. A one-pixel top line is drawn
+     horizontally and stops dead where the radius turns, leaving a visible nick at both top
+     corners; a ring follows the curve the whole way round. */
+  --lift: 0 14px 34px rgba(0, 0, 0, 0.5);
+  --lift-lg: 0 26px 60px rgba(0, 0, 0, 0.64);
+  --sheen: inset 0 0 0 1px rgba(255, 255, 255, 0.045);
 
   /* Text over artwork needs solid ground under it, not a guess about the image. Anchored at the
      bottom and ending opaque, so a name never lands on a bright patch of sky. */
@@ -184,7 +192,7 @@ button:disabled {
 button.primary {
   background: var(--accent);
   border-color: var(--accent);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 22px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.38);
   /* Dark text, because the fill is pale. Swapping the fill without this line puts white on
      white and makes every primary action invisible. */
   color: var(--ground);

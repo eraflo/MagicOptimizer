@@ -213,8 +213,10 @@
     border: none;
     border-radius: 8px;
     background: rgba(255, 255, 255, 0.05);
+    /* A ring, not a top line: a one-pixel horizontal highlight stops dead where the radius
+       turns and leaves a nick in both upper corners. */
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.12),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.08),
       inset 0 -2px 6px rgba(0, 0, 0, 0.45);
     overflow: hidden;
   }

@@ -110,10 +110,15 @@ over artwork has to let some through, or the app is a grid of grey boxes again.
 Reported three times as missing, and it was never one thing. Held against the mockup it came down
 to depth, air and light, all three of which are tokens now:
 
-* **`--lift`** — a wide, soft, mostly transparent shadow. Things that float read as premium;
-  flat cards with a hairline read as diagrams.
-* **`--sheen`** — `inset 0 1px 0` along the top edge, which is how glass catches light. One line,
-  and it does more than any amount of colour work.
+* **`--lift`** — one wide, soft, mostly transparent shadow. Things that float read as premium;
+  flat cards with a hairline read as diagrams. **One**, not two: it carried a tight `0 1px 2px`
+  alongside the broad one, and every surface here is translucent, so that tight shadow showed
+  *through* the glass and pooled where it is densest — just inside each corner. Never pair a
+  tight shadow with a translucent background.
+* **`--sheen`** — a full `inset 0 0 0 1px` ring, which is how glass catches light. It began as
+  `inset 0 1px 0` along the top edge, and that was wrong on every rounded card: a one-pixel
+  horizontal line is drawn flat and stops dead where the radius turns, leaving a visible nick in
+  both upper corners. A ring follows the curve the whole way round.
 * **Air.** Panel padding 26px, gaps 28px, list rows 10/16. The old panel was correct and cramped.
 * **Scrollbars absent at rest, and inset at both ends.** A permanent bar down the side of a
   floating card is furniture. The thumb fades in on hover of the thing that scrolls and is
