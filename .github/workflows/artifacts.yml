@@ -1,0 +1,52 @@
+name: Data artifacts reachable
+
+# The one test no other job can do, because it needs the network.
+#
+# `cargo test -p magicoptimizer -- --ignored` fetches a byte of each published artifact by range
+# and checks its size against what the download screen promises. It is `#[ignore]`d so that CI on
+# every push does not depend on GitHub being up, which would turn an outage into a red build on
+# code that is fine.
+#
+# It exists because of a failure no offline test could see. The downloader shipped with no TLS
+# backend compiled in at all: the constants were right, the names matched, every unit test passed,
+# and not one byte could ever arrive. Two things can break it again and neither shows up locally —
+# the TLS stack losing its provider through a dependency bump, and somebody deleting or renaming
+# an asset on the `data` release.
+#
+# Weekly rather than nightly: the artifacts change when Scryfall publishes a set, so a daily run
+# would mostly prove that GitHub's CDN is still online.
+on:
+  schedule:
+    - cron: "17 6 * * 1"
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  reachable:
+    name: fetch each published artifact
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # `src-tauri` links against the system WebView, so the job fails at link time without
+      # these — on something that has nothing to do with the downloader.
+      - name: Install Tauri system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libgtk-3-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            patchelf
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      # `--nocapture` on purpose: the test prints each URL with its status and byte count, and
+      # when this fails the useful information is *which* artifact and *what* it answered.
+      - name: Fetch each artifact
+        run: cargo test -p magicoptimizer -- --ignored --nocapture

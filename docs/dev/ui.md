@@ -1,11 +1,18 @@
 # Interface: one app, two shapes
 
-> **Status** — a design document, and a proposal. Nothing here is built yet. It exists because
-> the mobile interface was tried on a real phone and reported as bad, and "make it responsive"
-> is not an actionable instruction.
+> **Status — superseded for visual direction; still current for layout.**
 >
-> There is an interactive companion to this document with both layouts drawn in the app's own
-> palette, and a working bottom bar you can tap through — easier to react to than prose.
+> This was written when the mobile interface had been tried on a phone and reported as bad, and
+> "make it responsive" is not an actionable instruction. Its **layout** reasoning still holds and
+> is still followed: what each device is for, bottom navigation on mobile, the per-view treatment
+> table, the touch and type rules.
+>
+> Its **visual** proposals do not. Three directions were rejected after this was written, and the
+> one that landed is in [`design.md`](design.md) — near-black chassis, artwork as the source of
+> colour, floating glass cards on a lit ground. Where the two disagree, `design.md` wins.
+>
+> Everything the "order to do this in" section lists is now built. The line further down saying
+> there is no artifact downloader is also out of date; there is one, and a `Data` screen for it.
 
 ## The mistake to stop making
 
