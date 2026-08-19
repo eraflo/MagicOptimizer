@@ -261,5 +261,8 @@ are the opposite case and do scroll individually, because each is a full-height 
   row, or for a file input dressed as a button. Those three all shipped shouting and wrapping.
   Any label containing an `input[type=radio]`, a `.checkbox`, or acting as a button resets
   `text-transform` and `letter-spacing`.
+- **A card supplies the frame, not the room.** Giving a panel the floating-card treatment does
+  not give its contents padding — the deck list shipped with its header, its form and its rows
+  flush against the rounded edge. Check the inside after moving the outside.
 - **Never `overflow: hidden` on a vertical stack of cards.** Something always falls off the
   bottom at some window height, and there is nothing to scroll to reach it.

@@ -482,12 +482,22 @@
     overflow-y: auto;
   }
 
+  /* The card supplies the frame; its contents still need their own room. Giving `.list` the
+     floating-card treatment left everything inside flush against the rounded edge. */
   .list header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 12px 14px;
-    border-bottom: 1px solid var(--border);
+    gap: 10px;
+    padding: 18px 18px 14px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .list header h3 {
+    margin: 0;
+    font-size: var(--t-title);
+    font-weight: 700;
+    letter-spacing: -0.015em;
   }
 
   h3 {
@@ -513,9 +523,12 @@
   }
 
   .draft {
-    padding: 12px 14px;
-    border-bottom: 1px solid var(--border);
-    background: var(--bg);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 18px;
+    border-bottom: 1px solid var(--line);
+    background: rgba(0, 0, 0, 0.28);
   }
 
   .draft button {
@@ -565,7 +578,7 @@
     flex: 1;
     min-width: 0;
     overflow-y: auto;
-    padding: 24px;
+    padding: 26px;
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 18px;
     background: rgba(20, 20, 24, 0.8);
@@ -777,9 +790,11 @@
 
   .placeholder,
   .empty {
-    color: var(--text-dim);
+    color: var(--ink-2);
     text-align: center;
-    padding: 40px 16px;
+    padding: 56px 22px;
+    font-size: var(--t-body);
+    text-wrap: balance;
   }
 
   .empty-zone {
