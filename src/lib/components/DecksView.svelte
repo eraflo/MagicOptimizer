@@ -173,7 +173,7 @@
   }
 </script>
 
-<section class="decks">
+<section class="decks" class:editing={open !== null}>
   <aside class="list">
     <header>
       <h3>Decks</h3>
@@ -274,6 +274,10 @@
           </ul>
         </div>
       {/if}
+
+      <button type="button" class="back ghost" onclick={() => (open = null)}>
+        <span aria-hidden="true">‹</span> All decks
+      </button>
 
       <div class="deck-layout" role="group" aria-label="Deck layout">
         <button
@@ -619,6 +623,15 @@
     color: var(--ground);
   }
 
+  /* Only on a phone, where the list it returns to is not on screen. */
+  .back {
+    display: none;
+    align-items: center;
+    gap: 7px;
+    margin-bottom: 14px;
+    padding-left: 12px;
+  }
+
   .deck-head {
     display: flex;
     align-items: center;
@@ -829,6 +842,10 @@
     }
   }
 
+  /* Phones: one page at a time, not two stacked. Splitting a 375px screen between a deck list
+     and a deck editor gave each half a job it could not do — the list was a peephole and the
+     editor started below the fold. `docs/dev/ui.md` called for a pushed page and a back arrow,
+     and this is it: the list until a deck is open, the editor after. */
   @media (max-width: 860px) {
     .decks {
       flex-direction: column;
@@ -836,9 +853,24 @@
 
     .list {
       width: 100%;
+      /* Fills the page rather than sizing to its contents. A short card floating above a lot of
+         empty ground reads as something that failed to load. */
+      flex: 1;
+      min-height: 0;
       border-right: none;
-      border-bottom: 1px solid var(--border);
-      max-height: 45%;
+      max-height: none;
+    }
+
+    .decks.editing .list {
+      display: none;
+    }
+
+    .decks:not(.editing) .editor {
+      display: none;
+    }
+
+    .back {
+      display: inline-flex;
     }
 
     .entry-actions {
