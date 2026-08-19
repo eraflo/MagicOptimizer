@@ -227,6 +227,94 @@ pub fn deck_export(state: State<'_, AppState>, id: u64, style: String) -> Comman
 
 /// The deck zones the UI offers, as (key, label) pairs, served from Rust so the two cannot
 /// drift apart.
+/// One card of a deck, with what the board needs to place it.
+///
+/// The deck store keeps `oracle_id`, a name and a quantity — nothing about what the card costs
+/// or looks like, and rightly so: that belongs to the catalog and would go stale in a saved deck.
+/// This is the join, done at the moment the editor opens it.
+#[derive(Debug, Serialize)]
+pub struct BoardCard {
+    pub oracle_id: String,
+    pub name: String,
+    pub quantity: u32,
+    pub zone: String,
+    /// The column this card belongs in. `None` when the catalog does not know the card.
+    pub mana_value: Option<f32>,
+    pub colors: String,
+    pub type_line: String,
+    /// True for lands, which get a column of their own — their cost says nothing about when
+    /// they are played.
+    pub is_land: bool,
+    pub image_art: Option<String>,
+}
+
+/// A deck laid out for the board: every card, joined to the catalog.
+///
+/// Resolved by scanning the catalog once and keeping only the deck's oracle ids, rather than
+/// looking each card up by name. Names are not keys — Scryfall has several cards sharing one —
+/// and `CardId` shifts on every catalog rebuild, which is exactly why decks persist `oracle_id`
+/// in the first place. One scan is ~5 ms over 35,306 cards and runs once per deck opened.
+#[tauri::command]
+pub fn deck_board(state: State<'_, AppState>, id: u64) -> CommandResult<Vec<BoardCard>> {
+    let stored = state
+        .decks()
+        .get(DeckId(id))
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| format!("there is no deck {id}"))?;
+
+    let wanted: std::collections::HashSet<&str> = stored
+        .deck
+        .entries
+        .iter()
+        .map(|entry| entry.oracle_id.as_str())
+        .collect();
+
+    let found = state.with_catalog(|catalog| {
+        let mut found = std::collections::HashMap::new();
+        for (_, card) in catalog.iter() {
+            let oracle = card.oracle_id();
+            if wanted.contains(oracle) {
+                found.insert(
+                    oracle.to_owned(),
+                    (
+                        card.mana_value(),
+                        card.colors().to_string(),
+                        card.type_line().to_owned(),
+                        card.type_line().contains("Land"),
+                        crate::dto::image_url(&card.image_id, "art_crop"),
+                    ),
+                );
+            }
+        }
+        found
+    })?;
+
+    Ok(stored
+        .deck
+        .entries
+        .iter()
+        .map(|entry| {
+            let known = found.get(&entry.oracle_id);
+            BoardCard {
+                oracle_id: entry.oracle_id.clone(),
+                name: entry.name.clone(),
+                quantity: entry.quantity,
+                zone: match entry.zone {
+                    Zone::Main => "main",
+                    Zone::Sideboard => "sideboard",
+                    Zone::Command => "command",
+                }
+                .to_owned(),
+                mana_value: known.map(|k| k.0),
+                colors: known.map(|k| k.1.clone()).unwrap_or_default(),
+                type_line: known.map(|k| k.2.clone()).unwrap_or_default(),
+                is_land: known.is_some_and(|k| k.3),
+                image_art: known.and_then(|k| k.4.clone()),
+            }
+        })
+        .collect())
+}
+
 #[tauri::command]
 pub fn deck_zones() -> Vec<(String, String)> {
     Zone::ALL

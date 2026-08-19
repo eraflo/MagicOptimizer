@@ -56,6 +56,7 @@ pub fn run() {
             deck_commands::deck_import,
             deck_commands::deck_export,
             deck_commands::deck_zones,
+            deck_commands::deck_board,
             optimize_commands::deck_score,
             optimize_commands::deck_optimize,
             optimize_commands::deck_apply_suggestion,

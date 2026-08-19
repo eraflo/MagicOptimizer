@@ -1,8 +1,9 @@
 <script lang="ts">
   import * as api from "../api";
   import { describeViolation } from "../types";
-  import type { DeckView, ExportStyle, StoredDeck, Zone } from "../types";
+  import type { BoardCard, DeckView, ExportStyle, StoredDeck, Zone } from "../types";
   import BracketPanel from "./BracketPanel.svelte";
+  import DeckBoard from "./DeckBoard.svelte";
   import ManaCurve from "./ManaCurve.svelte";
   import OptimizePanel from "./OptimizePanel.svelte";
 
@@ -13,6 +14,42 @@
 
   let decks = $state<StoredDeck[]>([]);
   let open = $state<DeckView | null>(null);
+
+  /**
+   * How the main deck is drawn.
+   *
+   * The board lays the cards out in columns by mana value, which is what anyone does physically
+   * when building: spread them out, step back, look at the shape. The curve is then the
+   * arrangement rather than a chart beside it — a column running too tall is visible without
+   * reading a number. The list stays for the moments the board is bad at: renaming, moving
+   * between zones, and reading a hundred rows quickly.
+   */
+  let deckLayout = $state<"board" | "list">(
+    (localStorage.getItem("deck-layout") as "board" | "list" | null) ?? "board",
+  );
+  $effect(() => localStorage.setItem("deck-layout", deckLayout));
+
+  let boardCards = $state<BoardCard[]>([]);
+
+  // Reloaded whenever the deck changes, since a quantity edit changes what the board draws.
+  $effect(() => {
+    const id = open?.id;
+    if (id === undefined) {
+      boardCards = [];
+      return;
+    }
+    const version = open?.deck.entries.length;
+    void version;
+    void api
+      .deckBoard(id)
+      .then((cards) => (boardCards = cards))
+      .catch(() => (boardCards = []));
+  });
+
+  async function boardChange(oracleId: string, delta: number) {
+    await changeQuantity(oracleId, "main", delta);
+    if (open) boardCards = await api.deckBoard(open.id).catch(() => []);
+  }
   let error = $state<string | null>(null);
   let busy = $state(false);
 
@@ -238,9 +275,37 @@
         </div>
       {/if}
 
+      <div class="deck-layout" role="group" aria-label="Deck layout">
+        <button
+          type="button"
+          class="mode"
+          class:on={deckLayout === "board"}
+          aria-pressed={deckLayout === "board"}
+          onclick={() => (deckLayout = "board")}
+        >
+          <span aria-hidden="true">▦</span> Board
+        </button>
+        <button
+          type="button"
+          class="mode"
+          class:on={deckLayout === "list"}
+          aria-pressed={deckLayout === "list"}
+          onclick={() => (deckLayout = "list")}
+        >
+          <span aria-hidden="true">▤</span> List
+        </button>
+      </div>
+
+      {#if deckLayout === "board"}
+        <DeckBoard cards={boardCards} onchange={boardChange} />
+      {/if}
+
       <div class="columns">
         <div class="zones">
           {#each ZONES as { zone, label }}
+            <!-- In board mode the main deck is the board above; the sideboard and the command
+                 zone stay here, because neither is a point on a curve. -->
+            {#if !(deckLayout === "board" && zone === "main")}
             {@const entries = entriesIn(open, zone)}
             {#if entries.length || zone === "main"}
               <section class="zone">
@@ -299,6 +364,7 @@
                 {/each}
               </section>
             {/if}
+            {/if}
           {/each}
         </div>
 
@@ -350,11 +416,15 @@
             </p>
           {/if}
 
-          <ManaCurve
-            curve={open.stats.curve}
-            colorPips={open.stats.color_pips}
-            averageManaValue={open.stats.average_mana_value}
-          />
+          <!-- Only in list mode. The board *is* the curve, and drawing a histogram beside it
+               would make the same claim twice in two shapes. -->
+          {#if deckLayout === "list"}
+            <ManaCurve
+              curve={open.stats.curve}
+              colorPips={open.stats.color_pips}
+              averageManaValue={open.stats.average_mana_value}
+            />
+          {/if}
 
           {#if open.deck.format === "commander" || open.deck.format === "brawl" || open.deck.format === "duel" || open.deck.format === "predh"}
             <BracketPanel deckId={open.id} />
@@ -502,6 +572,38 @@
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     box-shadow: var(--sheen), var(--lift);
+  }
+
+  .deck-layout {
+    display: flex;
+    gap: 4px;
+    padding: 3px;
+    margin-bottom: 16px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.05);
+    width: fit-content;
+  }
+
+  .mode {
+    min-height: 30px;
+    padding: 0 13px;
+    border: none;
+    background: transparent;
+    border-radius: 999px;
+    color: var(--ink-3);
+    font-size: var(--t-meta);
+    font-weight: 600;
+    box-shadow: none;
+  }
+
+  .mode:hover:not(.on) {
+    background: transparent;
+    color: var(--ink-2);
+  }
+
+  .mode.on {
+    background: var(--accent);
+    color: var(--ground);
   }
 
   .deck-head {

@@ -166,6 +166,21 @@ export type DeckEntry = {
   collector_number: string;
 };
 
+/** One card of a deck, joined to the catalog so the board can place it. */
+export type BoardCard = {
+  oracle_id: string;
+  name: string;
+  quantity: number;
+  zone: Zone;
+  /** Null when the catalog does not know the card, so it cannot be placed in a column. */
+  mana_value: number | null;
+  colors: string;
+  type_line: string;
+  /** Lands get a column of their own: their cost says nothing about when they are played. */
+  is_land: boolean;
+  image_art: string | null;
+};
+
 export type Deck = {
   name: string;
   format: string;

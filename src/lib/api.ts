@@ -29,6 +29,7 @@ import type {
   Game,
   GameInput,
   ImportSummary,
+  BoardCard,
   ScanResult,
   ScanStatus,
   SyncStatus,
@@ -46,6 +47,11 @@ export function reloadCatalog(): Promise<CatalogStatus> {
 
 export function searchCards(request: SearchRequest): Promise<SearchResponse> {
   return invoke("search_cards", { request });
+}
+
+/** A deck's cards joined to the catalog, for the mana-value board. */
+export function deckBoard(id: number): Promise<BoardCard[]> {
+  return invoke("deck_board", { id });
 }
 
 export function cardDetails(oracleId: string): Promise<CardDetails> {

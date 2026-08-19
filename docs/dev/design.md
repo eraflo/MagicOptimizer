@@ -158,13 +158,31 @@ Spacing is a multiple of 4. Radii: `6px` on small controls, `10px` on panels, `9
 | **Scan result** | Cinema, full-bleed | One card, just photographed. The screen the phone exists for. Built. |
 | **Card detail** | A cinema hero over the art crop, rules below. Built. | Same subject, different room. |
 | **Catalogue** | Contact sheet by default, list on a switch. Built. | Density *through* images. A player recognises artwork before a name. |
-| **Deck editor** | Two floating cards. Columns by mana value at 63:88 designed, not built. | The curve is the arrangement, not a chart beside it. |
+| **Deck editor** | Board by default — columns by mana value, cards at 63:88 — with the list on a switch. Built. | The curve is the arrangement, not a chart beside it. |
 | **Collection** | Floating cards. Binder pages 3×3 designed, not built. | `mtg-collection` already models storage locations and nothing shows them. |
 | **Journal** | Two floating cards, form beside results. Built. | Recording is the mobile task; the numbers are the desktop one. |
 
-Every view carries the palette, the controls and the floating-card layout, and the catalogue has
-its contact sheet. Still **not** built: mana-value columns for the deck editor, binder pages for
-the collection. Do not describe those two as done.
+Every view carries the palette, the controls and the floating-card layout; the catalogue has its
+contact sheet and the deck editor its board. Still **not** built: binder pages for the collection.
+Do not describe that one as done.
+
+### The deck board
+
+Columns by mana value, cards at their real 63:88 proportion, which is what anyone does physically
+when building — spread them out, step back, look at the shape. Four decisions carry it:
+
+* **The curve is the arrangement.** A column running too tall is visible without reading a
+  number, so the histogram is hidden in board mode: drawing it beside the board would make the
+  same claim twice in two shapes.
+* **Lands get their own column.** Their mana value says nothing about when they are played, and
+  leaving them at zero would put a third of the deck in one bar and flatten everything else.
+* **0–1 and 6+ share their columns.** Few decks have enough of either end to fill one alone.
+* **A card the catalog does not know goes to "Unplaced"** rather than being dropped. Silently
+  losing it would make the board disagree with the list beside it.
+
+The join happens in `deck_board`, which scans the catalog once (~5 ms) keeping only the deck's
+oracle ids. Not by name — Scryfall has several cards sharing one — and not by `CardId`, which
+shifts on every rebuild, which is why decks persist `oracle_id` at all.
 
 **The catalogue offers both layouts and neither is a compromise.** The sheet shows four times the
 artwork and is faster to scan, because a card is recognised by its painting before its name; the
