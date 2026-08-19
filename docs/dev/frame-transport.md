@@ -102,9 +102,23 @@ amount of work, and it only solves Android.
    unnecessary and removes the whole class of problem.
 5. **CameraX plugin.** Best on Android, Android only, most work.
 
-## What is not yet known
+## What the silence turned out to mean
 
-The camera stopping has **not been diagnosed**. Everything above is reasoning from the shape of
-the code, and the shape is genuinely wrong — but the error text now shown over the viewfinder is
-what would confirm which of these actually matters. Fixing 1–3 blind may well work and still
-leave nobody any wiser.
+The stopping was reported again with one new detail that settled a great deal: **it stops with
+no message at all.**
+
+That silence was the fingerprint. The viewfinder reports what `grab()` catches, so a frame that
+*throws* was always visible — but a `MediaStreamTrack` that simply ends throws nothing. The
+interval keeps ticking against a dead source, every frame comes back blank, and no code path in
+the component ever learned that the stream was gone. Nothing was watching the thing that failed.
+
+So the tracks and the `<video>` are now instrumented: `ended`, `mute`, `unmute` on each track,
+`pause` on the element. Android ends a camera track for several reasons that are not faults —
+another app takes the camera, the screen locks, the activity is backgrounded, the system reclaims
+it under memory pressure — and from here they are indistinguishable, so each is named and the
+stream is reopened **once**. Once, because if the camera is gone for a reason that persists,
+retrying in a loop turns one failure into a spinning one and buries the message that matters.
+
+This does not rule out the allocation pressure described above; it is entirely possible that the
+per-frame `getImageData` is *why* the system reclaims the camera. But that is now a question the
+app can answer instead of a guess, because it will say which event fired.

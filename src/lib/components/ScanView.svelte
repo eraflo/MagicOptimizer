@@ -111,7 +111,13 @@
     return () => stop();
   });
 
-  async function start() {
+  /**
+   * `automatic` is set only by the one reopen after the system took the camera. A start the user
+   * asked for clears that budget — otherwise the first automatic retry would spend it forever
+   * and pressing the button again would do nothing but repeat the give-up message.
+   */
+  async function start(automatic = false) {
+    if (!automatic) reopened = false;
     cameraError = null;
     error = null;
     try {
@@ -128,8 +134,37 @@
       return;
     }
 
+    // Watch the stream itself, not only the frames taken from it.
+    //
+    // Reported symptom: the camera stops after a while with no message at all. That silence was
+    // the bug's own fingerprint — nothing here observed the track. `grab()` reports what it
+    // catches, so a *throwing* frame was visible, but a track that simply ends throws nothing:
+    // the loop keeps ticking against a dead source and every frame is silently blank.
+    //
+    // Android ends a camera track for reasons that are not faults: another app takes the camera,
+    // the screen locks, the activity is backgrounded, the system reclaims it under memory
+    // pressure. All of them look identical from here, so all of them get named and, once, retried.
+    for (const track of stream.getTracks()) {
+      track.addEventListener("ended", () => {
+        frameError = "The camera was released — reopening.";
+        void restart();
+      });
+      track.addEventListener("mute", () => {
+        frameError = "The camera stopped sending frames. Another app may have taken it.";
+      });
+      track.addEventListener("unmute", () => {
+        frameError = null;
+      });
+    }
+
     if (video) {
       video.srcObject = stream;
+      // A WebView pauses media of its own accord — on losing focus, on some memory pressure —
+      // and a paused `<video>` yields the same blank frames as a dead track.
+      video.addEventListener("pause", () => {
+        if (running) frameError = "The camera was paused — resuming.";
+        void video?.play().catch(() => {});
+      });
       await video.play().catch((e) => {
         cameraError = `The camera stream would not start: ${e}`;
       });
@@ -211,6 +246,25 @@
     } finally {
       inFlight = false;
     }
+  }
+
+  /**
+   * Reopen the camera once after the system took it away.
+   *
+   * Once, deliberately. If the camera is gone for a reason that persists — permission revoked,
+   * another app holding it — retrying in a loop turns one failure into a spinning one, and the
+   * message the user needs is that it did not come back.
+   */
+  let reopened = false;
+  async function restart() {
+    if (!running || reopened) {
+      if (reopened) frameError = "The camera closed again. Reopen the Scan tab to try afresh.";
+      return;
+    }
+    reopened = true;
+    stop();
+    await start(true);
+    if (running) frameError = null;
   }
 
   function accept(card: ScannedCard) {
