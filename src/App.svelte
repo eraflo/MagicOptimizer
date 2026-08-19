@@ -878,6 +878,11 @@
     display: flex;
     flex-direction: column;
     min-width: 0;
+    /* A flex child will not shrink below its content without this, and this one holds a grid of
+       card art that is taller than any screen. Without it the column grows to fit the images,
+       `main` grows with it, and the bottom navigation is pushed off the viewport — which is
+       Browse-specific because Browse is the only tab whose content has no natural height. */
+    min-height: 0;
     border: 1px solid rgba(255, 255, 255, 0.07);
     border-radius: 18px;
     background: rgba(20, 20, 24, 0.74);
