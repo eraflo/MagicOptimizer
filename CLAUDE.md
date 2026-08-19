@@ -231,7 +231,15 @@ fix it, do not silence it with `#[allow]` unless you write the justification in 
   been produced. The planned fallback
   is a Kotlin CameraX plugin; that boundary does **not** exist yet, the frame source is `grab()`
   in `ScanView.svelte`. Do not describe it as prepared.
-- **Camera frames go over raw IPC, never as a command argument.** A 640×480 greyscale frame is
+- **Tauri's raw IPC is not available on the device, and the frame path must not assume it is.**
+  `scan_frame` rejected anything that was not `InvokeBody::Raw`, and on Android the IPC falls back
+  to `postMessage`, which carries JSON only. So **every frame was refused**: the scanner never saw
+  a single pixel, and the camera "stopping" was the 15-failure guard doing its job. No amount of
+  work on detection, hashing or the artwork archive could have made recognition function. The
+  frontend now tries raw once, remembers the answer, and falls back to base64 — a third more
+  bytes for a path that works everywhere. `docs/dev/frame-transport.md` has the real fix, which is
+  to stop sending frames at all and send the 32-byte hash.
+- **Camera frames go over raw IPC where it exists, never as a JSON array of numbers.** A 640×480 greyscale frame is
   300 KB; as a `Vec<u8>` argument Tauri would serialize three hundred thousand JSON numbers ten
   times a second. `scan_frame` takes a `tauri::ipc::Request` and reads dimensions from headers.
 - **The greyscale weights in `ScanView.svelte` must match `mtg_vision::rgba_to_gray`.** Both use

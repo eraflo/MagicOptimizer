@@ -243,10 +243,55 @@ export function scanReset(): Promise<void> {
  * second — the encoding would cost far more than the recognition does. The dimensions ride
  * along as headers because a raw body cannot carry anything else.
  */
-export function scanFrame(gray: Uint8Array, width: number, height: number): Promise<ScanResult> {
-  return invoke("scan_frame", gray, {
-    headers: { width: String(width), height: String(height) },
-  });
+/**
+ * Sends one greyscale frame.
+ *
+ * Raw bytes first, because they are a third smaller and cost nothing to encode. Tauri only takes
+ * that path when the custom-protocol IPC is available, and on the device it fell back to
+ * `postMessage`, which carries JSON only — so every frame was rejected and the scanner never saw
+ * a pixel. The base64 fallback is slower and always works; `docs/dev/frame-transport.md` has the
+ * real fix, which is to stop sending frames at all.
+ *
+ * The raw attempt is made once and remembered. Retrying it per frame would pay the failure ten
+ * times a second for a capability that does not change while the app is running.
+ */
+let rawFrames: boolean | null = null;
+
+export async function scanFrame(
+  gray: Uint8Array,
+  width: number,
+  height: number,
+): Promise<ScanResult> {
+  const headers = { width: String(width), height: String(height) };
+
+  if (rawFrames !== false) {
+    try {
+      const result = await invoke<ScanResult>("scan_frame", gray, { headers });
+      rawFrames = true;
+      return result;
+    } catch (e) {
+      if (rawFrames === true) throw e;
+      rawFrames = false;
+    }
+  }
+
+  return invoke("scan_frame", { data: toBase64(gray) }, { headers });
+}
+
+/**
+ * Bytes to base64, in chunks.
+ *
+ * `String.fromCharCode(...bytes)` on a whole frame blows the argument limit — 76,800 arguments
+ * is well past what any engine accepts — and fails as a stack overflow rather than as anything
+ * that names the cause.
+ */
+function toBase64(bytes: Uint8Array): string {
+  let binary = "";
+  const CHUNK = 0x8000;
+  for (let i = 0; i < bytes.length; i += CHUNK) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
+  }
+  return btoa(binary);
 }
 
 // --- Game log --------------------------------------------------------------

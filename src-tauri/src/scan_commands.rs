@@ -115,6 +115,43 @@ impl ScanResult {
     }
 }
 
+/// Decodes standard base64, no padding required.
+///
+/// Written out rather than pulling a crate in: it is twenty lines, it runs on data the app itself
+/// produced a millisecond earlier, and a frame decoder is not a place to add a dependency that
+/// then has to cross-compile to Android.
+fn from_base64(text: &str) -> Result<Vec<u8>, String> {
+    const TABLE: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    let mut lookup = [255u8; 256];
+    for (index, byte) in TABLE.iter().enumerate() {
+        lookup[*byte as usize] = index as u8;
+    }
+
+    let mut out = Vec::with_capacity(text.len() / 4 * 3);
+    let mut buffer = 0u32;
+    let mut bits = 0u32;
+    for byte in text.bytes() {
+        if byte == b'=' {
+            break;
+        }
+        let value = lookup[byte as usize];
+        if value == 255 {
+            // Whitespace is tolerated; anything else means the payload is not what it claims.
+            if byte.is_ascii_whitespace() {
+                continue;
+            }
+            return Err("the frame data is not valid base64".to_owned());
+        }
+        buffer = (buffer << 6) | u32::from(value);
+        bits += 6;
+        if bits >= 8 {
+            bits -= 8;
+            out.push((buffer >> bits) as u8);
+        }
+    }
+    Ok(out)
+}
+
 fn scanned(card: &mtg_vision::Match) -> ScannedCard {
     ScannedCard {
         oracle_id: card.oracle_id.clone(),
@@ -161,8 +198,27 @@ pub fn scan_reset(state: State<'_, AppState>) -> CommandResult<()> {
 /// The body is the raw pixels, one byte per pixel; `width` and `height` come in as headers.
 #[tauri::command]
 pub fn scan_frame(state: State<'_, AppState>, request: Request<'_>) -> CommandResult<ScanResult> {
-    let InvokeBody::Raw(pixels) = request.body() else {
-        return Err("the frame must be sent as raw bytes, not JSON".to_owned());
+    // Raw when the transport allows it, base64 when it does not.
+    //
+    // Tauri's raw invoke needs the custom-protocol IPC. On the device it fell back to
+    // `postMessage`, which can only carry JSON, so *every* frame was rejected by the old
+    // unconditional error — the scanner never saw a single pixel and no amount of work on
+    // detection or hashing could have made recognition function.
+    //
+    // Base64 costs a third more bytes than the pixels themselves, which is worth paying for a
+    // path that works everywhere. `docs/dev/frame-transport.md` describes the real fix, which is
+    // to stop sending frames at all and send the 32-byte hash instead.
+    let decoded;
+    let pixels: &[u8] = match request.body() {
+        InvokeBody::Raw(raw) => raw,
+        InvokeBody::Json(value) => {
+            let text = value
+                .get("data")
+                .and_then(|d| d.as_str())
+                .ok_or_else(|| "the frame carried no pixel data".to_owned())?;
+            decoded = from_base64(text)?;
+            &decoded
+        }
     };
 
     let width = header(&request, "width")?;
@@ -197,6 +253,43 @@ fn header(request: &Request<'_>, name: &str) -> CommandResult<u32> {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn base64_round_trips_what_the_frontend_sends() {
+        // The fallback path carries every pixel of every frame on a device where raw IPC is
+        // unavailable, so a decoder that is subtly wrong would corrupt the image rather than
+        // fail — and a corrupt frame looks exactly like a card the scanner cannot recognise.
+        use super::from_base64;
+        assert_eq!(from_base64("").unwrap(), b"");
+        assert_eq!(from_base64("TWE=").unwrap(), b"Ma");
+        assert_eq!(from_base64("TWFu").unwrap(), b"Man");
+        assert_eq!(from_base64("bGlnaHQgdw==").unwrap(), b"light w");
+        // Every byte value, which is what a greyscale frame actually contains.
+        let all: Vec<u8> = (0..=255u8).collect();
+        let encoded = {
+            const T: &[u8; 64] =
+                b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+            let mut s = String::new();
+            for chunk in all.chunks(3) {
+                let b = [
+                    chunk[0],
+                    *chunk.get(1).unwrap_or(&0),
+                    *chunk.get(2).unwrap_or(&0),
+                ];
+                let n = (u32::from(b[0]) << 16) | (u32::from(b[1]) << 8) | u32::from(b[2]);
+                for i in 0..4 {
+                    if i <= chunk.len() {
+                        s.push(T[((n >> (18 - 6 * i)) & 63) as usize] as char);
+                    } else {
+                        s.push('=');
+                    }
+                }
+            }
+            s
+        };
+        assert_eq!(from_base64(&encoded).unwrap(), all);
+        assert!(from_base64("not*valid").is_err());
+    }
+
     use super::*;
     use mtg_vision::Match;
 
