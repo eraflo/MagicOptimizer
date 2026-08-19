@@ -336,7 +336,7 @@
 
   .fill {
     height: 100%;
-    background: linear-gradient(90deg, var(--accent), #58a5f0);
+    background: linear-gradient(90deg, var(--gold), #f0d19a);
   }
 
   .criterion-detail {
@@ -385,7 +385,7 @@
 
   .suggestions li {
     padding: 8px 0;
-    border-top: 1px solid rgba(38, 44, 59, 0.7);
+    border-top: 1px solid var(--line);
   }
 
   .suggestions li.done {

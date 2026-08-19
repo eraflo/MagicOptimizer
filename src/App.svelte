@@ -523,20 +523,31 @@
 
   .tabs {
     display: flex;
-    gap: 4px;
+    gap: 6px;
   }
 
+  /* Pills, as the chosen direction draws them. The active one is a pale fill with dark text —
+     the interface's emphasis is light, never a hue. See docs/dev/design.md, law 6. */
   .tab {
     background: transparent;
     border-color: transparent;
-    color: var(--text-muted);
-    padding: 5px 14px;
+    border-radius: 999px;
+    color: var(--ink-2);
+    font-size: var(--t-body);
+    font-weight: 600;
+    padding: 8px 16px;
+  }
+
+  .tab:hover:not(.active) {
+    background: var(--ground-3);
+    border-color: transparent;
+    color: var(--ink);
   }
 
   .tab.active {
-    background: var(--accent-soft);
+    background: var(--accent);
     border-color: var(--accent);
-    color: var(--text);
+    color: var(--ground);
   }
 
   /* A button, because it navigates. Styled as the quiet chip it used to be so the header does
@@ -686,7 +697,7 @@
     position: fixed;
     inset: 0;
     z-index: 29;
-    background: rgba(6, 8, 13, 0.6);
+    background: rgba(12, 10, 14, 0.62);
     border: none;
     border-radius: 0;
     padding: 0;

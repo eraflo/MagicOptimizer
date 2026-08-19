@@ -247,7 +247,7 @@
         ? "#43aa6a"
         : outcome.state === "tracking"
           ? "#e8a33d"
-          : "#8f99ae";
+          : "#b8b1ac";
 
     context.strokeStyle = colour;
     context.lineWidth = 3;
@@ -795,7 +795,7 @@ ${written} card${written === 1 ? "" : "s"} were added. ` +
     gap: 10px;
     padding: 10px 14px;
     border-radius: var(--radius);
-    background: rgba(13, 15, 22, 0.82);
+    background: rgba(23, 21, 26, 0.86);
     border: 1px solid var(--border-strong);
     backdrop-filter: blur(6px);
   }
@@ -1026,7 +1026,7 @@ ${written} card${written === 1 ? "" : "s"} were added. ` +
       /* Collapsed to the handle: enough to say where cards are going and how many, no more. */
       max-height: 52px;
       padding: 0 12px 10px;
-      background: rgba(22, 26, 36, 0.94);
+      background: rgba(32, 29, 36, 0.96);
       backdrop-filter: blur(8px);
       border-color: var(--border-strong);
       overflow: hidden;
@@ -1074,7 +1074,7 @@ ${written} card${written === 1 ? "" : "s"} were added. ` +
     /* Over a camera image, a translucent readout is unreadable. */
     .readout {
       bottom: 70px;
-      background: rgba(13, 15, 22, 0.92);
+      background: rgba(23, 21, 26, 0.94);
     }
 
     .curtain {

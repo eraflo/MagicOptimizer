@@ -110,7 +110,9 @@
     width: 100%;
     min-height: 2px;
     border-radius: 3px 3px 0 0;
-    background: linear-gradient(180deg, var(--accent), rgba(62, 143, 232, 0.45));
+    /* Ink, not a hue. A curve is a measurement of the deck, and the five colours are reserved
+       for mana — a blue bar next to a blue mana pip would read as a claim about the deck. */
+    background: linear-gradient(180deg, var(--ink-2), rgba(184, 177, 172, 0.35));
   }
 
   .label {

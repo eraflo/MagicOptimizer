@@ -49,8 +49,13 @@
   --text: var(--ink);
   --text-muted: var(--ink-2);
   --text-dim: var(--ink-3);
-  --accent: #3e8fe8;
-  --accent-soft: rgba(62, 143, 232, 0.14);
+  /* The interface's own emphasis is *light*, not a hue.
+     Gold is spoken for — it marks what you own — and law 6 forbids a second accent. So a primary
+     action is a pale pill on a warm ground, exactly as the chosen mockup drew it and as every
+     art-forward interface does it: the content carries the colour, the chrome carries none.
+     Kept under the name `--accent` because twenty rules already reference it. */
+  --accent: #f4f0ea;
+  --accent-soft: rgba(244, 240, 234, 0.12);
   --danger: #e4573d;
   --success: #43aa6a;
 
@@ -132,13 +137,15 @@ button:disabled {
 button.primary {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
-  font-weight: 600;
+  /* Dark text, because the fill is now pale. This is the line that would have made the whole
+     app unreadable if the accent had been swapped without following it. */
+  color: var(--ground);
+  font-weight: 650;
 }
 
 button.primary:hover:not(:disabled) {
-  background: #4f9bef;
-  border-color: #4f9bef;
+  background: #ffffff;
+  border-color: #ffffff;
 }
 
 button.ghost {
@@ -213,7 +220,7 @@ label {
   border-radius: 999px;
   font-size: 10px;
   font-weight: 700;
-  color: #10131b;
+  color: var(--ground);
   background: var(--pip-color);
   border: 1px solid rgba(0, 0, 0, 0.35);
 }
@@ -223,7 +230,7 @@ label {
 }
 
 .pip.dark-text {
-  color: #10131b;
+  color: var(--ground);
 }
 
 .pip.light-text {

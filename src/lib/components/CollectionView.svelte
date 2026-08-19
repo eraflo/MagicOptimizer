@@ -257,7 +257,7 @@
   }
 
   .row {
-    border-bottom: 1px solid rgba(38, 44, 59, 0.6);
+    border-bottom: 1px solid var(--line);
   }
 
   .row:hover {
@@ -323,10 +323,12 @@
     flex: none;
   }
 
+  /* Foil is a property of the physical card, not a state of the interface, so it reads as a
+     sheen rather than as a colour. */
   .tag.foil {
-    background: rgba(62, 143, 232, 0.16);
-    border-color: rgba(62, 143, 232, 0.4);
-    color: var(--accent);
+    background: linear-gradient(120deg, rgba(240, 236, 230, 0.18), rgba(216, 169, 81, 0.16));
+    border-color: rgba(240, 236, 230, 0.32);
+    color: var(--ink);
   }
 
   .tag.digital {

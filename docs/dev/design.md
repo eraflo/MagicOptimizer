@@ -54,8 +54,11 @@ tokens, not the layout.
    sits beside the way to accept it, at the same size. An algorithm offering a name must not
    style disagreement as the quiet option.
 6. **Colour belongs to mana.** The five colours always mean mana and never decorate. The gold
-   `#d8a951` is the interface's own accent and marks one thing only: **what you own**. That is the
-   question the app exists to answer in a shop.
+   `#d8a951` marks one thing only: **what you own** — the question the app exists to answer in a
+   shop. And the interface's own emphasis is **light, not a hue**: a primary action is a pale pill
+   with dark text, an active tab likewise. This is the law that was written and then not applied —
+   the first pass left `--accent` a developer-tool blue on every button, tab and selected row, and
+   the result read as the old app with photographs glued on.
 
 ## Tokens
 
@@ -72,6 +75,7 @@ fits; that drift is what makes a direction dissolve.
 | `--ink-2` | `#b8b1ac` | Secondary text, still fully readable. |
 | `--ink-3` | `#837c79` | Metadata and disabled. Never body text. |
 | `--gold` | `#d8a951` | Owned quantity. Nothing else. |
+| `--accent` | `#f4f0ea` | Emphasis, and it is light rather than coloured. Primary fills take `--ground` as their text. |
 | `--scrim` | gradient | Bottom-anchored, ends opaque at `--ground`. |
 
 Type scale — `13 / 15 / 17 / 21 / 26 / 34 / 40`, and nothing between. Body text is 15px with a

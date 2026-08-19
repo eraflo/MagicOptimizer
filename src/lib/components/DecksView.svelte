@@ -466,7 +466,7 @@
     padding: 9px 14px;
     background: transparent;
     border: none;
-    border-bottom: 1px solid rgba(38, 44, 59, 0.6);
+    border-bottom: 1px solid var(--line);
     border-radius: 0;
   }
 
@@ -532,7 +532,7 @@
     gap: 8px;
     align-items: center;
     padding: 4px 0;
-    border-bottom: 1px solid rgba(38, 44, 59, 0.5);
+    border-bottom: 1px solid var(--line);
   }
 
   .qty {
