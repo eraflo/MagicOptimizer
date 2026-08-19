@@ -179,7 +179,8 @@
     flex: none;
     padding: 22px 20px 28px;
     overflow-y: auto;
-    border-right: 1px solid rgba(244, 240, 234, 0.06);
+    border: 1px solid rgba(244, 240, 234, 0.07);
+    border-radius: 18px;
     background: rgba(32, 29, 36, 0.55);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);

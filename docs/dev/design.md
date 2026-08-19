@@ -60,6 +60,22 @@ tokens, not the layout.
    the first pass left `--accent` a developer-tool blue on every button, tab and selected row, and
    the result read as the old app with photographs glued on.
 
+## The ground is lit, and it is lit by the content
+
+The single device that separates this direction from "a dark theme", and the one that took
+longest to arrive at. `#app` carries three radial gradients whose colour is written to the root
+by `App.svelte` from the **colour identity of the card in view**: a Boros card bathes the app in
+amber, a Dimir one in indigo, and with nothing selected it holds a warm ember.
+
+Two things about it are load-bearing:
+
+* **It must be strong enough to be the room**, not a tint someone has to look for. The first
+  attempt ran at `0.26` alpha and was invisible beside the mockup it was copied from; it is
+  `0.44` now.
+* **Panels float on it.** `main` has padding and a gap, and each panel is an 18px-radius card
+  with a hairline all round — not a full-height column separated from its neighbour by a 1px
+  divider. That grid of hairlines is what read as "database tool" through three palettes.
+
 ## The control layer is the leverage, not the tokens
 
 Two rounds were spent swapping colour tokens while every control kept its old shape, and the app

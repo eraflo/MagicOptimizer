@@ -111,6 +111,16 @@ body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  /* The ground is lit, not flat, and it is lit by whatever card is in view — the two ambient
+     stops are written to the root by `App.svelte`. This is the device that separates the
+     direction from "a dark theme": a flat black rectangle is what made three previous attempts
+     read as a database tool regardless of their palette. */
+  background:
+    radial-gradient(115% 95% at 8% -12%, var(--amb-1, rgba(208, 132, 74, 0.44)) 0%, transparent 64%),
+    radial-gradient(95% 85% at 96% 6%, var(--amb-2, rgba(150, 78, 52, 0.34)) 0%, transparent 62%),
+    radial-gradient(140% 70% at 50% 118%, var(--amb-2, rgba(150, 78, 52, 0.34)) 0%, transparent 70%),
+    var(--ground);
+  transition: background 500ms ease;
 }
 
 /* Controls -----------------------------------------------------------------

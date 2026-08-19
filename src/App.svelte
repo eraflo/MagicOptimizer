@@ -246,6 +246,41 @@
     }
   }
 
+  /**
+   * The warm glow behind everything, taking its hue from the card in view.
+   *
+   * This is the device that separates the chosen direction from a dark theme: the ground is not
+   * flat, it is lit, and it is lit by the content. A Boros card bathes the app in amber, a Dimir
+   * one in indigo. With nothing selected it stays a warm ember, because a black rectangle is
+   * what made every previous attempt look like a database tool.
+   */
+  const ambient = $derived.by(() => {
+    const tints: Record<string, [string, string]> = {
+      W: ["243, 226, 170", "214, 176, 108"],
+      U: ["78, 150, 224", "60, 96, 190"],
+      B: ["150, 120, 200", "96, 72, 150"],
+      R: ["226, 116, 58", "196, 62, 40"],
+      G: ["104, 178, 96", "58, 130, 82"],
+    };
+    const chosen = [...(selected?.color_identity ?? "")]
+      .map((c) => tints[c])
+      .filter(Boolean);
+    const [a, b] = chosen.length
+      ? [chosen[0][0], (chosen[1] ?? chosen[0])[1]]
+      : ["208, 132, 74", "150, 78, 52"];
+    // Strong enough to be the room the app sits in, not a tint someone has to look for. The
+    // first attempt at 0.26 was invisible beside the mockup it was copied from.
+    return { one: `rgba(${a}, 0.44)`, two: `rgba(${b}, 0.34)` };
+  });
+
+  // Written to the root rather than to a wrapper: `#app` is created by `main.ts`, and the glow
+  // has to sit behind every screen, not inside one of them.
+  $effect(() => {
+    const root = document.documentElement;
+    root.style.setProperty("--amb-1", ambient.one);
+    root.style.setProperty("--amb-2", ambient.two);
+  });
+
   const megabytes = (bytes: number) => (bytes / 1024 / 1024).toFixed(1);
 
   // Quoted on the empty state so the size is known before tapping through. Read from the backend
@@ -598,12 +633,22 @@
     color: var(--danger);
   }
 
+  /* Panels float on the lit ground with gaps between them, instead of butting together with a
+     1px divider. That grid of hairlines is what read as "database tool" no matter the palette. */
   main {
     flex: 1;
     display: flex;
+    gap: 14px;
+    padding: 14px;
     min-height: 0;
     overflow: hidden;
     position: relative;
+  }
+
+  /* The scan and data screens own their whole surface. */
+  main.scan-main,
+  main.data-main {
+    gap: 0;
   }
 
   /* The data screen scrolls at every width. It deliberately does not reuse `.scan-main`, which
@@ -676,10 +721,18 @@
     }
   }
 
+  /* A card on the stage like the other two, not the leftover space between them. */
   .results {
     flex: 1;
     display: flex;
     flex-direction: column;
+    min-width: 0;
+    border: 1px solid rgba(244, 240, 234, 0.07);
+    border-radius: 18px;
+    background: rgba(32, 29, 36, 0.5);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    overflow: hidden;
     min-width: 0;
   }
 
