@@ -66,8 +66,8 @@
   --mana-g: #43aa6a;
   --mana-generic: #6d7789;
 
-  --radius: 10px;
-  --radius-sm: 6px;
+  --radius: 12px;
+  --radius-sm: 8px;
 
   /* Breakpoints. Declared here for reference only — media queries cannot read custom
      properties, so the same numbers are written literally in each component.
@@ -113,34 +113,48 @@ body {
   overflow: hidden;
 }
 
+/* Controls -----------------------------------------------------------------
+   Everything here is shared by every view, which is why it is the layer worth rewriting: a
+   token swap changes hues, this changes shapes. Pills, glass fills, and nothing under 15px.
+   See docs/dev/design.md. */
+
 button {
   font: inherit;
-  color: inherit;
-  background: var(--panel-raised);
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-sm);
-  padding: 6px 12px;
+  font-size: var(--t-body);
+  font-weight: 600;
+  color: var(--ink);
+  /* Translucent rather than a flat panel colour, so a control sitting over artwork borrows it
+     instead of punching a grey hole in it. */
+  background: rgba(244, 240, 234, 0.09);
+  border: 1px solid rgba(244, 240, 234, 0.16);
+  border-radius: 999px;
+  min-height: 38px;
+  padding: 0 18px;
   cursor: pointer;
-  transition: background 120ms, border-color 120ms;
+  transition: background 140ms ease, border-color 140ms ease, transform 140ms ease;
 }
 
 button:hover:not(:disabled) {
-  background: #232939;
-  border-color: #414b63;
+  background: rgba(244, 240, 234, 0.16);
+  border-color: rgba(244, 240, 234, 0.3);
+}
+
+button:active:not(:disabled) {
+  transform: translateY(1px);
 }
 
 button:disabled {
-  opacity: 0.45;
+  opacity: 0.4;
   cursor: default;
 }
 
 button.primary {
   background: var(--accent);
   border-color: var(--accent);
-  /* Dark text, because the fill is now pale. This is the line that would have made the whole
-     app unreadable if the accent had been swapped without following it. */
+  /* Dark text, because the fill is pale. Swapping the fill without this line puts white on
+     white and makes every primary action invisible. */
   color: var(--ground);
-  font-weight: 650;
+  font-weight: 700;
 }
 
 button.primary:hover:not(:disabled) {
@@ -151,55 +165,144 @@ button.primary:hover:not(:disabled) {
 button.ghost {
   background: transparent;
   border-color: transparent;
-  color: var(--text-muted);
+  color: var(--ink-2);
 }
 
 button.ghost:hover:not(:disabled) {
-  background: var(--panel-raised);
-  color: var(--text);
+  background: rgba(244, 240, 234, 0.09);
+  border-color: transparent;
+  color: var(--ink);
+}
+
+button.danger {
+  background: rgba(228, 87, 61, 0.14);
+  border-color: rgba(228, 87, 61, 0.4);
+  color: var(--danger);
+}
+
+button.danger:hover:not(:disabled) {
+  background: rgba(228, 87, 61, 0.24);
 }
 
 input,
 select,
 textarea {
   font: inherit;
-  color: var(--text);
-  background: var(--bg);
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-sm);
-  padding: 6px 9px;
+  font-size: var(--t-body);
+  color: var(--ink);
+  /* A well rather than a box: darker than the surface it sits on, with the border doing almost
+     nothing. A 1px light rectangle around every field is what made the old panels look like a
+     configuration dialog. */
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(244, 240, 234, 0.1);
+  border-radius: 10px;
+  min-height: 40px;
+  padding: 9px 13px;
   width: 100%;
+  transition: border-color 140ms ease, background 140ms ease;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--ink-3);
+}
+
+input:hover,
+select:hover,
+textarea:hover {
+  border-color: rgba(244, 240, 234, 0.2);
 }
 
 input:focus,
 select:focus,
 textarea:focus {
   outline: none;
+  background: rgba(0, 0, 0, 0.4);
   border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
+textarea {
+  min-height: 84px;
+  line-height: 1.55;
+}
+
+/* Uppercase and spaced, so a field label reads as a caption rather than as more prose. */
 label {
   display: block;
-  font-size: 12px;
-  color: var(--text-muted);
-  margin-bottom: 4px;
+  font-size: var(--t-meta);
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-bottom: 7px;
 }
 
 .checkbox {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  color: var(--text);
+  gap: 10px;
+  font-size: var(--t-body);
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ink-2);
   cursor: pointer;
   margin: 0;
+  min-height: 36px;
+}
+
+.checkbox:hover {
+  color: var(--ink);
 }
 
 .checkbox input {
-  width: auto;
+  width: 19px;
+  height: 19px;
+  min-height: 0;
+  flex: none;
   accent-color: var(--accent);
   cursor: pointer;
+  border-radius: 5px;
+}
+
+/* Glass ---------------------------------------------------------------------
+   The one decorative device the direction allows, and it earns its place: a panel laid over
+   artwork has to let some of it through, or the app becomes a grid of grey boxes again. */
+.glass {
+  background: rgba(32, 29, 36, 0.72);
+  backdrop-filter: blur(18px) saturate(1.2);
+  -webkit-backdrop-filter: blur(18px) saturate(1.2);
+  border: 1px solid rgba(244, 240, 234, 0.08);
+}
+
+/* A chip: the shape filters, tags and toggles take. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(244, 240, 234, 0.14);
+  background: rgba(244, 240, 234, 0.06);
+  color: var(--ink-2);
+  font-size: var(--t-meta);
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.chip:hover {
+  background: rgba(244, 240, 234, 0.13);
+  color: var(--ink);
+}
+
+.chip[aria-pressed="true"],
+.chip.on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--ground);
 }
 
 /* Mana pips ---------------------------------------------------------------- */
@@ -248,13 +351,15 @@ label {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #2b3244;
+  background: rgba(244, 240, 234, 0.14);
   border-radius: 999px;
-  border: 2px solid var(--bg);
+  border: 2px solid transparent;
+  background-clip: padding-box;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #3a435a;
+  background: rgba(244, 240, 234, 0.26);
+  background-clip: padding-box;
 }
 
 /* Touch --------------------------------------------------------------------- */
@@ -262,20 +367,20 @@ label {
    and a large tablet still has fingers. 44px is the usual minimum comfortable target. */
 @media (pointer: coarse) {
   button {
-    min-height: 40px;
-    padding: 8px 14px;
+    min-height: 44px;
+    padding: 0 20px;
   }
 
   input,
   select,
   textarea {
-    min-height: 40px;
+    min-height: 46px;
     /* Anything under 16px makes iOS and some Android WebViews zoom on focus. */
     font-size: 16px;
   }
 
   .checkbox {
-    min-height: 40px;
+    min-height: 44px;
   }
 
   .checkbox input {

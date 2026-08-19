@@ -60,6 +60,26 @@ tokens, not the layout.
    the first pass left `--accent` a developer-tool blue on every button, tab and selected row, and
    the result read as the old app with photographs glued on.
 
+## The control layer is the leverage, not the tokens
+
+Two rounds were spent swapping colour tokens while every control kept its old shape, and the app
+still read as the old interface. It was a fair complaint: a token changes hues, the shared
+element layer in `src/app.css` changes *shapes*, and that layer is inherited by every view.
+
+What it now defines, and what each replaced:
+
+| | Was | Is |
+|---|---|---|
+| Buttons | 6px-radius grey rectangles, 13px | Pills, 38px tall, 15px, translucent fill |
+| Inputs | Light 1px box on the ground | A dark well with an almost-invisible edge, 40px, 10px radius |
+| Labels | 12px grey prose | 13px uppercase, spaced, so a panel reads as captions |
+| Panels | Flat `--panel` | **Glass** — translucent, blurred, hairline |
+| Filter chips | 12px outlines | Pills, pale fill when active |
+| Colour toggles | Hollow rings | Solid mana discs, desaturated until chosen |
+
+**Glass is the one decorative device the direction allows**, and it earns its place: a panel laid
+over artwork has to let some through, or the app is a grid of grey boxes again.
+
 ## Tokens
 
 Defined in `src/app.css`. Do not write a literal colour or size in a component when one of these

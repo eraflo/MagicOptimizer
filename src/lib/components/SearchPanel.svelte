@@ -175,97 +175,116 @@
 
 <style>
   .panel {
-    width: 268px;
+    width: 292px;
     flex: none;
-    padding: 16px;
+    padding: 22px 20px 28px;
     overflow-y: auto;
-    border-right: 1px solid var(--border);
-    background: var(--panel);
+    border-right: 1px solid rgba(244, 240, 234, 0.06);
+    background: rgba(32, 29, 36, 0.55);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 24px;
   }
 
+  /* Uppercase and spaced. A filter panel is a stack of captions; setting them as prose is what
+     made the old sidebar read like a settings dialog. */
   .field-label {
     display: block;
-    font-size: 12px;
-    color: var(--text-muted);
-    margin-bottom: 6px;
+    font-size: var(--t-meta);
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin-bottom: 9px;
   }
 
   .row {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 8px;
+    gap: 10px;
   }
 
   .colors {
     display: flex;
-    gap: 6px;
+    gap: 8px;
   }
 
+  /* The five colours are the one place the interface is allowed to be colourful, so they get
+     to be solid discs rather than outlines — this is the mana identity, not a form control. */
   .color-toggle {
-    width: 34px;
-    height: 34px;
+    width: 40px;
+    height: 40px;
+    min-height: 0;
     padding: 0;
     border-radius: 999px;
     font-weight: 700;
-    font-size: 12px;
-    background: transparent;
-    border: 2px solid var(--color);
-    color: var(--color);
-    opacity: 0.55;
+    font-size: var(--t-meta);
+    background: var(--color);
+    border: 1px solid rgba(0, 0, 0, 0.4);
+    color: var(--ground);
+    opacity: 0.34;
+    filter: saturate(0.5);
   }
 
   .color-toggle:hover {
-    opacity: 0.85;
-    background: transparent;
+    opacity: 0.68;
+    filter: saturate(0.8);
+    background: var(--color);
   }
 
   .color-toggle.active {
-    background: var(--color);
-    color: #10131b;
     opacity: 1;
+    filter: none;
+    box-shadow: 0 0 0 2px rgba(244, 240, 234, 0.75);
   }
 
   .chips {
     display: flex;
     flex-wrap: wrap;
-    gap: 5px;
+    gap: 7px;
   }
 
   .chip {
-    padding: 3px 9px;
-    font-size: 12px;
+    min-height: 34px;
+    padding: 0 14px;
+    font-size: var(--t-meta);
+    font-weight: 600;
     border-radius: 999px;
-    background: transparent;
-    border: 1px solid var(--border-strong);
-    color: var(--text-muted);
+    background: rgba(244, 240, 234, 0.06);
+    border: 1px solid rgba(244, 240, 234, 0.14);
+    color: var(--ink-2);
+  }
+
+  .chip:hover:not(.active) {
+    background: rgba(244, 240, 234, 0.13);
+    color: var(--ink);
   }
 
   .chip.active {
-    background: var(--accent-soft);
+    background: var(--accent);
     border-color: var(--accent);
-    color: var(--text);
+    color: var(--ground);
   }
 
   .toggles {
     display: flex;
     flex-direction: column;
-    gap: 9px;
+    gap: 4px;
   }
 
   .hint {
-    margin: 6px 0 0;
-    font-size: 11px;
-    color: var(--text-dim);
-    line-height: 1.4;
+    margin: 8px 0 0;
+    font-size: var(--t-meta);
+    color: var(--ink-3);
+    line-height: 1.5;
   }
 
   .footer {
     margin-top: auto;
-    padding-top: 12px;
-    border-top: 1px solid var(--border);
+    padding-top: 18px;
+    border-top: 1px solid rgba(244, 240, 234, 0.08);
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -273,8 +292,9 @@
   }
 
   .count {
-    font-size: 12px;
-    color: var(--text-muted);
+    font-size: var(--t-meta);
+    color: var(--ink-2);
+    font-variant-numeric: tabular-nums;
   }
 
   /* The drawer header only exists when the panel is a drawer. */

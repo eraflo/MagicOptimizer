@@ -264,18 +264,21 @@
 
 <style>
   .panel {
-    width: 352px;
+    width: 372px;
     flex: none;
-    padding: 16px;
+    padding: 20px;
     overflow-y: auto;
-    border-left: 1px solid var(--border);
-    background: var(--panel);
+    border-left: 1px solid rgba(244, 240, 234, 0.06);
+    background: rgba(32, 29, 36, 0.55);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
   }
 
   .placeholder {
-    color: var(--text-dim);
+    color: var(--ink-3);
     text-align: center;
-    margin-top: 48px;
+    margin-top: 56px;
+    font-size: var(--t-body);
   }
 
   .hero {

@@ -492,22 +492,27 @@
 
 <style>
   .app-bar {
-    /* The inset lives here now, on the element that actually touches the notch. */
-    padding-top: calc(9px + env(safe-area-inset-top, 0px));
     display: flex;
     align-items: center;
-    gap: 24px;
-    padding: 9px 16px;
-    border-bottom: 1px solid var(--border);
-    background: var(--panel);
+    gap: 28px;
+    padding: 12px 20px;
+    /* The inset lives here, on the element that actually touches the notch. */
+    padding-top: calc(12px + env(safe-area-inset-top, 0px));
+    border-bottom: 1px solid rgba(244, 240, 234, 0.07);
+    background: rgba(23, 21, 26, 0.82);
+    backdrop-filter: blur(20px) saturate(1.2);
+    -webkit-backdrop-filter: blur(20px) saturate(1.2);
     flex: none;
+    z-index: 5;
   }
 
   .brand {
     display: flex;
     align-items: center;
-    gap: 9px;
-    font-size: 14px;
+    gap: 11px;
+    font-size: var(--t-lede);
+    font-weight: 700;
+    letter-spacing: -0.015em;
   }
 
   .logo {
@@ -516,9 +521,10 @@
   }
 
   .dot {
-    width: 8px;
-    height: 8px;
+    width: 9px;
+    height: 9px;
     border-radius: 999px;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4);
   }
 
   .tabs {
