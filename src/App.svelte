@@ -38,20 +38,19 @@
   $effect(() => localStorage.setItem("catalogue-layout", layout));
 
   /**
-   * Which side panels are showing.
+   * Whether the filter panel is showing.
    *
-   * Three columns share the width and you rarely need more than one of the sides: filtering and
-   * reading a card are separate moments. Collapsing either hands the whole difference to the
-   * results, which matters most for the contact sheet — the filter panel alone is four more
-   * columns of artwork.
+   * Three columns share the width and you rarely need all of them: filtering and reading a card
+   * are separate moments. Collapsing this one hands its 292px to the results, which is four more
+   * columns of artwork on the contact sheet. It persists, because it is a working preference
+   * rather than a per-visit one.
    *
-   * Both persist, because this is a working preference rather than a per-visit one.
+   * The card panel has no equivalent control on purpose — it follows the selection, which is the
+   * only thing that ever decided whether it had anything to say.
    */
   let filtersShown = $state(localStorage.getItem("panel-filters") !== "off");
-  let detailShown = $state(localStorage.getItem("panel-detail") !== "off");
 
   $effect(() => localStorage.setItem("panel-filters", filtersShown ? "on" : "off"));
-  $effect(() => localStorage.setItem("panel-detail", detailShown ? "on" : "off"));
   /** Only has an effect below 1180px, where the filter panel is a drawer. */
   let filtersOpen = $state(false);
   let status = $state<CatalogStatus | null>(null);
@@ -159,11 +158,15 @@
   );
 
   async function select(oracleId: string) {
+    // Clicking the card that is already open closes it, which is the whole control: the panel
+    // appears when a card has something to say and goes away when it does not.
+    if (selectedId === oracleId) {
+      closeDetail();
+      return;
+    }
     selectedId = oracleId;
     try {
-      // Opening a card with its panel collapsed would look like the click did nothing.
-    detailShown = true;
-    selected = await api.cardDetails(oracleId);
+      selected = await api.cardDetails(oracleId);
     } catch (e) {
       error = String(e);
       selected = null;
@@ -490,12 +493,18 @@
       <div class="compact-bar">
         <button
           type="button"
-          class="side-toggle left"
+          class="side-toggle"
           aria-pressed={filtersShown}
-          onclick={() => (filtersShown = !filtersShown)}
+          aria-label={filtersShown ? "Hide the filters" : "Show the filters"}
           title={filtersShown ? "Hide the filters" : "Show the filters"}
+          onclick={() => (filtersShown = !filtersShown)}
         >
-          <span aria-hidden="true">{filtersShown ? "◧" : "▢"}</span> Filters
+          <!-- The standard sidebar mark: a panel with one edge filled. It says which edge moves,
+               which no glyph in the character set manages. -->
+          <svg viewBox="0 0 16 16" aria-hidden="true">
+            <rect x="1.5" y="2.5" width="13" height="11" rx="2.5" />
+            <path class="fill" d="M2 5a2.5 2.5 0 0 1 2.5-2.5H6v11H4.5A2.5 2.5 0 0 1 2 11z" />
+          </svg>
         </button>
 
         <button type="button" class="drawer" onclick={() => (filtersOpen = true)}>
@@ -534,15 +543,6 @@
           </button>
         </div>
 
-        <button
-          type="button"
-          class="side-toggle right"
-          aria-pressed={detailShown}
-          onclick={() => (detailShown = !detailShown)}
-          title={detailShown ? "Hide the card panel" : "Show the card panel"}
-        >
-          <span aria-hidden="true">{detailShown ? "◨" : "▢"}</span> Card
-        </button>
       </div>
       {#if layout === "sheet"}
         <CardSheet cards={results} {owned} selected={selectedId} onselect={select} />
@@ -558,7 +558,7 @@
       {decks}
       onadd={addSelected}
       onaddtodeck={addSelectedToDeck}
-      shown={detailShown}
+      shown={selected !== null}
       onclose={closeDetail}
     />
   </main>
@@ -838,18 +838,50 @@
 
   /* The collapse toggles only exist where there is a panel to collapse — below their
      breakpoints the panels are already a drawer and a full-screen sheet. */
+  /* Square, quiet, icon only. A labelled pill beside the layout switch made the bar read as
+     three competing controls; this one is a utility and should sit back. */
   .side-toggle {
     display: none;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
     min-height: 30px;
-    padding: 0 13px;
-    font-size: var(--t-meta);
-    color: var(--ink-2);
+    padding: 0;
+    border-radius: 9px;
+    border-color: transparent;
+    background: transparent;
+    color: var(--ink-3);
+    box-shadow: none;
   }
 
-  .side-toggle[aria-pressed="false"] {
-    color: var(--ink-3);
-    background: transparent;
+  .side-toggle:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.08);
     border-color: transparent;
+    color: var(--ink);
+  }
+
+  .side-toggle[aria-pressed="true"] {
+    color: var(--ink);
+  }
+
+  .side-toggle svg {
+    width: 16px;
+    height: 16px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.4;
+  }
+
+  /* The filled edge is what distinguishes "panel showing" from "panel hidden". */
+  .side-toggle svg .fill {
+    stroke: none;
+    fill: currentColor;
+    opacity: 0;
+    transition: opacity 140ms ease;
+  }
+
+  .side-toggle[aria-pressed="true"] svg .fill {
+    opacity: 1;
   }
 
   .compact-count {
@@ -903,13 +935,7 @@
   }
 
   @media (min-width: 1181px) {
-    .side-toggle.left {
-      display: inline-flex;
-    }
-  }
-
-  @media (min-width: 861px) {
-    .side-toggle.right {
+    .side-toggle {
       display: inline-flex;
     }
   }

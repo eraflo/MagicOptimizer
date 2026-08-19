@@ -171,13 +171,20 @@ artwork and is faster to scan, because a card is recognised by its painting befo
 list wins when the type line, the cost and the owned count have to be read together. The choice
 persists in `localStorage`, because a density preference is a standing one.
 
-**Both side panels collapse, and that is what makes the sheet worth having.** Three columns share
-the width and you rarely need more than one of the sides at once — filtering and reading a card
-are separate moments. Measured on a 1250px window: results 528px and four columns with both
-panels open, 834px and seven with the filters away, **1220px and ten with neither**. The state
-persists; opening a card reopens its panel, because otherwise the click looks like it did
-nothing. The toggles exist only above each panel's own breakpoint — below them the filters are
-already a drawer and the card is already a full-screen sheet.
+**The card panel follows the selection; it has no control of its own.** It appears when a card is
+opened and goes away when the same card is clicked again or the panel is closed — which is the
+only thing that ever decided whether it had anything to say. It used to sit there permanently
+holding "Select a card to see its details", costing 372px to say nothing.
+
+**The filter panel does have a toggle**, because nothing else can tell whether you are still
+filtering. Measured on a 1250px window: the results are 914px with the filters open and **1220px
+with them away**, and the sheet goes from seven columns to ten. With a card open as well it is
+528px and four. The state persists; the toggle exists only above 1180px, where the panel is a
+permanent column rather than a drawer.
+
+Its button is a 30px icon with no label — the standard sidebar mark, a panel with one edge
+filled, and the fill is what distinguishes showing from hidden. A labelled pill beside the layout
+switch made the bar read as three competing controls when one of them is a utility.
 
 Cell width is measured, not picked: the results column sits between a 292px filter panel and a
 372px detail panel, so at a 1250px window it is about 528px wide. `minmax(118px, 1fr)` gave three
