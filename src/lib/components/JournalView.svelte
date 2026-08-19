@@ -467,14 +467,26 @@
     margin-top: 10px;
   }
 
-  /* The entry form no longer fits beside the results. */
+  /* The entry form no longer fits beside the results, so the view becomes one scrolling column
+     rather than two cards each scrolling inside half the height. Splitting a phone screen in two
+     gave the form a keyhole to be filled in through and the results a keyhole to be read in;
+     one scroll gives each of them the whole screen in turn.
+
+     The clip box is pushed out and the cards put back, so their shadows finish rather than being
+     sliced flat against the scroller's edge. */
   @media (max-width: 1180px) {
     .journal {
-      grid-template-columns: 1fr;
-      grid-template-rows: auto 1fr;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      overflow-y: auto;
+      padding: 4px 20px 8px;
+      margin: -4px -20px -8px;
     }
 
-    .entry {
+    .entry,
+    .results-panel {
+      flex: none;
       overflow-y: visible;
     }
   }
