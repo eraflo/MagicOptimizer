@@ -900,9 +900,16 @@
     flex: none;
   }
 
-  /* The drawer button only exists where the filter panel is a drawer. */
+  /* The drawer button only exists where the filter panel is a drawer. It also has to match the
+     bar it lives in: at the default 38px it was the tallest thing there by eight pixels, so it
+     set the bar's height on its own and left the count and the layout switch floating beside a
+     control that looked like it belonged to a different screen. */
   .compact-bar > button.drawer {
     display: none;
+    min-height: 30px;
+    padding: 0 14px;
+    font-size: var(--t-meta);
+    font-weight: 600;
   }
 
   /* The collapse toggles only exist where there is a panel to collapse — below their
