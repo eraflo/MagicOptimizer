@@ -22,6 +22,13 @@
      one. Everything else stands out by weight, size or position. */
   --gold: #d8a951;
 
+  /* Depth. The mockup read as premium largely because things floated: a wide, soft, mostly
+     transparent shadow plus a one-pixel highlight along the top edge, which is how glass
+     catches light. Flat cards with a hairline read as diagrams. */
+  --lift: 0 1px 2px rgba(0, 0, 0, 0.3), 0 12px 32px rgba(0, 0, 0, 0.42);
+  --lift-lg: 0 2px 4px rgba(0, 0, 0, 0.3), 0 26px 60px rgba(0, 0, 0, 0.52);
+  --sheen: inset 0 1px 0 rgba(247, 239, 230, 0.07);
+
   /* Text over artwork needs solid ground under it, not a guess about the image. Anchored at the
      bottom and ending opaque, so a name never lands on a bright patch of sky. */
   --scrim: linear-gradient(
@@ -145,7 +152,9 @@ button {
   min-height: 38px;
   padding: 0 18px;
   cursor: pointer;
-  transition: background 140ms ease, border-color 140ms ease, transform 140ms ease;
+  box-shadow: var(--sheen);
+  transition: background 140ms ease, border-color 140ms ease, transform 140ms ease,
+    box-shadow 140ms ease;
 }
 
 button:hover:not(:disabled) {
@@ -165,6 +174,7 @@ button:disabled {
 button.primary {
   background: var(--accent);
   border-color: var(--accent);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 22px rgba(0, 0, 0, 0.35);
   /* Dark text, because the fill is pale. Swapping the fill without this line puts white on
      white and makes every primary action invisible. */
   color: var(--ground);
@@ -308,6 +318,7 @@ label {
   backdrop-filter: blur(18px) saturate(1.2);
   -webkit-backdrop-filter: blur(18px) saturate(1.2);
   border: 1px solid rgba(247, 239, 230, 0.08);
+  box-shadow: var(--sheen), var(--lift);
 }
 
 /* A chip: the shape filters, tags and toggles take. */
@@ -375,16 +386,23 @@ label {
 }
 
 /* Scrollbars --------------------------------------------------------------- */
-/* Thin, warm and inset. At 10px with a pale thumb it sat on the panel's rounded corner and
-   read as a fixture bolted to the side of the card. */
+/* Scrollbars ---------------------------------------------------------------
+   Absent at rest. A permanent bar down the side of a floating card is furniture, and it was
+   the first thing anyone noticed about the panel. The thumb fades in when the pointer is over
+   the thing that scrolls, which is the only moment it is useful. */
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(247, 239, 230, 0.18) transparent;
+  scrollbar-color: transparent transparent;
+}
+
+*:hover,
+*:focus-within {
+  scrollbar-color: rgba(247, 239, 230, 0.22) transparent;
 }
 
 ::-webkit-scrollbar {
-  width: 7px;
-  height: 7px;
+  width: 10px;
+  height: 10px;
 }
 
 ::-webkit-scrollbar-track {
@@ -392,15 +410,30 @@ label {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(247, 239, 230, 0.14);
+  background: transparent;
   border-radius: 999px;
+  /* Drawn inside its own padding so the thumb is 6px of colour in a 10px lane — it never
+     touches the card's rounded edge. */
   border: 2px solid transparent;
   background-clip: padding-box;
+  transition: background-color 180ms ease;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(247, 239, 230, 0.26);
-  background-clip: padding-box;
+*:hover > ::-webkit-scrollbar-thumb,
+:hover::-webkit-scrollbar-thumb {
+  background-color: rgba(247, 239, 230, 0.2);
+}
+
+:hover::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(247, 239, 230, 0.36);
+}
+
+@media (pointer: coarse) {
+  /* Touch surfaces overlay their own indicator; ours would only steal 10px of width. */
+  ::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+  }
 }
 
 /* Touch --------------------------------------------------------------------- */

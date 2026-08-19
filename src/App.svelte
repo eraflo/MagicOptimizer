@@ -732,6 +732,7 @@
     background: rgba(44, 35, 29, 0.5);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
+    box-shadow: var(--sheen), var(--lift);
     overflow: hidden;
     min-width: 0;
   }
@@ -791,13 +792,17 @@
     }
   }
 
+  /* A card that floats, not a band painted across the window. A full-bleed red strip under
+     the app bar is the single least premium thing an interface can do. */
   .error {
-    margin: 0;
-    padding: 8px 16px;
-    background: rgba(228, 87, 61, 0.12);
-    border-bottom: 1px solid rgba(228, 87, 61, 0.4);
-    color: var(--danger);
-    font-size: 13px;
+    margin: 14px 14px -4px;
+    padding: 12px 16px;
+    border-radius: 14px;
+    background: rgba(228, 87, 61, 0.14);
+    border: 1px solid rgba(228, 87, 61, 0.34);
+    box-shadow: var(--sheen), var(--lift);
+    color: #f0a08c;
+    font-size: var(--t-body);
   }
 
   .downloads {

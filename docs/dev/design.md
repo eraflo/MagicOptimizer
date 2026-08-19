@@ -99,6 +99,23 @@ What it now defines, and what each replaced:
 **Glass is the one decorative device the direction allows**, and it earns its place: a panel laid
 over artwork has to let some through, or the app is a grid of grey boxes again.
 
+### What "premium" actually consisted of
+
+Reported three times as missing, and it was never one thing. Held against the mockup it came down
+to depth, air and light, all three of which are tokens now:
+
+* **`--lift`** — a wide, soft, mostly transparent shadow. Things that float read as premium;
+  flat cards with a hairline read as diagrams.
+* **`--sheen`** — `inset 0 1px 0` along the top edge, which is how glass catches light. One line,
+  and it does more than any amount of colour work.
+* **Air.** Panel padding 26px, gaps 28px, list rows 10/16. The old panel was correct and cramped.
+* **Scrollbars absent at rest.** A permanent bar down the side of a floating card is furniture.
+  The thumb fades in on hover of the thing that scrolls, drawn inside its own padding so it never
+  touches the rounded edge, and is removed entirely on touch where the platform draws its own.
+* **No full-bleed banners.** The error was a red strip painted across the window under the app
+  bar — the single least premium thing an interface can do. It is a floating card like everything
+  else.
+
 ## Tokens
 
 Defined in `src/app.css`. Do not write a literal colour or size in a component when one of these

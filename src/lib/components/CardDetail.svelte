@@ -266,20 +266,24 @@
   .panel {
     width: 372px;
     flex: none;
-    padding: 20px;
+    padding: 24px;
     overflow-y: auto;
     border: 1px solid rgba(247, 239, 230, 0.07);
     border-radius: 18px;
     background: rgba(44, 35, 29, 0.58);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
+    box-shadow: var(--sheen), var(--lift);
   }
 
   .placeholder {
-    color: var(--ink-3);
+    color: var(--ink-2);
     text-align: center;
-    margin-top: 56px;
-    font-size: var(--t-body);
+    margin: 96px auto 0;
+    max-width: 26ch;
+    font-size: var(--t-lede);
+    line-height: 1.5;
+    text-wrap: balance;
   }
 
   .hero {
@@ -290,6 +294,7 @@
     overflow: hidden;
     margin-bottom: 16px;
     background: var(--ground-3);
+    box-shadow: var(--lift);
     display: flex;
     flex-direction: column;
     justify-content: flex-end;

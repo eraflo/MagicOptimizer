@@ -177,16 +177,17 @@
   .panel {
     width: 292px;
     flex: none;
-    padding: 22px 20px 28px;
+    padding: 26px 24px 30px;
     overflow-y: auto;
     border: 1px solid rgba(247, 239, 230, 0.07);
     border-radius: 18px;
     background: rgba(44, 35, 29, 0.58);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
+    box-shadow: var(--sheen), var(--lift);
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: 28px;
   }
 
   /* Uppercase and spaced. A filter panel is a stack of captions; setting them as prose is what

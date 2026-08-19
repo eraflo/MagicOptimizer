@@ -99,7 +99,7 @@
     align-items: center;
     width: 100%;
     text-align: left;
-    padding: 8px 14px;
+    padding: 10px 16px;
     background: transparent;
     border: none;
     border-bottom: 1px solid var(--line);
@@ -206,10 +206,15 @@
     border-color: rgba(228, 87, 61, 0.45);
   }
 
+  /* An empty result is a state, not an error message set in fine print. */
   .empty {
-    padding: 32px 16px;
+    padding: 72px 24px;
     text-align: center;
-    color: var(--ink-3);
+    color: var(--ink-2);
+    font-size: var(--t-lede);
+    max-width: 34ch;
+    margin-inline: auto;
+    text-wrap: balance;
   }
 
   /* Phones: the cost moves under the type line rather than squeezing the name. The artwork stays
