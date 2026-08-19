@@ -162,7 +162,23 @@
 
   /* A file input styled as a button: the native control cannot be, and a bare "Choose file"
      next to a styled button looks like a bug. */
+  /* A file input dressed as a button, so it must not inherit the caption styling. */
   .restore {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    min-height: 38px;
+    padding: 0 18px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    background: rgba(255, 255, 255, 0.09);
+    color: var(--ink);
+    font-size: var(--t-body);
+    font-weight: 600;
+    letter-spacing: 0;
+    text-transform: none;
+    cursor: pointer;
     display: inline-flex;
     align-items: center;
     padding: 6px 12px;

@@ -627,8 +627,9 @@ ${written} card${written === 1 ? "" : "s"} were added. ` +
   .viewfinder {
     position: relative;
     background: #000;
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 18px;
+    box-shadow: var(--sheen), var(--lift);
     overflow: hidden;
     display: flex;
     align-items: center;
@@ -845,12 +846,55 @@ ${written} card${written === 1 ? "" : "s"} were added. ` +
   }
 
   .panel {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 18px;
+    background: rgba(20, 20, 24, 0.8);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow: var(--sheen), var(--lift);
+    padding: 22px;
     overflow-y: auto;
     min-height: 0;
+  }
+
+  /* A destination is a choice, not a field caption. The global `label` rule sets captions in
+     spaced uppercase, which turned these four options into shouting fragments that wrapped. */
+  .destinations label {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    margin: 0;
+    padding: 0 14px;
+    min-height: 44px;
+    border-radius: 12px;
+    border: 1px solid transparent;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--ink-2);
+    font-size: var(--t-body);
+    font-weight: 500;
+    letter-spacing: 0;
+    text-transform: none;
+    cursor: pointer;
+  }
+
+  .destinations label:hover {
+    background: rgba(255, 255, 255, 0.09);
+    color: var(--ink);
+  }
+
+  .destinations label.active {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.24);
+    color: var(--ink);
+    font-weight: 600;
+  }
+
+  .destinations input[type="radio"] {
+    width: 17px;
+    height: 17px;
+    min-height: 0;
+    flex: none;
+    accent-color: var(--accent);
   }
 
   h3 {
@@ -880,8 +924,8 @@ ${written} card${written === 1 ? "" : "s"} were added. ` +
   .destinations {
     display: flex;
     flex-direction: column;
-    gap: 4px;
-    margin-bottom: 12px;
+    gap: 6px;
+    margin-bottom: 18px;
   }
 
   .destinations label {

@@ -256,5 +256,10 @@ are the opposite case and do scroll individually, because each is a full-height 
 - **Never show a bare percentage for a match confidence without the way to refuse it.**
 - **No text below 13px.** None. Including captions.
 - **Do not put `image_normal` in a background.** See law 1.
+- **A `<label>` that wraps a choice is not a caption.** The global rule sets labels in spaced
+  uppercase, which is right for "Deck" above a field and wrong for Won / Lost / Draw, for a radio
+  row, or for a file input dressed as a button. Those three all shipped shouting and wrapping.
+  Any label containing an `input[type=radio]`, a `.checkbox`, or acting as a button resets
+  `text-transform` and `letter-spacing`.
 - **Never `overflow: hidden` on a vertical stack of cards.** Something always falls off the
   bottom at some window height, and there is nothing to scroll to reach it.

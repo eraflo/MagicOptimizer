@@ -310,20 +310,36 @@
     margin-bottom: 10px;
   }
 
+  /* Won / Lost / Draw is a choice, not a field caption. The global `label` rule sets captions in
+     spaced uppercase, which is right for "Deck" and wrong for a control you press. */
   .results label {
     flex: 1;
-    text-align: center;
-    padding: 7px 0;
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--border-strong);
-    background: var(--panel-raised);
-    font-size: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 40px;
+    margin: 0;
+    padding: 0;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--ink-2);
+    font-size: var(--t-body);
+    font-weight: 600;
+    letter-spacing: 0;
+    text-transform: none;
     cursor: pointer;
   }
 
+  .results label:hover:not(.active) {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--ink);
+  }
+
   .results label.active {
-    background: var(--accent-soft);
+    background: var(--accent);
     border-color: var(--accent);
+    color: var(--ground);
   }
 
   .results input {

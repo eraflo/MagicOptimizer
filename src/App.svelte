@@ -1036,11 +1036,43 @@
     white-space: nowrap;
   }
 
+  /* A card like every other screen, and left-aligned. Centred prose on a bare ground was the
+     one place left that still looked like a holding page rather than part of the app. */
   .setup {
-    margin: 64px auto;
-    max-width: 520px;
-    padding: 0 24px;
-    text-align: center;
+    margin: 8px auto;
+    max-width: 620px;
+    padding: 30px 32px 32px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 18px;
+    background: rgba(20, 20, 24, 0.8);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow: var(--sheen), var(--lift);
+    text-align: left;
+  }
+
+  .setup h2 {
+    margin: 0 0 12px;
+    font-size: var(--t-head);
+    font-weight: 700;
+    letter-spacing: -0.018em;
+  }
+
+  .setup p {
+    margin: 0 0 14px;
+    color: var(--ink-2);
+    max-width: 62ch;
+  }
+
+  .setup pre {
+    margin: 6px 0 18px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    background: rgba(0, 0, 0, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    color: var(--ink-2);
+    font-size: var(--t-meta);
+    overflow-x: auto;
   }
 
   .setup h2 {
