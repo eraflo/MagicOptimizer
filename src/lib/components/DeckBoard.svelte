@@ -192,7 +192,9 @@
     aspect-ratio: 63 / 88;
     border-radius: 6px;
     overflow: hidden;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+    box-shadow:
+      0 1px 3px rgba(0, 0, 0, 0.2),
+      0 4px 10px rgba(0, 0, 0, 0.24);
   }
 
   .frame img {
@@ -220,7 +222,9 @@
     font-weight: 700;
     line-height: 18px;
     text-align: center;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.55);
+    box-shadow:
+      0 1px 3px rgba(0, 0, 0, 0.24),
+      0 3px 8px rgba(0, 0, 0, 0.22);
   }
 
   .nm {

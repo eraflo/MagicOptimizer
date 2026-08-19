@@ -36,8 +36,25 @@
      The sheen is a full inset ring rather than `inset 0 1px 0`. A one-pixel top line is drawn
      horizontally and stops dead where the radius turns, leaving a visible nick at both top
      corners; a ring follows the curve the whole way round. */
-  --lift: 0 14px 34px rgba(0, 0, 0, 0.5);
-  --lift-lg: 0 26px 60px rgba(0, 0, 0, 0.64);
+  /* A ladder of layers, not one shadow.
+     A single `0 14px 34px rgba(0,0,0,.5)` has a falloff steep enough that an 8-bit display
+     quantises it into visible rings — worst of all over a near-black ground, where every step
+     is a large fraction of the remaining range. Stacking four low-opacity layers of increasing
+     blur approximates a real penumbra: each one bands, but they band at different radii, so the
+     steps interleave and disappear.
+
+     None of them is tighter than 2px, because every surface here is translucent glass and a
+     dense shadow hugging the edge shows through it and pools in the corners. */
+  --lift:
+    0 2px 6px rgba(0, 0, 0, 0.13),
+    0 6px 14px rgba(0, 0, 0, 0.14),
+    0 14px 30px rgba(0, 0, 0, 0.16),
+    0 26px 54px rgba(0, 0, 0, 0.18);
+  --lift-lg:
+    0 3px 8px rgba(0, 0, 0, 0.15),
+    0 10px 22px rgba(0, 0, 0, 0.16),
+    0 24px 48px rgba(0, 0, 0, 0.18),
+    0 44px 90px rgba(0, 0, 0, 0.22);
   --sheen: inset 0 0 0 1px rgba(255, 255, 255, 0.045);
 
   /* Text over artwork needs solid ground under it, not a guess about the image. Anchored at the
@@ -192,7 +209,10 @@ button:disabled {
 button.primary {
   background: var(--accent);
   border-color: var(--accent);
-  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.38);
+  box-shadow:
+    0 2px 5px rgba(0, 0, 0, 0.16),
+    0 6px 14px rgba(0, 0, 0, 0.18),
+    0 12px 26px rgba(0, 0, 0, 0.2);
   /* Dark text, because the fill is pale. Swapping the fill without this line puts white on
      white and makes every primary action invisible. */
   color: var(--ground);

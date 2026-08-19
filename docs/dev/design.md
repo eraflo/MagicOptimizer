@@ -110,11 +110,15 @@ over artwork has to let some through, or the app is a grid of grey boxes again.
 Reported three times as missing, and it was never one thing. Held against the mockup it came down
 to depth, air and light, all three of which are tokens now:
 
-* **`--lift`** — one wide, soft, mostly transparent shadow. Things that float read as premium;
-  flat cards with a hairline read as diagrams. **One**, not two: it carried a tight `0 1px 2px`
-  alongside the broad one, and every surface here is translucent, so that tight shadow showed
-  *through* the glass and pooled where it is densest — just inside each corner. Never pair a
-  tight shadow with a translucent background.
+* **`--lift`** — a **ladder** of four low-opacity layers of increasing blur, never one shadow.
+  Things that float read as premium; flat cards with a hairline read as diagrams. Two rules were
+  learned the hard way:
+  * **A single shadow bands.** `0 14px 34px rgba(0,0,0,.5)` falls off steeply enough that an
+    8-bit display quantises it into visible rings, and worst over a near-black ground where each
+    step is a large fraction of what is left. Four layers each band too, but at different radii,
+    so the steps interleave and vanish.
+  * **No layer is tighter than 2px.** Every surface here is translucent glass, so a dense shadow
+    hugging the edge shows *through* the panel and pools just inside each corner.
 * **`--sheen`** — a full `inset 0 0 0 1px` ring, which is how glass catches light. It began as
   `inset 0 1px 0` along the top edge, and that was wrong on every rounded card: a one-pixel
   horizontal line is drawn flat and stops dead where the radius turns, leaving a visible nick in

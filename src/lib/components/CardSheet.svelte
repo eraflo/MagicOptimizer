@@ -105,13 +105,17 @@
     aspect-ratio: 4 / 3;
     border-radius: 6px;
     overflow: hidden;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+    box-shadow:
+      0 1px 3px rgba(0, 0, 0, 0.2),
+      0 4px 10px rgba(0, 0, 0, 0.24);
     transition: transform 140ms ease, box-shadow 140ms ease;
   }
 
   .cell:hover .frame {
     transform: translateY(-2px);
-    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.6);
+    box-shadow:
+      0 2px 6px rgba(0, 0, 0, 0.2),
+      0 8px 20px rgba(0, 0, 0, 0.26);
   }
 
   .frame img {
@@ -138,7 +142,9 @@
     font-weight: 700;
     line-height: 19px;
     text-align: center;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.55);
+    box-shadow:
+      0 1px 3px rgba(0, 0, 0, 0.24),
+      0 3px 8px rgba(0, 0, 0, 0.22);
   }
 
   .cap {

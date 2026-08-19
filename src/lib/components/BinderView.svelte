@@ -264,7 +264,9 @@
     font-weight: 700;
     line-height: 19px;
     text-align: center;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+    box-shadow:
+      0 1px 3px rgba(0, 0, 0, 0.26),
+      0 3px 8px rgba(0, 0, 0, 0.24);
   }
 
   /* Named on hover only. Nine captions at once would bury the artwork the page exists to show. */
