@@ -37,6 +37,7 @@ pub fn run() {
             commands::card_details,
             commands::card_by_name,
             commands::collection_list,
+            commands::collection_binder,
             commands::collection_add,
             commands::collection_set_quantity,
             commands::collection_update,

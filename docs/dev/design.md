@@ -159,12 +159,30 @@ Spacing is a multiple of 4. Radii: `6px` on small controls, `10px` on panels, `9
 | **Card detail** | A cinema hero over the art crop, rules below. Built. | Same subject, different room. |
 | **Catalogue** | Contact sheet by default, list on a switch. Built. | Density *through* images. A player recognises artwork before a name. |
 | **Deck editor** | Board by default — columns by mana value, cards at 63:88 — with the list on a switch. Built. | The curve is the arrangement, not a chart beside it. |
-| **Collection** | Floating cards. Binder pages 3×3 designed, not built. | `mtg-collection` already models storage locations and nothing shows them. |
+| **Collection** | Binder pages 3×3 on a switch, table by default. Built. | `mtg-collection` already models storage locations and nothing showed them. |
 | **Journal** | Two floating cards, form beside results. Built. | Recording is the mobile task; the numbers are the desktop one. |
 
-Every view carries the palette, the controls and the floating-card layout; the catalogue has its
-contact sheet and the deck editor its board. Still **not** built: binder pages for the collection.
-Do not describe that one as done.
+Every view designed here is now built: the contact sheet for the catalogue, the board for the
+deck editor, binder pages for the collection.
+
+### The binder
+
+Nine pockets to a page, grouped by container, cards at 63:88. It exists because
+`mtg-collection` has modelled storage locations since it was written and no screen ever showed
+one — the question in front of a shelf is *which box*, not *do I own it*.
+
+* **Empty pockets are drawn.** A collection is read as much by its gaps as by its cards, and a
+  hole in a page says that faster than a row reading "0 copies".
+* **Pockets sort by slot** where a holding gives one, so the screen matches the physical page.
+* **Names appear on hover only.** Nine captions at once would bury the artwork the page exists
+  to show.
+* **The sleeve sheen is one gradient**, and it is the only decorative flourish in the view. It
+  does most of the work of making these read as objects.
+
+The table stays the default and holds the editing; a pocket opens it. Both the deck board and the
+binder join to the catalog through a command of their own (`deck_board`, `collection_binder`)
+rather than fattening the stored types — what a card looks like belongs to the catalog and would
+go stale inside a saved deck or collection.
 
 ### The deck board
 

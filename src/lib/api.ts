@@ -29,6 +29,7 @@ import type {
   Game,
   GameInput,
   ImportSummary,
+  BinderCard,
   BoardCard,
   ScanResult,
   ScanStatus,
@@ -64,6 +65,11 @@ export function cardByName(name: string): Promise<CardDetails> {
 
 export function collectionList(pool: Pool | "all"): Promise<Holding[]> {
   return invoke("collection_list", { pool });
+}
+
+/** The collection joined to the catalog, for the binder pages. */
+export function collectionBinder(pool?: Pool): Promise<BinderCard[]> {
+  return invoke("collection_binder", { pool });
 }
 
 export function collectionAdd(holding: NewHolding): Promise<number> {

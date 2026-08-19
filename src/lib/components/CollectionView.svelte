@@ -1,12 +1,37 @@
 <script lang="ts">
   import * as api from "../api";
   import BackupPanel from "./BackupPanel.svelte";
+  import BinderView from "./BinderView.svelte";
   import { CONDITIONS } from "../types";
-  import type { Holding, Pool, Stats } from "../types";
+  import type { BinderCard, Holding, Pool, Stats } from "../types";
 
   let { onchanged }: { onchanged: () => void } = $props();
 
   let pool = $state<Pool | "all">("all");
+
+  /**
+   * How the collection is drawn.
+   *
+   * `mtg-collection` has modelled storage locations since it was written and nothing ever showed
+   * them. Binder pages do: nine to a page, grouped by container, so the screen answers "which box
+   * is it in" and not only "do I own it". The table stays for editing and for reading a long
+   * collection quickly.
+   */
+  let collectionLayout = $state<"binder" | "table">(
+    (localStorage.getItem("collection-layout") as "binder" | "table" | null) ?? "table",
+  );
+  $effect(() => localStorage.setItem("collection-layout", collectionLayout));
+
+  let binder = $state<BinderCard[]>([]);
+
+  $effect(() => {
+    if (collectionLayout !== "binder") return;
+    const chosen = pool === "all" ? undefined : pool;
+    void api
+      .collectionBinder(chosen)
+      .then((cards) => (binder = cards))
+      .catch(() => (binder = []));
+  });
   let holdings = $state<Holding[]>([]);
   let stats = $state<Stats | null>(null);
   let filter = $state("");
@@ -108,13 +133,44 @@
       placeholder="Filter by name or container"
       bind:value={filter}
     />
+
+    <div class="layout" role="group" aria-label="Collection layout">
+      <button
+        type="button"
+        class="mode"
+        class:on={collectionLayout === "binder"}
+        aria-pressed={collectionLayout === "binder"}
+        onclick={() => (collectionLayout = "binder")}
+      >
+        <span aria-hidden="true">▦</span> Binder
+      </button>
+      <button
+        type="button"
+        class="mode"
+        class:on={collectionLayout === "table"}
+        aria-pressed={collectionLayout === "table"}
+        onclick={() => (collectionLayout = "table")}
+      >
+        <span aria-hidden="true">▤</span> Table
+      </button>
+    </div>
   </header>
 
   {#if error}
     <p class="error">{error}</p>
   {/if}
 
-  {#if loading}
+  {#if collectionLayout === "binder"}
+    <BinderView
+      cards={binder.filter(
+        (c) =>
+          !filter.trim() ||
+          c.name.toLowerCase().includes(filter.trim().toLowerCase()) ||
+          c.container.toLowerCase().includes(filter.trim().toLowerCase()),
+      )}
+      onopen={() => (collectionLayout = "table")}
+    />
+  {:else if loading}
     <p class="empty">Loading…</p>
   {:else if holdings.length === 0}
     <div class="empty">
@@ -232,6 +288,36 @@
   .tab.active {
     background: var(--accent);
     border-color: var(--accent);
+    color: var(--ground);
+  }
+
+  .layout {
+    display: flex;
+    gap: 4px;
+    padding: 3px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  .mode {
+    min-height: 30px;
+    padding: 0 13px;
+    border: none;
+    background: transparent;
+    border-radius: 999px;
+    color: var(--ink-3);
+    font-size: var(--t-meta);
+    font-weight: 600;
+    box-shadow: none;
+  }
+
+  .mode:hover:not(.on) {
+    background: transparent;
+    color: var(--ink-2);
+  }
+
+  .mode.on {
+    background: var(--accent);
     color: var(--ground);
   }
 

@@ -116,6 +116,24 @@ export type Holding = {
 
 export type NewHolding = Omit<Holding, "id">;
 
+/** A holding joined to the catalog, so the binder can show the card rather than name it. */
+export type BinderCard = {
+  id: number;
+  oracle_id: string;
+  name: string;
+  quantity: number;
+  set_code: string;
+  collector_number: string;
+  finish: string;
+  condition: string;
+  /** Empty when the holding says nothing about where it lives, which is its own answer. */
+  container: string;
+  section: string;
+  slot: number | null;
+  colors: string;
+  image_art: string | null;
+};
+
 export type Stats = {
   holdings: number;
   distinct_cards: number;

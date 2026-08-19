@@ -161,6 +161,93 @@ pub fn collection_list(
     state.collection().list(pool).map_err(|e| e.to_string())
 }
 
+/// One holding, joined to the catalog so the binder can show it.
+///
+/// The collection stores what you own — `oracle_id`, a printing, a condition, where it lives.
+/// It deliberately stores nothing about what the card *looks* like, because that belongs to the
+/// catalog and would go stale in a saved collection. This is that join, done once per view.
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct BinderCard {
+    pub id: u64,
+    pub oracle_id: String,
+    pub name: String,
+    pub quantity: u32,
+    pub set_code: String,
+    pub collector_number: String,
+    pub finish: String,
+    pub condition: String,
+    /// Where it is kept. Empty when the holding says nothing, which is its own answer.
+    pub container: String,
+    pub section: String,
+    pub slot: Option<u16>,
+    pub colors: String,
+    pub image_art: Option<String>,
+}
+
+/// The collection, joined to the catalog, for the binder pages.
+///
+/// One catalog scan (~5 ms over 35,306 cards) rather than a lookup per holding, and keyed on
+/// `oracle_id` for the reason everything persisted is: `CardId` is a position in one artifact and
+/// moves on every rebuild.
+#[tauri::command]
+pub fn collection_binder(
+    state: State<'_, AppState>,
+    pool: Option<String>,
+) -> CommandResult<Vec<BinderCard>> {
+    let pool = parse_pool(pool)?;
+    let holdings = state.collection().list(pool).map_err(|e| e.to_string())?;
+
+    let wanted: std::collections::HashSet<&str> =
+        holdings.iter().map(|h| h.oracle_id.as_str()).collect();
+
+    let found = state.with_catalog(|catalog| {
+        let mut found = std::collections::HashMap::new();
+        for (_, card) in catalog.iter() {
+            let oracle = card.oracle_id();
+            if wanted.contains(oracle) {
+                found.insert(
+                    oracle.to_owned(),
+                    (
+                        card.colors().to_string(),
+                        crate::dto::image_url(&card.image_id, "art_crop"),
+                    ),
+                );
+            }
+        }
+        found
+    })?;
+
+    Ok(holdings
+        .into_iter()
+        .map(|h| {
+            let known = found.get(&h.oracle_id);
+            BinderCard {
+                id: h.id.0,
+                name: h.name,
+                quantity: h.quantity,
+                set_code: h.set_code,
+                collector_number: h.collector_number,
+                finish: format!("{:?}", h.finish).to_lowercase(),
+                condition: format!("{:?}", h.condition).to_lowercase(),
+                container: h
+                    .location
+                    .as_ref()
+                    .map(|l| l.container.clone())
+                    .unwrap_or_default(),
+                section: h
+                    .location
+                    .as_ref()
+                    .and_then(|l| l.section.clone())
+                    .unwrap_or_default(),
+                slot: h.location.as_ref().and_then(|l| l.slot),
+                colors: known.map(|k| k.0.clone()).unwrap_or_default(),
+                image_art: known.and_then(|k| k.1.clone()),
+                oracle_id: h.oracle_id,
+            }
+        })
+        .collect())
+}
+
 #[tauri::command]
 pub fn collection_add(state: State<'_, AppState>, holding: NewHolding) -> CommandResult<u64> {
     state
