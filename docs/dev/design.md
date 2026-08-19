@@ -158,11 +158,19 @@ Spacing is a multiple of 4. Radii: `6px` on small controls, `10px` on panels, `9
 | **Scan result** | Cinema, full-bleed | One card, just photographed. The screen the phone exists for. Built. |
 | **Card detail** | A cinema hero over the art crop, rules below. Built. | Same subject, different room. |
 | **Catalogue** | Rows now carry the art crop; the contact-sheet grid is designed, not built | Density *through* images. A player recognises artwork before a name. |
-| **Deck editor** | Columns by mana value, cards at 63:88 | The curve is the arrangement, not a chart beside it. |
-| **Collection** | Binder pages, 3×3 | `mtg-collection` already models storage locations and nothing shows them. |
+| **Deck editor** | Two floating cards. Columns by mana value at 63:88 designed, not built. | The curve is the arrangement, not a chart beside it. |
+| **Collection** | Floating cards. Binder pages 3×3 designed, not built. | `mtg-collection` already models storage locations and nothing shows them. |
+| **Journal** | Two floating cards, form beside results. Built. | Recording is the mobile task; the numbers are the desktop one. |
 
-The deck editor and the collection are designed but **not built**, and the catalogue has the
-tokens without the contact-sheet layout. Do not describe any of the three as done.
+Every view now carries the palette, the controls and the floating-card layout. What is **not**
+built is the per-view structure each was designed for: the contact-sheet grid for the catalogue,
+mana-value columns for the deck editor, binder pages for the collection. Do not describe those
+three as done.
+
+**Nothing renders below 13px.** Eighty-one declarations under the floor were swept out of ten
+components in one pass — that alone was most of what still read as unfinished, and it is the law
+easiest to break by writing `font-size: 11px` for a caption. The one exception is `ManaCost`,
+whose numeral sits inside a 17px disc and cannot grow with the scale.
 
 One rule the placeholders enforce: a list row must look deliberate **with no network at all**.
 Artwork comes from Scryfall's CDN, so an offline install gets the card's own colours as a swatch

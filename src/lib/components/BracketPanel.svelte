@@ -160,7 +160,7 @@
 
   h4 {
     margin: 0;
-    font-size: 12px;
+    font-size: var(--t-meta);
     font-weight: 600;
     color: var(--text-muted);
   }
@@ -184,7 +184,7 @@
     background: var(--panel-raised);
     border: 1px solid var(--border-strong);
     color: var(--text-muted);
-    font-size: 12px;
+    font-size: var(--t-meta);
     font-variant-numeric: tabular-nums;
   }
 
@@ -205,19 +205,19 @@
   .reasons {
     margin: 0 0 8px;
     padding-left: 18px;
-    font-size: 12px;
+    font-size: var(--t-meta);
     color: var(--text-muted);
     line-height: 1.5;
   }
 
   .toggle {
-    font-size: 12px;
+    font-size: var(--t-meta);
     padding: 3px 0;
   }
 
   .findings {
     margin: 6px 0 0;
-    font-size: 12px;
+    font-size: var(--t-meta);
   }
 
   .findings dt {
@@ -240,30 +240,30 @@
   .produces {
     display: block;
     color: var(--text-dim);
-    font-size: 11px;
+    font-size: var(--t-meta);
   }
 
   .note {
     margin: 0 0 4px;
-    font-size: 11px;
+    font-size: var(--t-meta);
     font-style: italic;
   }
 
   .caveat {
     margin: 8px 0 0;
-    font-size: 11.5px;
+    font-size: var(--t-meta);
     color: #d9a441;
     line-height: 1.45;
   }
 
   .source {
     margin: 8px 0 0;
-    font-size: 11px;
+    font-size: var(--t-meta);
     color: var(--text-dim);
   }
 
   code {
-    font-size: 10.5px;
+    font-size: var(--t-meta);
     background: var(--bg);
     padding: 1px 4px;
     border-radius: 3px;
@@ -276,6 +276,6 @@
     background: rgba(228, 87, 61, 0.12);
     border: 1px solid rgba(228, 87, 61, 0.4);
     color: var(--danger);
-    font-size: 12px;
+    font-size: var(--t-meta);
   }
 </style>

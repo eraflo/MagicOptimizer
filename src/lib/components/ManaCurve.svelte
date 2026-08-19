@@ -69,13 +69,13 @@
 
   h4 {
     margin: 0 0 8px;
-    font-size: 12px;
+    font-size: var(--t-meta);
     font-weight: 600;
     color: var(--text-muted);
   }
 
   .average {
-    font-size: 12px;
+    font-size: var(--t-meta);
     color: var(--text-dim);
   }
 
@@ -97,7 +97,7 @@
   }
 
   .count {
-    font-size: 10px;
+    font-size: var(--t-meta);
     color: var(--text-muted);
     margin-bottom: 2px;
   }
@@ -116,14 +116,14 @@
   }
 
   .label {
-    font-size: 10px;
+    font-size: var(--t-meta);
     color: var(--text-dim);
     margin-top: 4px;
   }
 
   .note {
     margin: 8px 0 0;
-    font-size: 11px;
+    font-size: var(--t-meta);
     color: var(--text-dim);
   }
 
@@ -141,7 +141,7 @@
     display: inline-flex;
     align-items: center;
     gap: 5px;
-    font-size: 12px;
+    font-size: var(--t-meta);
     color: var(--text-muted);
   }
 
@@ -154,6 +154,6 @@
 
   .cards {
     color: var(--text-dim);
-    font-size: 11px;
+    font-size: var(--t-meta);
   }
 </style>

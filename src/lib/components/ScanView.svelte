@@ -779,7 +779,7 @@ ${written} card${written === 1 ? "" : "s"} were added. ` +
     border: 1px solid var(--border-strong);
     border-radius: var(--radius-sm);
     padding: 8px 10px;
-    font-size: 12px;
+    font-size: var(--t-meta);
     overflow-x: auto;
     text-align: left;
     margin: 0 0 12px;
@@ -819,7 +819,7 @@ ${written} card${written === 1 ? "" : "s"} were added. ` +
   }
 
   .tag {
-    font-size: 11px;
+    font-size: var(--t-meta);
     text-transform: uppercase;
     letter-spacing: 0.05em;
     color: var(--success);
@@ -855,7 +855,7 @@ ${written} card${written === 1 ? "" : "s"} were added. ` +
 
   h3 {
     margin: 0 0 10px;
-    font-size: 12px;
+    font-size: var(--t-meta);
     font-weight: 600;
     color: var(--text-muted);
     text-transform: uppercase;
@@ -874,7 +874,7 @@ ${written} card${written === 1 ? "" : "s"} were added. ` +
     color: var(--accent);
     border-radius: 999px;
     padding: 1px 8px;
-    font-size: 11px;
+    font-size: var(--t-meta);
   }
 
   .destinations {
@@ -902,7 +902,7 @@ ${written} card${written === 1 ? "" : "s"} were added. ` +
 
   .field {
     display: block;
-    font-size: 12px;
+    font-size: var(--t-meta);
     color: var(--text-muted);
     margin-bottom: 10px;
   }
@@ -920,7 +920,7 @@ ${written} card${written === 1 ? "" : "s"} were added. ` +
   .note,
   .footnote,
   .empty {
-    font-size: 12px;
+    font-size: var(--t-meta);
     color: var(--text-muted);
     line-height: 1.5;
     margin: 8px 0 0;
@@ -933,7 +933,7 @@ ${written} card${written === 1 ? "" : "s"} were added. ` +
 
   .error {
     color: var(--danger);
-    font-size: 12px;
+    font-size: var(--t-meta);
     margin-top: 10px;
     /* The commit failure message is two paragraphs: what went wrong, then what was written. */
     white-space: pre-line;

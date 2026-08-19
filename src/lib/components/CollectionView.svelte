@@ -183,6 +183,7 @@
     flex: 1;
     display: flex;
     flex-direction: column;
+    gap: 14px;
     min-width: 0;
     overflow: hidden;
   }
@@ -190,10 +191,15 @@
   header {
     display: flex;
     align-items: center;
-    gap: 16px;
-    padding: 12px 16px;
-    border-bottom: 1px solid var(--border);
-    background: var(--panel);
+    gap: 18px;
+    padding: 14px 20px;
+    flex: none;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 18px;
+    background: rgba(20, 20, 24, 0.8);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow: var(--sheen), var(--lift);
   }
 
   .tabs {
@@ -204,25 +210,36 @@
   .tab {
     background: transparent;
     border-color: transparent;
-    color: var(--text-muted);
-    padding: 5px 12px;
+    border-radius: 999px;
+    color: var(--ink-2);
+    font-size: var(--t-body);
+    font-weight: 600;
+    min-height: 34px;
+    padding: 0 15px;
+  }
+
+  .tab:hover:not(.active) {
+    background: var(--ground-3);
+    color: var(--ink);
   }
 
   .tab.active {
-    background: var(--accent-soft);
+    background: var(--accent);
     border-color: var(--accent);
-    color: var(--text);
+    color: var(--ground);
   }
 
   .stats {
     display: flex;
-    gap: 16px;
-    font-size: 12px;
-    color: var(--text-muted);
+    gap: 18px;
+    font-size: var(--t-meta);
+    color: var(--ink-3);
+    font-variant-numeric: tabular-nums;
   }
 
   .stats strong {
-    color: var(--text);
+    color: var(--ink);
+    font-size: var(--t-body);
   }
 
   .filter {
@@ -233,6 +250,13 @@
   .table {
     flex: 1;
     overflow-y: auto;
+    min-height: 0;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 18px;
+    background: rgba(20, 20, 24, 0.8);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow: var(--sheen), var(--lift);
   }
 
   .head,
@@ -249,7 +273,7 @@
     top: 0;
     background: var(--bg);
     border-bottom: 1px solid var(--border);
-    font-size: 11px;
+    font-size: var(--t-meta);
     text-transform: uppercase;
     letter-spacing: 0.05em;
     color: var(--text-dim);
@@ -276,7 +300,7 @@
 
   .dim {
     color: var(--text-muted);
-    font-size: 12.5px;
+    font-size: var(--t-meta);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -302,7 +326,7 @@
   }
 
   .remove {
-    font-size: 12px;
+    font-size: var(--t-meta);
     color: var(--text-dim);
   }
 
@@ -311,7 +335,7 @@
   }
 
   .tag {
-    font-size: 9.5px;
+    font-size: var(--t-meta);
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.04em;
@@ -348,7 +372,7 @@
   }
 
   .hint {
-    font-size: 12px;
+    font-size: var(--t-meta);
     max-width: 420px;
     margin: 0 auto;
   }
@@ -420,7 +444,7 @@
 
     .dim {
       order: 5;
-      font-size: 12px;
+      font-size: var(--t-meta);
       white-space: nowrap;
     }
 

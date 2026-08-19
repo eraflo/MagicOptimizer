@@ -113,15 +113,22 @@
 </section>
 
 <style>
+  /* A card like everything else. It sat bare on the ground with a hairline above it, which is
+     the one shape this direction does not have. */
   .backup {
-    border-top: 1px solid var(--border);
-    padding-top: 14px;
-    margin-top: 18px;
+    flex: none;
+    padding: 20px 22px 22px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 18px;
+    background: rgba(20, 20, 24, 0.8);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow: var(--sheen), var(--lift);
   }
 
   h3 {
     margin: 0 0 8px;
-    font-size: 12px;
+    font-size: var(--t-body);
     font-weight: 600;
     color: var(--text-muted);
     text-transform: uppercase;
@@ -131,7 +138,7 @@
   .why,
   .note,
   .holds {
-    font-size: 12px;
+    font-size: var(--t-meta);
     color: var(--text-muted);
     line-height: 1.5;
     margin: 0 0 10px;
@@ -177,13 +184,13 @@
 
   .done {
     color: var(--success);
-    font-size: 12px;
+    font-size: var(--t-meta);
     margin: 0;
   }
 
   .error {
     color: var(--danger);
-    font-size: 12px;
+    font-size: var(--t-meta);
     line-height: 1.5;
     margin: 0;
   }

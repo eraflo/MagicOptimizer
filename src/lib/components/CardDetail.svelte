@@ -371,7 +371,7 @@
   }
 
   .badge {
-    font-size: 11px;
+    font-size: var(--t-meta);
     padding: 2px 7px;
     border-radius: 999px;
     background: var(--panel-raised);
@@ -412,7 +412,7 @@
 
   .face-type {
     margin: 2px 0 6px;
-    font-size: 12px;
+    font-size: var(--t-meta);
     color: var(--text-muted);
   }
 
@@ -426,7 +426,7 @@
   }
 
   .roles li {
-    font-size: 11px;
+    font-size: var(--t-meta);
     padding: 2px 8px;
     border-radius: 999px;
     background: var(--accent-soft);
@@ -435,7 +435,7 @@
 
   .legality {
     margin-bottom: 16px;
-    font-size: 12px;
+    font-size: var(--t-meta);
   }
 
   .legality summary {
@@ -470,7 +470,7 @@
   }
 
   .owned {
-    font-size: 12px;
+    font-size: var(--t-meta);
     color: var(--success);
     font-weight: 600;
   }
@@ -513,7 +513,7 @@
 
   .hint {
     margin: 8px 0 0;
-    font-size: 11px;
+    font-size: var(--t-meta);
     color: var(--text-dim);
     line-height: 1.4;
   }

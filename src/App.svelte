@@ -602,7 +602,7 @@
     gap: 8px;
     padding: 6px 10px;
     font: inherit;
-    font-size: 12px;
+    font-size: var(--t-meta);
     color: inherit;
     background: transparent;
     border: 1px solid transparent;
@@ -694,7 +694,7 @@
       border-radius: 0;
       background: none;
       color: var(--text-dim);
-      font-size: 10px;
+      font-size: var(--t-meta);
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -751,7 +751,7 @@
   }
 
   .compact-count {
-    font-size: 12px;
+    font-size: var(--t-meta);
     color: var(--text-muted);
   }
 
@@ -834,7 +834,7 @@
   }
 
   .artifact .what .dim {
-    font-size: 12px;
+    font-size: var(--t-meta);
   }
 
   .have {
@@ -850,13 +850,13 @@
 
   .done {
     color: var(--success);
-    font-size: 12px;
+    font-size: var(--t-meta);
     white-space: nowrap;
   }
 
   .progress {
     color: var(--accent);
-    font-size: 12px;
+    font-size: var(--t-meta);
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
   }
@@ -889,11 +889,11 @@
   }
 
   .dim {
-    font-size: 12px;
+    font-size: var(--t-meta);
     color: var(--text-dim);
   }
 
   code {
-    font-size: 12px;
+    font-size: var(--t-meta);
   }
 </style>

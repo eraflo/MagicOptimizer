@@ -259,7 +259,7 @@
 
   h4 {
     margin: 0;
-    font-size: 12px;
+    font-size: var(--t-meta);
     font-weight: 600;
     color: var(--text-muted);
   }
@@ -270,7 +270,7 @@
   }
 
   .total small {
-    font-size: 11px;
+    font-size: var(--t-meta);
     font-weight: 400;
     color: var(--text-dim);
   }
@@ -301,7 +301,7 @@
     display: flex;
     justify-content: space-between;
     align-items: baseline;
-    font-size: 12px;
+    font-size: var(--t-meta);
   }
 
   .criterion-name {
@@ -316,7 +316,7 @@
   }
 
   .convention {
-    font-size: 9px;
+    font-size: var(--t-meta);
     text-transform: uppercase;
     letter-spacing: 0.04em;
     padding: 1px 5px;
@@ -341,14 +341,14 @@
 
   .criterion-detail {
     margin: 0;
-    font-size: 11px;
+    font-size: var(--t-meta);
     color: var(--text-dim);
     line-height: 1.4;
   }
 
   .simulation {
     margin: 0 0 12px;
-    font-size: 11.5px;
+    font-size: var(--t-meta);
     color: var(--text-muted);
     line-height: 1.45;
   }
@@ -367,7 +367,7 @@
 
   .limitation {
     margin: 9px 0 0;
-    font-size: 11px;
+    font-size: var(--t-meta);
     color: var(--text-dim);
     line-height: 1.45;
   }
@@ -400,7 +400,7 @@
       "in  gain button";
     gap: 1px 8px;
     align-items: center;
-    font-size: 12.5px;
+    font-size: var(--t-meta);
   }
 
   .out {
@@ -427,13 +427,13 @@
 
   .swap button {
     grid-area: button;
-    font-size: 12px;
+    font-size: var(--t-meta);
     padding: 4px 10px;
   }
 
   .reason {
     margin: 5px 0 0;
-    font-size: 11px;
+    font-size: var(--t-meta);
     color: var(--text-dim);
     line-height: 1.45;
   }
@@ -445,14 +445,14 @@
     background: rgba(217, 164, 65, 0.1);
     border: 1px solid rgba(217, 164, 65, 0.35);
     color: #d9a441;
-    font-size: 11.5px;
+    font-size: var(--t-meta);
     line-height: 1.45;
   }
 
   .empty {
     margin: 12px 0 0;
     color: var(--text-dim);
-    font-size: 12px;
+    font-size: var(--t-meta);
   }
 
   .error {
@@ -462,6 +462,6 @@
     background: rgba(228, 87, 61, 0.12);
     border: 1px solid rgba(228, 87, 61, 0.4);
     color: var(--danger);
-    font-size: 12px;
+    font-size: var(--t-meta);
   }
 </style>

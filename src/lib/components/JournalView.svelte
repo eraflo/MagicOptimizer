@@ -242,25 +242,28 @@
 <style>
   .journal {
     display: grid;
-    grid-template-columns: 300px 1fr;
-    gap: 16px;
+    grid-template-columns: 330px 1fr;
+    gap: 14px;
     height: 100%;
     min-height: 0;
   }
 
   .entry,
   .results-panel {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 18px;
+    background: rgba(20, 20, 24, 0.8);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow: var(--sheen), var(--lift);
+    padding: 24px;
     overflow-y: auto;
     min-height: 0;
   }
 
   h3 {
     margin: 0 0 6px;
-    font-size: 12px;
+    font-size: var(--t-meta);
     font-weight: 600;
     color: var(--text-muted);
     text-transform: uppercase;
@@ -269,7 +272,7 @@
 
   h4 {
     margin: 20px 0 8px;
-    font-size: 12px;
+    font-size: var(--t-meta);
     font-weight: 600;
     color: var(--text-muted);
   }
@@ -279,7 +282,7 @@
   .confidence,
   .empty,
   .tally {
-    font-size: 12px;
+    font-size: var(--t-meta);
     color: var(--text-muted);
     line-height: 1.5;
   }
@@ -290,7 +293,7 @@
 
   .field {
     display: block;
-    font-size: 12px;
+    font-size: var(--t-meta);
     color: var(--text-muted);
     margin-bottom: 10px;
   }
@@ -361,7 +364,7 @@
 
   .rate-label {
     display: block;
-    font-size: 11px;
+    font-size: var(--t-meta);
     color: var(--text-muted);
     margin-top: 2px;
   }
@@ -405,7 +408,7 @@
 
   .outcome {
     text-transform: capitalize;
-    font-size: 12px;
+    font-size: var(--t-meta);
     padding: 1px 8px;
     border-radius: 999px;
     background: var(--panel-raised);
@@ -425,7 +428,7 @@
   }
 
   .verdict {
-    font-size: 12px;
+    font-size: var(--t-meta);
     color: var(--text-muted);
     line-height: 1.5;
     margin: 0;
@@ -444,7 +447,7 @@
 
   .error {
     color: var(--danger);
-    font-size: 12px;
+    font-size: var(--t-meta);
     margin-top: 10px;
   }
 

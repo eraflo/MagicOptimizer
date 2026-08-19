@@ -391,15 +391,22 @@
   .decks {
     flex: 1;
     display: flex;
+    gap: 14px;
     min-width: 0;
     overflow: hidden;
   }
 
+  /* Two floating cards on the lit ground, like Browse. A full-height column with a 1px divider
+     is the shape this direction replaced. */
   .list {
-    width: 264px;
+    width: 282px;
     flex: none;
-    border-right: 1px solid var(--border);
-    background: var(--panel);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 18px;
+    background: rgba(20, 20, 24, 0.8);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow: var(--sheen), var(--lift);
     display: flex;
     flex-direction: column;
     overflow-y: auto;
@@ -420,7 +427,7 @@
 
   h4 {
     margin: 0 0 8px;
-    font-size: 12px;
+    font-size: var(--t-meta);
     font-weight: 600;
     color: var(--text-muted);
   }
@@ -431,7 +438,7 @@
   }
 
   .actions button {
-    font-size: 12px;
+    font-size: var(--t-meta);
     padding: 4px 9px;
   }
 
@@ -448,7 +455,7 @@
 
   .draft textarea {
     font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
-    font-size: 12px;
+    font-size: var(--t-meta);
     resize: vertical;
   }
 
@@ -480,7 +487,7 @@
   }
 
   .deck-format {
-    font-size: 11.5px;
+    font-size: var(--t-meta);
     color: var(--text-muted);
   }
 
@@ -488,7 +495,13 @@
     flex: 1;
     min-width: 0;
     overflow-y: auto;
-    padding: 16px;
+    padding: 24px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 18px;
+    background: rgba(20, 20, 24, 0.8);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow: var(--sheen), var(--lift);
   }
 
   .deck-head {
@@ -599,20 +612,20 @@
   .problems ul {
     margin: 8px 0 0;
     padding-left: 18px;
-    font-size: 12px;
+    font-size: var(--t-meta);
     color: var(--text-muted);
     line-height: 1.5;
   }
 
   .counts {
     margin: 0;
-    font-size: 12px;
+    font-size: var(--t-meta);
     color: var(--text-muted);
   }
 
   .approximate {
     margin: 8px 0 0;
-    font-size: 11.5px;
+    font-size: var(--t-meta);
     color: #d9a441;
     line-height: 1.45;
   }
@@ -620,7 +633,7 @@
   .numbers {
     display: flex;
     gap: 14px;
-    font-size: 12px;
+    font-size: var(--t-meta);
     color: var(--text-muted);
     margin-bottom: 14px;
   }
@@ -652,7 +665,7 @@
   .exported {
     margin-top: 10px;
     font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
-    font-size: 11.5px;
+    font-size: var(--t-meta);
     resize: vertical;
   }
 
@@ -669,13 +682,13 @@
 
   .empty-zone {
     color: var(--text-dim);
-    font-size: 12px;
+    font-size: var(--t-meta);
     margin: 4px 0;
   }
 
   .hint {
     margin: 8px 0 0;
-    font-size: 11px;
+    font-size: var(--t-meta);
     color: var(--text-dim);
     line-height: 1.45;
   }
