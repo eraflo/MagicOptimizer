@@ -758,7 +758,9 @@
     flex: 1;
     display: flex;
     gap: 14px;
-    padding: 14px;
+    /* Wide enough for the panels' shadows to finish inside it. `main` clips, so anything the
+       gutter cannot hold is cut off with a straight edge rather than faded. */
+    padding: 20px;
     min-height: 0;
     overflow: hidden;
     position: relative;

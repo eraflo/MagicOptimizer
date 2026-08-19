@@ -111,11 +111,13 @@
     transition: transform 140ms ease, box-shadow 140ms ease;
   }
 
+  /* Kept inside the sheet's 14px padding: a hover shadow reaching 28px is clipped by the
+     scrolling grid and the lift reads as a rectangle rather than a shadow. */
   .cell:hover .frame {
     transform: translateY(-2px);
     box-shadow:
-      0 2px 6px rgba(0, 0, 0, 0.2),
-      0 8px 20px rgba(0, 0, 0, 0.26);
+      0 1px 3px rgba(0, 0, 0, 0.22),
+      0 4px 11px rgba(0, 0, 0, 0.26);
   }
 
   .frame img {

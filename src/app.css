@@ -36,25 +36,27 @@
      The sheen is a full inset ring rather than `inset 0 1px 0`. A one-pixel top line is drawn
      horizontally and stops dead where the radius turns, leaving a visible nick at both top
      corners; a ring follows the curve the whole way round. */
-  /* A ladder of layers, not one shadow.
-     A single `0 14px 34px rgba(0,0,0,.5)` has a falloff steep enough that an 8-bit display
-     quantises it into visible rings — worst of all over a near-black ground, where every step
-     is a large fraction of the remaining range. Stacking four low-opacity layers of increasing
-     blur approximates a real penumbra: each one bands, but they band at different radii, so the
-     steps interleave and disappear.
+  /* A ladder of layers, and every layer fits the gutter it is drawn in.
+     This is the constraint that decides the numbers, and it took two wrong attempts to see.
+     The panels live inside `main`, which is `overflow: hidden` with a 20px gutter — so a shadow
+     reaching 54px below its card does not fade out, it is *sliced* by the container edge, and a
+     straight cut across a soft shadow is far uglier than no shadow at all. The furthest layer
+     here reaches 5 + 13 = 18px, inside the gutter with room to spare.
 
-     None of them is tighter than 2px, because every surface here is translucent glass and a
-     dense shadow hugging the edge shows through it and pools in the corners. */
+     Layered rather than single because one shadow with a steep falloff bands into visible rings
+     on an 8-bit display, worst over a near-black ground; several faint ones band at different
+     radii and the steps interleave.
+
+     Nothing tighter than 1px offset: the surfaces are translucent glass, and a dense shadow
+     hugging the edge shows through the panel and pools in its corners. */
   --lift:
-    0 2px 6px rgba(0, 0, 0, 0.13),
-    0 6px 14px rgba(0, 0, 0, 0.14),
-    0 14px 30px rgba(0, 0, 0, 0.16),
-    0 26px 54px rgba(0, 0, 0, 0.18);
+    0 1px 2px rgba(0, 0, 0, 0.18),
+    0 2px 5px rgba(0, 0, 0, 0.16),
+    0 5px 13px rgba(0, 0, 0, 0.18);
   --lift-lg:
-    0 3px 8px rgba(0, 0, 0, 0.15),
-    0 10px 22px rgba(0, 0, 0, 0.16),
-    0 24px 48px rgba(0, 0, 0, 0.18),
-    0 44px 90px rgba(0, 0, 0, 0.22);
+    0 1px 3px rgba(0, 0, 0, 0.2),
+    0 3px 8px rgba(0, 0, 0, 0.18),
+    0 7px 18px rgba(0, 0, 0, 0.2);
   --sheen: inset 0 0 0 1px rgba(255, 255, 255, 0.045);
 
   /* Text over artwork needs solid ground under it, not a guess about the image. Anchored at the
@@ -210,9 +212,8 @@ button.primary {
   background: var(--accent);
   border-color: var(--accent);
   box-shadow:
-    0 2px 5px rgba(0, 0, 0, 0.16),
-    0 6px 14px rgba(0, 0, 0, 0.18),
-    0 12px 26px rgba(0, 0, 0, 0.2);
+    0 1px 2px rgba(0, 0, 0, 0.18),
+    0 3px 8px rgba(0, 0, 0, 0.2);
   /* Dark text, because the fill is pale. Swapping the fill without this line puts white on
      white and makes every primary action invisible. */
   color: var(--ground);

@@ -246,8 +246,11 @@
     gap: 14px;
     min-width: 0;
     overflow-y: auto;
-    /* So the last card is not flush against the window edge. */
-    padding-bottom: 4px;
+    /* A scrolling box clips on *both* axes, so the cards' shadows were sliced flat against its
+       left and right edges. The padding pushes the clip box outward and the negative margin puts
+       the cards back where they were, so the shadow has somewhere to finish. */
+    padding: 2px 20px 8px;
+    margin: -2px -20px -8px;
   }
 
   header {
