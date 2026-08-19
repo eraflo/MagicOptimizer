@@ -319,6 +319,40 @@
     root.style.setProperty("--amb-2", ambient.two);
   });
 
+  /** The bottom bar, in the order the device is for: the camera first, Browse last. */
+  const DESTINATIONS = [
+    // A viewfinder: four corner brackets round a lens.
+    {
+      value: "scan",
+      label: "Scan",
+      path: "M3 8V5.5A2.5 2.5 0 0 1 5.5 3H8M16 3h2.5A2.5 2.5 0 0 1 21 5.5V8M21 16v2.5a2.5 2.5 0 0 1-2.5 2.5H16M8 21H5.5A2.5 2.5 0 0 1 3 18.5V16M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z",
+    },
+    // A stack of cards, offset.
+    {
+      value: "collection",
+      label: "Cards",
+      path: "M8 4h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM4 8v10a2 2 0 0 0 2 2h10",
+    },
+    // Two cards fanned, which is what a deck looks like held.
+    {
+      value: "decks",
+      label: "Decks",
+      path: "M10 3.5h8a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2h-8a2 2 0 0 1-2-2v-11a2 2 0 0 1 2-2zM5 7l-1.4 10.3a2 2 0 0 0 1.7 2.2l7 1",
+    },
+    // A ruled log with a mark against one line.
+    {
+      value: "journal",
+      label: "Log",
+      path: "M6 3.5h12a1.5 1.5 0 0 1 1.5 1.5v14a1.5 1.5 0 0 1-1.5 1.5H6A1.5 1.5 0 0 1 4.5 19V5A1.5 1.5 0 0 1 6 3.5zM8 9h8M8 13h8M8 17h4",
+    },
+    // A magnifier.
+    {
+      value: "browse",
+      label: "Browse",
+      path: "M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM16.2 16.2 21 21",
+    },
+  ] as const;
+
   const megabytes = (bytes: number) => (bytes / 1024 / 1024).toFixed(1);
 
   // Quoted on the empty state so the size is known before tapping through. Read from the backend
@@ -585,7 +619,10 @@
      why the app is on a phone at all, and Browse — the view a phone handles worst — goes last.
      See docs/dev/ui.md. -->
 <nav class="bottom-nav" aria-label="Sections">
-  {#each [["scan", "◎", "Scan"], ["collection", "▤", "Cards"], ["decks", "◈", "Decks"], ["journal", "✓", "Log"], ["browse", "⌕", "Browse"]] as [value, icon, label] (value)}
+  <!-- Drawn rather than typed. The five destinations used ◎ ▤ ◈ ✓ ⌕, which come from five
+       different Unicode blocks: mismatched weights, mismatched optical sizes, and a tick mark
+       standing in for a game log. One 24px grid and one stroke width fixes all of it. -->
+  {#each DESTINATIONS as { value, label, path } (value)}
     <button
       type="button"
       class="dest"
@@ -593,7 +630,7 @@
       aria-current={tab === value ? "page" : undefined}
       onclick={() => (tab = value as typeof tab)}
     >
-      <span class="icon" aria-hidden="true">{icon}</span>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d={path} /></svg>
       {label}
     </button>
   {/each}
@@ -768,27 +805,54 @@
     .dest {
       flex: 1;
       /* Above the 44px minimum, because these are the most-tapped controls in the app. */
-      min-height: 48px;
-      padding: 4px 0;
+      min-height: 52px;
+      padding: 7px 0 5px;
       border: 0;
       border-radius: 0;
       background: none;
-      color: var(--text-dim);
-      font-size: var(--t-meta);
+      color: var(--ink-3);
+      font-size: 11.5px;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      box-shadow: none;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 3px;
+      gap: 5px;
     }
 
-    .dest .icon {
-      font-size: 17px;
-      line-height: 1;
+    .dest svg {
+      width: 22px;
+      height: 22px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.6;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      transition: transform 160ms ease;
     }
 
+    .dest:hover:not(.active) {
+      background: none;
+      color: var(--ink-2);
+    }
+
+    /* Ink, not a hue — the chassis carries no colour. The mark lifts a little and thickens,
+       which reads as "you are here" without borrowing a second accent. */
     .dest.active {
-      color: var(--accent);
+      color: var(--ink);
+    }
+
+    .dest.active svg {
+      stroke-width: 2;
+      transform: translateY(-1px);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .dest svg {
+        transition: none;
+      }
     }
 
     /* The top bar keeps the title and the data status; only the tabs move. */
