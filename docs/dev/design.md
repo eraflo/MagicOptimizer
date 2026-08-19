@@ -274,6 +274,11 @@ are the opposite case and do scroll individually, because each is a full-height 
   `100vh` and `100dvh` are interpretations — of browser chrome, of the keyboard, of whatever the
   Android WebView believes its window to be — and on a phone the app was reported filling half
   the screen with the rest left as bare ground. Four insets are not an interpretation.
+- **`min-height` on a button does nothing for its label unless the button is flex.** A button is
+  `inline-block` by default: the text sits on its baseline at the top of the content box and the
+  minimum height is made up underneath it. Every pill in the app had its label riding high — the
+  boxes were centred and what was inside them was not, which is invisible in a measurement of the
+  boxes and obvious to anyone looking.
 - **A card supplies the frame, not the room.** Giving a panel the floating-card treatment does
   not give its contents padding — the deck list shipped with its header, its form and its rows
   flush against the rounded edge. Check the inside after moving the outside.

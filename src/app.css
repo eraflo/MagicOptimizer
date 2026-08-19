@@ -183,6 +183,13 @@ body {
    See docs/dev/design.md. */
 
 button {
+  /* Flex, so `min-height` centres the label instead of padding beneath it. A button is
+     `inline-block` by default: the text sits on its baseline at the top of the content box and
+     the minimum height is made up underneath, so every control in the app had its label riding
+     high in its pill. The boxes were centred; what is inside them was not. */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   font: inherit;
   font-size: var(--t-body);
   font-weight: 600;
