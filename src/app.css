@@ -320,6 +320,26 @@ label {
   border-radius: 5px;
 }
 
+/* An "optional" marker sits inside a caption, so it inherits the caption's uppercase and
+   spacing and ends up shouting the least important word in the sentence. */
+.optional {
+  text-transform: lowercase;
+  letter-spacing: 0;
+  font-weight: 400;
+  color: var(--ink-3);
+  opacity: 0.85;
+}
+
+/* Phones: a primary action spans the form. A 90px button hard against the left edge of a
+   full-width sheet reads as an afterthought, and is a smaller target than it needs to be. */
+@media (max-width: 640px) {
+  form button.primary,
+  .entry button.primary,
+  .setup button.primary {
+    width: 100%;
+  }
+}
+
 /* Glass ---------------------------------------------------------------------
    The one decorative device the direction allows, and it earns its place: a panel laid over
    artwork has to let some of it through, or the app becomes a grid of grey boxes again. */

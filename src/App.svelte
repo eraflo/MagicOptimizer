@@ -964,8 +964,11 @@
       color: var(--text-muted);
     }
 
+    /* The name stays. Hiding it left the bar holding five dots and a status pill with a gulf
+       between them — the app's own header stopped saying which app it was. What gives way at
+       this width is the gap, not the identity. */
     .brand strong {
-      display: none;
+      font-size: var(--t-body);
     }
   }
 
