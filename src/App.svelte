@@ -886,6 +886,12 @@
 
   .compact-count {
     margin-right: auto;
+    min-width: 0;
+    /* Never wrap. On a phone "No matches" broke across two lines and took the whole bar with
+       it, so a row of controls became a two-storey block. */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .layout {
@@ -937,6 +943,19 @@
   @media (min-width: 1181px) {
     .side-toggle {
       display: inline-flex;
+    }
+  }
+
+  /* Phones: the layout switch keeps its marks and drops its words. Three labelled controls do
+     not fit across 375px, and the two marks are already the clearer half. */
+  @media (max-width: 640px) {
+    .mode {
+      font-size: 0;
+      padding: 0 14px;
+    }
+
+    .mode span {
+      font-size: var(--t-lede);
     }
   }
 
