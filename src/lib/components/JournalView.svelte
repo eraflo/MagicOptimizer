@@ -261,13 +261,15 @@
     min-height: 0;
   }
 
+  /* A real heading. It was set as a caption — small, uppercase, muted — so the panel opened on
+     something that looked like a field label with no field, and the form below had no top. */
   h3 {
-    margin: 0 0 6px;
-    font-size: var(--t-meta);
-    font-weight: 600;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
+    margin: 0 0 8px;
+    font-size: var(--t-title);
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    color: var(--ink);
+    text-transform: none;
   }
 
   h4 {
@@ -288,20 +290,62 @@
   }
 
   .after {
-    margin: 0 0 12px;
+    margin: 0 0 22px;
+    color: var(--ink-2);
   }
 
+  /* Fields are a stack with real air between them. At 10px they touched, which is what made
+     the form read as dense rather than as something you fill in one line at a time. */
   .field {
     display: block;
-    font-size: var(--t-meta);
-    color: var(--text-muted);
-    margin-bottom: 10px;
+    margin-bottom: 18px;
   }
 
   .field input,
   .field select {
     width: 100%;
-    margin-top: 4px;
+    margin-top: 7px;
+  }
+
+  /* The extra fields are a disclosure, and it was a bare triangle and a word. */
+  details {
+    margin: 4px 0 20px;
+    border-top: 1px solid var(--line);
+    padding-top: 16px;
+  }
+
+  details summary {
+    cursor: pointer;
+    list-style: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 34px;
+    font-size: var(--t-body);
+    font-weight: 600;
+    color: var(--ink-2);
+  }
+
+  details summary::-webkit-details-marker {
+    display: none;
+  }
+
+  details summary::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    border-right: 1.6px solid currentColor;
+    border-bottom: 1.6px solid currentColor;
+    transform: rotate(-45deg);
+    transition: transform 140ms ease;
+  }
+
+  details[open] summary::before {
+    transform: rotate(45deg);
+  }
+
+  details summary:hover {
+    color: var(--ink);
   }
 
   .results {
