@@ -4,18 +4,21 @@
   /* A *warm* near-black. The previous ground was #0d0f16 — a blue-black, the colour every
      developer tool uses, and it cooled every illustration laid on it. Magic's art is warm; the
      ground has to let it radiate rather than fight it. */
-  /* Warm browns, not near-black. The first pass kept a cool #17151a and floated an amber glow
-     over it, so the glow read as a filter laid on someone else's palette rather than as light in
-     a room. Every neutral here is on the same warm axis as the ember, which is what makes the
-     two belong together. */
-  --ground: #211a16;
-  --ground-2: #2c231d;
-  --ground-3: #3a2e26;
-  --line: #473a30;
-  --line-strong: #5a4a3d;
-  --ink: #f7efe6;
-  --ink-2: #c9b8a9;
-  --ink-3: #94816f;
+  /* Near-black surfaces, saturated light. Chosen from four rendered candidates.
+     The pass before this warmed *every* surface, which put colour everywhere and contrast
+     nowhere — artwork is warm too, so it sank into the ground instead of coming off it. The
+     chassis is achromatic and almost black; all the colour in the app comes from the ambient
+     glow, the card art and the five mana hues. That is the arrangement that makes a media
+     library look like one. */
+  --ground: #08080a;
+  --ground-2: #141418;
+  --ground-3: #1e1e24;
+  --line: #2a2a31;
+  --line-strong: #3a3a44;
+  /* Pure white, deliberately. Against #08080a an off-white reads as dirty rather than as warm. */
+  --ink: #ffffff;
+  --ink-2: #b9b9c0;
+  --ink-3: #75757e;
 
   /* The interface's own accent, and it marks exactly one thing: what you own. That is the
      question the app answers in a shop, and giving the gold a second job would cost it this
@@ -25,18 +28,18 @@
   /* Depth. The mockup read as premium largely because things floated: a wide, soft, mostly
      transparent shadow plus a one-pixel highlight along the top edge, which is how glass
      catches light. Flat cards with a hairline read as diagrams. */
-  --lift: 0 1px 2px rgba(0, 0, 0, 0.3), 0 12px 32px rgba(0, 0, 0, 0.42);
-  --lift-lg: 0 2px 4px rgba(0, 0, 0, 0.3), 0 26px 60px rgba(0, 0, 0, 0.52);
-  --sheen: inset 0 1px 0 rgba(247, 239, 230, 0.07);
+  --lift: 0 1px 2px rgba(0, 0, 0, 0.5), 0 12px 32px rgba(0, 0, 0, 0.55);
+  --lift-lg: 0 2px 4px rgba(0, 0, 0, 0.5), 0 26px 60px rgba(0, 0, 0, 0.68);
+  --sheen: inset 0 1px 0 rgba(255, 255, 255, 0.07);
 
   /* Text over artwork needs solid ground under it, not a guess about the image. Anchored at the
      bottom and ending opaque, so a name never lands on a bright patch of sky. */
   --scrim: linear-gradient(
     180deg,
-    rgba(33, 26, 22, 0.55) 0%,
-    rgba(33, 26, 22, 0) 32%,
-    rgba(33, 26, 22, 0.78) 70%,
-    #211a16 100%
+    rgba(8, 8, 10, 0.5) 0%,
+    rgba(8, 8, 10, 0) 32%,
+    rgba(8, 8, 10, 0.8) 70%,
+    #08080a 100%
   );
 
   /* Type scale: 13 / 15 / 17 / 21 / 26 / 34 / 40, and nothing between. Nothing is below 13px.
@@ -65,8 +68,8 @@
      action is a pale pill on a warm ground, exactly as the chosen mockup drew it and as every
      art-forward interface does it: the content carries the colour, the chrome carries none.
      Kept under the name `--accent` because twenty rules already reference it. */
-  --accent: #f7efe6;
-  --accent-soft: rgba(247, 239, 230, 0.12);
+  --accent: #ffffff;
+  --accent-soft: rgba(255, 255, 255, 0.14);
   --danger: #e4573d;
   --success: #43aa6a;
 
@@ -127,9 +130,9 @@ body {
      direction from "a dark theme": a flat black rectangle is what made three previous attempts
      read as a database tool regardless of their palette. */
   background:
-    radial-gradient(115% 95% at 8% -12%, var(--amb-1, rgba(208, 132, 74, 0.44)) 0%, transparent 64%),
-    radial-gradient(95% 85% at 96% 6%, var(--amb-2, rgba(150, 78, 52, 0.34)) 0%, transparent 62%),
-    radial-gradient(140% 70% at 50% 118%, var(--amb-2, rgba(150, 78, 52, 0.34)) 0%, transparent 70%),
+    radial-gradient(115% 95% at 8% -12%, var(--amb-1, rgba(255, 146, 58, 0.42)) 0%, transparent 64%),
+    radial-gradient(95% 85% at 96% 6%, var(--amb-2, rgba(190, 60, 30, 0.3)) 0%, transparent 62%),
+    radial-gradient(140% 70% at 50% 118%, var(--amb-2, rgba(190, 60, 30, 0.3)) 0%, transparent 70%),
     var(--ground);
   transition: background 500ms ease;
 }
@@ -146,8 +149,8 @@ button {
   color: var(--ink);
   /* Translucent rather than a flat panel colour, so a control sitting over artwork borrows it
      instead of punching a grey hole in it. */
-  background: rgba(247, 239, 230, 0.09);
-  border: 1px solid rgba(247, 239, 230, 0.16);
+  background: rgba(255, 255, 255, 0.09);
+  border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 999px;
   min-height: 38px;
   padding: 0 18px;
@@ -158,8 +161,8 @@ button {
 }
 
 button:hover:not(:disabled) {
-  background: rgba(247, 239, 230, 0.16);
-  border-color: rgba(247, 239, 230, 0.3);
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.3);
 }
 
 button:active:not(:disabled) {
@@ -193,7 +196,7 @@ button.ghost {
 }
 
 button.ghost:hover:not(:disabled) {
-  background: rgba(247, 239, 230, 0.09);
+  background: rgba(255, 255, 255, 0.09);
   border-color: transparent;
   color: var(--ink);
 }
@@ -217,8 +220,8 @@ textarea {
   /* A well rather than a box: darker than the surface it sits on, with the border doing almost
      nothing. A 1px light rectangle around every field is what made the old panels look like a
      configuration dialog. */
-  background: rgba(18, 12, 9, 0.45);
-  border: 1px solid rgba(247, 239, 230, 0.1);
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 10px;
   min-height: 40px;
   padding: 9px 13px;
@@ -234,14 +237,14 @@ textarea::placeholder {
 input:hover,
 select:hover,
 textarea:hover {
-  border-color: rgba(247, 239, 230, 0.2);
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 input:focus,
 select:focus,
 textarea:focus {
   outline: none;
-  background: rgba(18, 12, 9, 0.6);
+  background: rgba(0, 0, 0, 0.72);
   border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--accent-soft);
 }
@@ -257,7 +260,7 @@ select {
   appearance: none;
   -webkit-appearance: none;
   padding-right: 38px;
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8' fill='none' stroke='%23c9b8a9' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><path d='M1 1.5 6 6.5 11 1.5'/></svg>");
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8' fill='none' stroke='%23b9b9c0' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><path d='M1 1.5 6 6.5 11 1.5'/></svg>");
   background-repeat: no-repeat;
   background-position: right 14px center;
   background-size: 12px 8px;
@@ -267,8 +270,8 @@ select {
 /* The options list is drawn by the platform and cannot be styled, so it is told the colours
    rather than left to guess and render black-on-black. */
 select option {
-  background: #2c231d;
-  color: #f7efe6;
+  background: #141418;
+  color: #ffffff;
 }
 
 /* Uppercase and spaced, so a field label reads as a caption rather than as more prose. */
@@ -314,10 +317,10 @@ label {
    The one decorative device the direction allows, and it earns its place: a panel laid over
    artwork has to let some of it through, or the app becomes a grid of grey boxes again. */
 .glass {
-  background: rgba(44, 35, 29, 0.72);
+  background: rgba(20, 20, 24, 0.82);
   backdrop-filter: blur(18px) saturate(1.2);
   -webkit-backdrop-filter: blur(18px) saturate(1.2);
-  border: 1px solid rgba(247, 239, 230, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: var(--sheen), var(--lift);
 }
 
@@ -329,8 +332,8 @@ label {
   min-height: 34px;
   padding: 0 14px;
   border-radius: 999px;
-  border: 1px solid rgba(247, 239, 230, 0.14);
-  background: rgba(247, 239, 230, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
   color: var(--ink-2);
   font-size: var(--t-meta);
   font-weight: 600;
@@ -339,7 +342,7 @@ label {
 }
 
 .chip:hover {
-  background: rgba(247, 239, 230, 0.13);
+  background: rgba(255, 255, 255, 0.13);
   color: var(--ink);
 }
 
@@ -397,7 +400,7 @@ label {
 
 *:hover,
 *:focus-within {
-  scrollbar-color: rgba(247, 239, 230, 0.22) transparent;
+  scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
 }
 
 ::-webkit-scrollbar {
@@ -430,11 +433,11 @@ label {
 
 *:hover > ::-webkit-scrollbar-thumb,
 :hover::-webkit-scrollbar-thumb {
-  background-color: rgba(247, 239, 230, 0.2);
+  background-color: rgba(255, 255, 255, 0.2);
 }
 
 :hover::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(247, 239, 230, 0.36);
+  background-color: rgba(255, 255, 255, 0.36);
 }
 
 @media (pointer: coarse) {

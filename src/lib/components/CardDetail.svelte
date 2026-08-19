@@ -268,9 +268,9 @@
     flex: none;
     padding: 24px;
     overflow-y: auto;
-    border: 1px solid rgba(247, 239, 230, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.07);
     border-radius: 18px;
-    background: rgba(44, 35, 29, 0.58);
+    background: rgba(20, 20, 24, 0.8);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     box-shadow: var(--sheen), var(--lift);

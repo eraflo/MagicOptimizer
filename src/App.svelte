@@ -255,22 +255,24 @@
    * what made every previous attempt look like a database tool.
    */
   const ambient = $derived.by(() => {
+    // Saturated, because they now sit on near-black rather than on a warm surface that was
+    // already doing half the work. On #08080a a muted tint simply reads as grey.
     const tints: Record<string, [string, string]> = {
-      W: ["243, 226, 170", "214, 176, 108"],
-      U: ["78, 150, 224", "60, 96, 190"],
-      B: ["150, 120, 200", "96, 72, 150"],
-      R: ["226, 116, 58", "196, 62, 40"],
-      G: ["104, 178, 96", "58, 130, 82"],
+      W: ["255, 232, 160", "228, 178, 88"],
+      U: ["70, 160, 255", "48, 92, 214"],
+      B: ["168, 124, 232", "96, 60, 170"],
+      R: ["255, 146, 58", "190, 60, 30"],
+      G: ["104, 210, 102", "44, 140, 78"],
     };
     const chosen = [...(selected?.color_identity ?? "")]
       .map((c) => tints[c])
       .filter(Boolean);
     const [a, b] = chosen.length
       ? [chosen[0][0], (chosen[1] ?? chosen[0])[1]]
-      : ["208, 132, 74", "150, 78, 52"];
+      : ["255, 146, 58", "190, 60, 30"];
     // Strong enough to be the room the app sits in, not a tint someone has to look for. The
     // first attempt at 0.26 was invisible beside the mockup it was copied from.
-    return { one: `rgba(${a}, 0.44)`, two: `rgba(${b}, 0.34)` };
+    return { one: `rgba(${a}, 0.42)`, two: `rgba(${b}, 0.3)` };
   });
 
   // Written to the root rather than to a wrapper: `#app` is created by `main.ts`, and the glow
@@ -533,8 +535,8 @@
     padding: 12px 20px;
     /* The inset lives here, on the element that actually touches the notch. */
     padding-top: calc(12px + env(safe-area-inset-top, 0px));
-    border-bottom: 1px solid rgba(247, 239, 230, 0.07);
-    background: rgba(33, 26, 22, 0.82);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    background: rgba(8, 8, 10, 0.86);
     backdrop-filter: blur(20px) saturate(1.2);
     -webkit-backdrop-filter: blur(20px) saturate(1.2);
     flex: none;
@@ -727,9 +729,9 @@
     display: flex;
     flex-direction: column;
     min-width: 0;
-    border: 1px solid rgba(247, 239, 230, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.07);
     border-radius: 18px;
-    background: rgba(44, 35, 29, 0.5);
+    background: rgba(20, 20, 24, 0.74);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     box-shadow: var(--sheen), var(--lift);
@@ -757,7 +759,7 @@
     position: fixed;
     inset: 0;
     z-index: 29;
-    background: rgba(18, 12, 9, 0.66);
+    background: rgba(0, 0, 0, 0.7);
     border: none;
     border-radius: 0;
     padding: 0;

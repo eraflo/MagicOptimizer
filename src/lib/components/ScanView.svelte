@@ -728,16 +728,16 @@ ${written} card${written === 1 ? "" : "s"} were added. ` +
     min-height: 44px;
     padding: 0 22px;
     border-radius: 999px;
-    border: 1px solid rgba(247, 239, 230, 0.28);
-    background: rgba(247, 239, 230, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    background: rgba(255, 255, 255, 0.12);
     color: var(--ink);
     font-size: var(--t-body);
     font-weight: 600;
   }
 
   .cinema .act:hover:not(:disabled) {
-    background: rgba(247, 239, 230, 0.2);
-    border-color: rgba(247, 239, 230, 0.42);
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.42);
   }
 
   .overlay {
@@ -795,7 +795,7 @@ ${written} card${written === 1 ? "" : "s"} were added. ` +
     gap: 10px;
     padding: 10px 14px;
     border-radius: var(--radius);
-    background: rgba(33, 26, 22, 0.88);
+    background: rgba(8, 8, 10, 0.9);
     border: 1px solid var(--border-strong);
     backdrop-filter: blur(6px);
   }
@@ -1026,7 +1026,7 @@ ${written} card${written === 1 ? "" : "s"} were added. ` +
       /* Collapsed to the handle: enough to say where cards are going and how many, no more. */
       max-height: 52px;
       padding: 0 12px 10px;
-      background: rgba(44, 35, 29, 0.96);
+      background: rgba(20, 20, 24, 0.96);
       backdrop-filter: blur(8px);
       border-color: var(--border-strong);
       overflow: hidden;
@@ -1074,7 +1074,7 @@ ${written} card${written === 1 ? "" : "s"} were added. ` +
     /* Over a camera image, a translucent readout is unreadable. */
     .readout {
       bottom: 70px;
-      background: rgba(33, 26, 22, 0.94);
+      background: rgba(8, 8, 10, 0.95);
     }
 
     .curtain {

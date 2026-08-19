@@ -47,11 +47,16 @@ tokens, not the layout.
 3. **Type is large and confident.** A subject's name is 34–40px. Nothing in the interface is
    below 13px, and list rows are 15px. Proposal 2 ran at 12px and that is precisely what
    "unpleasant to read" meant.
-4. **The ground is a warm brown, and every neutral sits on the same axis as the ember.** An
-   earlier pass moved from a blue-black to a near-black `#17151a` and floated an amber glow over
-   it — so the glow read as a filter laid on someone else's palette. Neutrals that share the
-   light's hue are what make the two belong together, and it is the difference between "amber
-   over black" and a lit room.
+4. **The chassis is achromatic and almost black; all the colour comes from the light.** Ground
+   `#08080a`, panels `#141418`, text pure white. Every hue in the app is the ambient glow, the
+   card art or one of the five mana colours — nothing else is allowed to be coloured.
+
+   This was arrived at by elimination. An earlier pass warmed *every* surface to a sepia brown so
+   that the neutrals shared the ember's hue; the result put colour everywhere and contrast
+   nowhere, and since artwork is warm too it sank into the ground instead of coming off it. Four
+   candidates were rendered on the same screen and this one chosen. Against `#08080a` an
+   off-white reads as dirty, so the ink is pure `#ffffff` — the opposite of what the warm pass
+   required, and the reason that pass has to be replaced wholesale rather than nudged.
 5. **Actions are pills, and the honest one is as visible as the confident one.** Where the app
    proposes something it inferred — a recognised card, a suggested swap — the way to reject it
    sits beside the way to accept it, at the same size. An algorithm offering a name must not
@@ -73,8 +78,9 @@ amber, a Dimir one in indigo, and with nothing selected it holds a warm ember.
 Two things about it are load-bearing:
 
 * **It must be strong enough to be the room**, not a tint someone has to look for. The first
-  attempt ran at `0.26` alpha and was invisible beside the mockup it was copied from; it is
-  `0.44` now.
+  attempt ran at `0.26` alpha and was invisible beside the mockup it came from. The tints are
+  also *saturated* — on `#08080a` a muted one simply reads as grey, where on the earlier warm
+  ground the surface was already doing half the work.
 * **Panels float on it.** `main` has padding and a gap, and each panel is an 18px-radius card
   with a hairline all round — not a full-height column separated from its neighbour by a 1px
   divider. That grid of hairlines is what read as "database tool" through three palettes.
@@ -127,13 +133,15 @@ fits; that drift is what makes a direction dissolve.
 
 | Token | Value | Role |
 |---|---|---|
-| `--ground` | `#211a16` | The app's ground. A warm brown, **not** a near-black. |
-| `--ground-2` | `#2c231d` | Panels, sheets, raised surfaces. |
-| `--ground-3` | `#3a2e26` | Controls, chips, hover. |
-| `--line` | `#473a30` | Hairline borders. |
-| `--ink` | `#f7efe6` | Primary text. Warm off-white, not pure. |
-| `--ink-2` | `#c9b8a9` | Secondary text, still fully readable. |
-| `--ink-3` | `#94816f` | Metadata and disabled. Never body text. |
+| `--ground` | `#08080a` | The app's ground. Near-black, achromatic. |
+| `--ground-2` | `#141418` | Panels, sheets, raised surfaces. |
+| `--ground-3` | `#1e1e24` | Controls, chips, hover. |
+| `--line` | `#2a2a31` | Hairline borders. |
+| `--ink` | `#ffffff` | Primary text. Pure — an off-white on this ground reads as dirty. |
+| `--ink-2` | `#b9b9c0` | Secondary text, still fully readable. |
+| `--ink-3` | `#75757e` | Metadata and disabled. Never body text. |
+| `--lift` / `--lift-lg` | shadows | Depth. Things that float read as premium. |
+| `--sheen` | `inset 0 1px 0` | How glass catches light. One line per surface. |
 | `--gold` | `#d8a951` | Owned quantity. Nothing else. |
 | `--accent` | `#f4f0ea` | Emphasis, and it is light rather than coloured. Primary fills take `--ground` as their text. |
 | `--scrim` | gradient | Bottom-anchored, ends opaque at `--ground`. |
