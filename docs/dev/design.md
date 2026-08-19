@@ -261,6 +261,10 @@ are the opposite case and do scroll individually, because each is a full-height 
   row, or for a file input dressed as a button. Those three all shipped shouting and wrapping.
   Any label containing an `input[type=radio]`, a `.checkbox`, or acting as a button resets
   `text-transform` and `letter-spacing`.
+- **The shell is pinned, never sized in viewport units.** `#app` is `position: fixed; inset: 0`.
+  `100vh` and `100dvh` are interpretations — of browser chrome, of the keyboard, of whatever the
+  Android WebView believes its window to be — and on a phone the app was reported filling half
+  the screen with the rest left as bare ground. Four insets are not an interpretation.
 - **A card supplies the frame, not the room.** Giving a panel the floating-card treatment does
   not give its contents padding — the deck list shipped with its header, its form and its rows
   flush against the rounded edge. Check the inside after moving the outside.
