@@ -157,15 +157,24 @@ Spacing is a multiple of 4. Radii: `6px` on small controls, `10px` on panels, `9
 |---|---|---|
 | **Scan result** | Cinema, full-bleed | One card, just photographed. The screen the phone exists for. Built. |
 | **Card detail** | A cinema hero over the art crop, rules below. Built. | Same subject, different room. |
-| **Catalogue** | Rows now carry the art crop; the contact-sheet grid is designed, not built | Density *through* images. A player recognises artwork before a name. |
+| **Catalogue** | Contact sheet by default, list on a switch. Built. | Density *through* images. A player recognises artwork before a name. |
 | **Deck editor** | Two floating cards. Columns by mana value at 63:88 designed, not built. | The curve is the arrangement, not a chart beside it. |
 | **Collection** | Floating cards. Binder pages 3×3 designed, not built. | `mtg-collection` already models storage locations and nothing shows them. |
 | **Journal** | Two floating cards, form beside results. Built. | Recording is the mobile task; the numbers are the desktop one. |
 
-Every view now carries the palette, the controls and the floating-card layout. What is **not**
-built is the per-view structure each was designed for: the contact-sheet grid for the catalogue,
-mana-value columns for the deck editor, binder pages for the collection. Do not describe those
-three as done.
+Every view carries the palette, the controls and the floating-card layout, and the catalogue has
+its contact sheet. Still **not** built: mana-value columns for the deck editor, binder pages for
+the collection. Do not describe those two as done.
+
+**The catalogue offers both layouts and neither is a compromise.** The sheet shows four times the
+artwork and is faster to scan, because a card is recognised by its painting before its name; the
+list wins when the type line, the cost and the owned count have to be read together. The choice
+persists in `localStorage`, because a density preference is a standing one.
+
+Cell width is measured, not picked: the results column sits between a 292px filter panel and a
+372px detail panel, so at a 1250px window it is about 528px wide. `minmax(118px, 1fr)` gave three
+columns there — a list with bigger pictures. At 104px it gives four, and ten on a full-width
+desktop.
 
 **Nothing renders below 13px.** Eighty-one declarations under the floor were swept out of ten
 components in one pass — that alone was most of what still read as unfinished, and it is the law

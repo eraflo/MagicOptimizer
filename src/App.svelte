@@ -4,6 +4,7 @@
   import * as api from "./lib/api";
   import CardDetail from "./lib/components/CardDetail.svelte";
   import CardList from "./lib/components/CardList.svelte";
+  import CardSheet from "./lib/components/CardSheet.svelte";
   import CollectionView from "./lib/components/CollectionView.svelte";
   import DecksView from "./lib/components/DecksView.svelte";
   import JournalView from "./lib/components/JournalView.svelte";
@@ -21,6 +22,20 @@
   let tab = $state<"browse" | "decks" | "collection" | "scan" | "journal" | "data">(
     "browse",
   );
+
+  /**
+   * How the catalogue is drawn.
+   *
+   * A real switch rather than one layout trying to be both. The contact sheet shows sixteen
+   * artworks where the list shows six rows and is faster to scan, because a card is recognised by
+   * its painting before its name; the list wins when you need the type line, the cost and the
+   * owned count side by side. Neither is a compromise on the other.
+   */
+  let layout = $state<"sheet" | "list">(
+    (localStorage.getItem("catalogue-layout") as "sheet" | "list" | null) ?? "sheet",
+  );
+
+  $effect(() => localStorage.setItem("catalogue-layout", layout));
   /** Only has an effect below 1180px, where the filter panel is a drawer. */
   let filtersOpen = $state(false);
   let status = $state<CatalogStatus | null>(null);
@@ -468,8 +483,33 @@
             {total.toLocaleString()} {total === 1 ? "card" : "cards"}
           {/if}
         </span>
+
+        <div class="layout" role="group" aria-label="Result layout">
+          <button
+            type="button"
+            class="mode"
+            class:on={layout === "sheet"}
+            aria-pressed={layout === "sheet"}
+            onclick={() => (layout = "sheet")}
+          >
+            <span aria-hidden="true">▦</span> Sheet
+          </button>
+          <button
+            type="button"
+            class="mode"
+            class:on={layout === "list"}
+            aria-pressed={layout === "list"}
+            onclick={() => (layout = "list")}
+          >
+            <span aria-hidden="true">▤</span> List
+          </button>
+        </div>
       </div>
-      <CardList cards={results} {owned} selected={selectedId} onselect={select} />
+      {#if layout === "sheet"}
+        <CardSheet cards={results} {owned} selected={selectedId} onselect={select} />
+      {:else}
+        <CardList cards={results} {owned} selected={selectedId} onselect={select} />
+      {/if}
     </div>
 
     <CardDetail
@@ -740,14 +780,53 @@
   }
 
   /* Shown only once the filter panel becomes a drawer. */
+  /* Permanent now: it carries the layout switch, which has to be reachable at every width. Only
+     the Filters button inside it is narrow-only. */
   .compact-bar {
-    display: none;
+    display: flex;
     align-items: center;
-    justify-content: space-between;
     gap: 12px;
-    padding: 8px 14px;
-    border-bottom: 1px solid var(--border);
-    background: var(--panel);
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--line);
+    flex: none;
+  }
+
+  .compact-bar > button:first-child {
+    display: none;
+  }
+
+  .compact-count {
+    margin-right: auto;
+  }
+
+  .layout {
+    display: flex;
+    gap: 4px;
+    padding: 3px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  .mode {
+    min-height: 30px;
+    padding: 0 13px;
+    border: none;
+    background: transparent;
+    border-radius: 999px;
+    color: var(--ink-3);
+    font-size: var(--t-meta);
+    font-weight: 600;
+    box-shadow: none;
+  }
+
+  .mode:hover:not(.on) {
+    background: transparent;
+    color: var(--ink-2);
+  }
+
+  .mode.on {
+    background: var(--accent);
+    color: var(--ground);
   }
 
   .compact-count {
@@ -766,9 +845,10 @@
     cursor: default;
   }
 
+  /* Below 1180px the filter panel becomes a drawer, so the way back into it appears here. */
   @media (max-width: 1180px) {
-    .compact-bar {
-      display: flex;
+    .compact-bar > button:first-child {
+      display: inline-flex;
     }
   }
 
