@@ -609,7 +609,10 @@
     <ScanView {decks} {containers} onCommitted={refreshCollectionSideData} />
   </main>
 {:else}
-  <main class="scan-main">
+  <!-- A plain `main`, not `.scan-main`. That class gives up its padding below 860px so the
+       camera can own the screen, and the journal inherited it — which is why its cards sat
+       flush against both edges of a phone while every other view kept its gutter. -->
+  <main>
     <JournalView {decks} />
   </main>
 {/if}
@@ -760,7 +763,7 @@
     gap: 14px;
     /* Wide enough for the panels' shadows to finish inside it. `main` clips, so anything the
        gutter cannot hold is cut off with a straight edge rather than faded. */
-    padding: 20px;
+    padding: var(--gutter);
     min-height: 0;
     overflow: hidden;
     position: relative;
@@ -1035,9 +1038,13 @@
   /* Phones: the header has to give up something. The catalog status goes, since the tabs and
      the brand are what you navigate with. */
   @media (max-width: 640px) {
+    main {
+      gap: 10px;
+    }
+
     .app-bar {
       gap: 12px;
-      padding: 8px 12px;
+      padding: 8px 14px;
     }
 
     .status .ok {

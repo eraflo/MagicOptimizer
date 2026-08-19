@@ -524,8 +524,8 @@
       flex-direction: column;
       gap: 14px;
       overflow-y: auto;
-      padding: 4px 20px 8px;
-      margin: -4px -20px -8px;
+      padding: 4px var(--gutter) 8px;
+      margin: -4px calc(-1 * var(--gutter)) -8px;
     }
 
     .entry,

@@ -470,8 +470,8 @@
     overflow: hidden;
     /* Same as the collection: the clip box is pushed out and the cards put back, so their
        shadows finish instead of being sliced flat against this element's edge. */
-    padding: 4px 20px 8px;
-    margin: -4px -20px -8px;
+    padding: 4px var(--gutter) 8px;
+    margin: -4px calc(-1 * var(--gutter)) -8px;
   }
 
   /* Two floating cards on the lit ground, like Browse. A full-height column with a 1px divider

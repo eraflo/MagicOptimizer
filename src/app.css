@@ -25,6 +25,12 @@
      one. Everything else stands out by weight, size or position. */
   --gold: #d8a951;
 
+  /* The gutter, in one place. Three views push their clip box outward by exactly this much and
+     pull it back with a negative margin, so a hard-coded 20px in any of them silently detaches
+     the moment the gutter changes — which is what put the journal's cards flush against both
+     screen edges. */
+  --gutter: 20px;
+
   /* Depth. The mockup read as premium largely because things floated: a wide, soft, mostly
      transparent shadow plus a one-pixel highlight along the top edge, which is how glass
      catches light. Flat cards with a hairline read as diagrams. */
@@ -366,6 +372,20 @@ label {
   .entry button.primary,
   .setup button.primary {
     width: 100%;
+  }
+}
+
+/* Phones: a narrower gutter, and a shadow shortened to match.
+   20px each side is 11% of a 375px screen — width that belongs to the content. The two numbers
+   move together on purpose: the gutter exists so the shadow can finish inside it, so shrinking
+   one without the other brings back the sliced edges. 4 + 8 = 12px, inside 14. */
+@media (max-width: 640px) {
+  :root {
+    --gutter: 14px;
+    --lift:
+      0 1px 2px rgba(0, 0, 0, 0.18),
+      0 2px 4px rgba(0, 0, 0, 0.16),
+      0 4px 8px rgba(0, 0, 0, 0.18);
   }
 }
 

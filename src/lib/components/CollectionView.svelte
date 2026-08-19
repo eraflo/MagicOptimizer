@@ -249,8 +249,8 @@
     /* A scrolling box clips on *both* axes, so the cards' shadows were sliced flat against its
        left and right edges. The padding pushes the clip box outward and the negative margin puts
        the cards back where they were, so the shadow has somewhere to finish. */
-    padding: 2px 20px 8px;
-    margin: -2px -20px -8px;
+    padding: 2px var(--gutter) 8px;
+    margin: -2px calc(-1 * var(--gutter)) -8px;
   }
 
   header {
